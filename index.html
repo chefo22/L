@@ -597,6 +597,14 @@
                     <span class="material-symbols-rounded">north_east</span> <span id="summary-subtitle-text">No se completaron tareas en 7 días</span>
                 </div>
             </div>
+            <div class="card" onclick="showScreen('view-products'); renderProductsView();">
+                <div class="card-text">Productos de limpieza</div>
+                <div class="card-value" id="dash-products-count">0 <span class="material-symbols-rounded">chevron_right</span></div>
+            </div>
+            <div class="card" onclick="showScreen('view-rewards'); renderRewardsView();">
+                <div class="card-text">Puntos y recompensas</div>
+                <div class="card-value" id="dash-points-count"><span class="material-symbols-rounded" style="font-size:18px; color:var(--accent-color);">stars</span> 0 <span class="material-symbols-rounded">chevron_right</span></div>
+            </div>
 
             <div class="section-header">
                 <h2>Habitaciones</h2>
@@ -625,6 +633,46 @@
             </div>
         </header>
         <div class="container" id="room-tasks-list" style="margin-top: 16px;"></div>
+    </div>
+
+    <div id="view-products" class="view-screen hidden">
+        <header class="top-bar">
+            <button class="btn-icon" onclick="switchTab('hogar')" style="color: var(--text-primary);">
+                <span class="material-symbols-rounded">arrow_back</span>
+            </button>
+            <div class="title-group" style="font-size:22px;">Productos</div>
+            <button class="add-btn" onclick="openCreateProduct()">
+                <span class="material-symbols-rounded">add</span> Agregar
+            </button>
+        </header>
+        <div class="container" id="products-list" style="margin-top: 16px;"></div>
+    </div>
+
+    <div id="view-rewards" class="view-screen hidden">
+        <header class="top-bar">
+            <button class="btn-icon" onclick="switchTab('hogar')" style="color: var(--text-primary);">
+                <span class="material-symbols-rounded">arrow_back</span>
+            </button>
+            <div class="title-group" style="font-size:22px;">Recompensas</div>
+            <button class="add-btn" onclick="openCreateReward()">
+                <span class="material-symbols-rounded">add</span>
+            </button>
+        </header>
+        <div class="container" style="margin-top: 16px;">
+            <div class="card" style="flex-direction:column; align-items:center; padding:22px 16px; gap:4px;">
+                <div style="font-size:12px; color:var(--text-secondary); font-weight:700; letter-spacing:0.5px;">TUS PUNTOS</div>
+                <div style="font-size:38px; font-weight:800; display:flex; align-items:center; gap:8px; color:var(--accent-color);">
+                    <span class="material-symbols-rounded" style="font-size:32px;">stars</span><span id="points-balance">0</span>
+                </div>
+                <div style="font-size:12px; color:var(--text-secondary);">Gana puntos completando tareas y manteniendo tu racha</div>
+            </div>
+
+            <div class="section-header"><h2>Canjear</h2></div>
+            <div id="rewards-list"></div>
+
+            <div class="section-header"><h2>Historial de canjes</h2></div>
+            <div id="redemptions-list"></div>
+        </div>
     </div>
 
     <div id="view-programa" class="view-screen hidden">
@@ -1082,6 +1130,51 @@
         </div>
     </div>
 
+    <div id="modal-product" class="modal">
+        <div class="modal-header">
+            <button class="btn-icon" style="color:var(--text-secondary);" onclick="closeModal('modal-product')"><span class="material-symbols-rounded">close</span></button>
+            <div class="modal-title" id="modal-product-title">Agregar producto</div>
+            <button class="btn-text" onclick="saveProduct()">Guardar</button>
+        </div>
+        <div class="modal-body">
+            <div class="input-group">
+                <div class="input-row"><input type="text" id="product-name" placeholder="Nombre (ej. Detergente)"></div>
+            </div>
+            <h3 class="section-title-sm">ICONO</h3>
+            <div class="icon-grid" id="product-icon-grid"></div>
+            <h3 class="section-title-sm">SE SUELE ACABAR CADA (DÍAS)</h3>
+            <div class="input-group">
+                <div class="input-row"><input type="number" id="product-estimated-days" placeholder="Ej. 30 (opcional, se calcula solo con el tiempo)" min="1"></div>
+            </div>
+            <h3 class="section-title-sm">AVISAR CON CUÁNTOS DÍAS DE ANTELACIÓN</h3>
+            <div class="input-group">
+                <div class="input-row"><input type="number" id="product-lead-days" placeholder="3" min="0"></div>
+            </div>
+            <button class="btn-secondary-block hidden" id="product-buy-btn" onclick="logProductPurchase(editingProductId); closeModal('modal-product');">Marcar como comprado hoy</button>
+            <button class="btn-danger-block hidden" id="product-delete-btn" onclick="deleteProduct()">Eliminar producto</button>
+        </div>
+    </div>
+
+    <div id="modal-reward" class="modal">
+        <div class="modal-header">
+            <button class="btn-icon" style="color:var(--text-secondary);" onclick="closeModal('modal-reward')"><span class="material-symbols-rounded">close</span></button>
+            <div class="modal-title" id="modal-reward-title">Agregar recompensa</div>
+            <button class="btn-text" onclick="saveReward()">Guardar</button>
+        </div>
+        <div class="modal-body">
+            <div class="input-group">
+                <div class="input-row"><input type="text" id="reward-name" placeholder="Nombre (ej. Cena fuera)"></div>
+            </div>
+            <h3 class="section-title-sm">ICONO</h3>
+            <div class="icon-grid" id="reward-icon-grid"></div>
+            <h3 class="section-title-sm">COSTE EN PUNTOS</h3>
+            <div class="input-group">
+                <div class="input-row"><input type="number" id="reward-cost" placeholder="Ej. 150" min="1"></div>
+            </div>
+            <button class="btn-danger-block hidden" id="reward-delete-btn" onclick="deleteReward()">Eliminar recompensa</button>
+        </div>
+    </div>
+
     <script>
         /* ============ DATOS Y MIGRACIÓN ============ */
         function defaultData() {
@@ -1107,8 +1200,23 @@
                 defaultReminderLead: 0,
                 timeFormat: '24h',
                 startView: 'hogar',
-                listDensity: 'comfortable'
+                listDensity: 'comfortable',
+                products: [],
+                points: 0,
+                claimedAchievements: [],
+                rewards: defaultRewardsPreset(),
+                redemptions: []
             };
+        }
+
+        function defaultRewardsPreset() {
+            return [
+                { id: 'r1', name: 'Cena fuera', icon: 'restaurant', cost: 150 },
+                { id: 'r2', name: 'Cita / date night', icon: 'favorite', cost: 200 },
+                { id: 'r3', name: 'Tarde de cine', icon: 'movie', cost: 100 },
+                { id: 'r4', name: 'Día libre de tareas', icon: 'self_improvement', cost: 80 },
+                { id: 'r5', name: 'Capricho personal', icon: 'redeem', cost: 120 }
+            ];
         }
 
         let data = JSON.parse(localStorage.getItem('hogarMasterData')) || defaultData();
@@ -1129,6 +1237,14 @@
         data.timeFormat = data.timeFormat || '24h';
         data.startView = data.startView || 'hogar';
         data.listDensity = data.listDensity || 'comfortable';
+        data.products = (data.products || []).map(p => ({
+            purchaseHistory: [], estimatedDays: null, leadDays: 3, reminderEnabled: true,
+            lastNotifiedKey: null, category: 'General', icon: 'cleaning_services', ...p
+        }));
+        data.points = (data.points === undefined || data.points === null) ? 0 : data.points;
+        data.claimedAchievements = data.claimedAchievements || [];
+        data.rewards = (data.rewards && data.rewards.length) ? data.rewards : defaultRewardsPreset();
+        data.redemptions = data.redemptions || [];
         data.tasks = (data.tasks || []).map(t => ({
             notes: '', dueDate: null, frequencyDays: null, lastCompletedAt: null, createdAt: new Date().toISOString(),
             tags: [], subtasks: [], memberId: null, favorite: false, duration: null, reminderTime: null, iconColor: null,
@@ -1153,6 +1269,10 @@
         let editingRoomId = null;
         let editingTaskId = null;
         let editingMemberId = null;
+        let editingProductId = null;
+        let editingRewardId = null;
+        let selectedProductIcon = 'cleaning_services';
+        let selectedRewardIcon = 'redeem';
         let selectedRoomIcon = 'bathtub';
         let selectedTaskIcon = 'mop';
         let selectedRoomColor = '#78c5d6';
@@ -1196,6 +1316,11 @@
             'General': ['home', 'bed', 'chair', 'weekend', 'desk', 'tv', 'bathtub', 'shower', 'checkroom', 'door_front', 'stairs', 'lightbulb', 'toys', 'crib', 'computer', 'shopping_cart', 'spa']
         };
         const allIconsFlat = [...new Set(Object.values(iconCategories).flat())];
+
+        const productIconOptions = ['cleaning_services', 'soap', 'sanitizer', 'water_drop', 'local_laundry_service', 'mop', 'dry_cleaning', 'delete', 'recycling', 'spa', 'bathtub', 'shower', 'shopping_cart', 'icecream', 'coffee_maker'];
+        const rewardIconOptions = ['restaurant', 'favorite', 'movie', 'self_improvement', 'redeem', 'celebration', 'local_cafe', 'flight', 'spa', 'shopping_bag', 'cake', 'nightlife'];
+        const achievementPoints = { streak3: 30, streak7: 70, streak30: 300, total10: 50, total50: 200, total100: 500, total250: 1000, members1: 20 };
+        const POINTS_PER_TASK = 5;
 
         const sortLabels = { fecha: 'Fecha de Vencimiento', importancia: 'Importancia', nombre: 'Nombre (A-Z)' };
         const allTasksSortLabels = { nombre: 'Nombre (A-Z)', fecha: 'Fecha de Vencimiento', importancia: 'Importancia', duracion: 'Duración' };
@@ -1263,6 +1388,8 @@
             renderHistoryView();
             renderMembersList();
             updateDashboardCounts();
+            renderProductsView();
+            renderRewardsView();
             if (currentRoomDetailId) renderRoomTasks();
         }
 
@@ -1534,6 +1661,20 @@
                     });
                 } catch (e) { /* silenciar entornos sin soporte total */ }
                 task.lastNotifiedKey = notifKey;
+                changed = true;
+            });
+            data.products.forEach(product => {
+                if (product.reminderEnabled === false) return;
+                const status = computeProductStatus(product);
+                if (status.state !== 'soon' && status.state !== 'empty') return;
+                const notifKey = status.nextDate; // se resetea cuando se registra una nueva compra
+                if (product.lastNotifiedKey === notifKey) return;
+                try {
+                    new Notification('Se te está acabando: ' + product.name, {
+                        body: status.state === 'empty' ? 'Según tu patrón de compra, ya deberías reponerlo.' : `Según tu patrón de compra, se acaba en ${status.daysLeft} día(s).`
+                    });
+                } catch (e) { /* silenciar entornos sin soporte total */ }
+                product.lastNotifiedKey = notifKey;
                 changed = true;
             });
             if (changed) saveData();
@@ -2062,6 +2203,296 @@
             refreshAll();
         }
 
+        /* --- PRODUCTOS DE LIMPIEZA (inventario y patrón de compra) --- */
+        function productById(id) {
+            return data.products.find(p => p.id === id);
+        }
+
+        // Analiza el historial de compras del producto y estima cada cuántos días se repone,
+        // promediando los intervalos entre las últimas compras (patrón de gasto).
+        function computeProductPattern(product) {
+            const history = (product.purchaseHistory || []).slice().sort();
+            if (history.length >= 2) {
+                const intervals = [];
+                for (let i = 1; i < history.length; i++) {
+                    const d1 = new Date(history[i - 1] + 'T00:00:00');
+                    const d2 = new Date(history[i] + 'T00:00:00');
+                    intervals.push(Math.round((d2 - d1) / 86400000));
+                }
+                const recent = intervals.slice(-6); // prioriza el patrón reciente
+                const avg = Math.round(recent.reduce((a, b) => a + b, 0) / recent.length);
+                return avg > 0 ? avg : null;
+            }
+            return product.estimatedDays || null;
+        }
+
+        function computeProductStatus(product) {
+            const history = (product.purchaseHistory || []).slice().sort();
+            const lastPurchase = history.length ? history[history.length - 1] : null;
+            const learnedDays = computeProductPattern(product);
+            if (!lastPurchase || !learnedDays) {
+                return { state: 'nodata', label: 'Sin datos suficientes', daysLeft: null, nextDate: null, learnedDays };
+            }
+            const nextDate = addDays(lastPurchase, learnedDays);
+            const daysLeft = Math.round((new Date(nextDate + 'T00:00:00') - new Date(todayStr() + 'T00:00:00')) / 86400000);
+            const lead = (product.leadDays === undefined || product.leadDays === null) ? 3 : product.leadDays;
+            let state = 'ok', label = `Abastecido · repón en ${daysLeft}d`;
+            if (daysLeft <= 0) { state = 'empty'; label = 'Repón ya'; }
+            else if (daysLeft <= lead) { state = 'soon'; label = `Se acaba pronto · ${daysLeft}d`; }
+            return { state, label, daysLeft, nextDate, learnedDays };
+        }
+
+        function renderProductsView() {
+            const container = document.getElementById('products-list');
+            if (!container) return;
+            container.innerHTML = '';
+            if (data.products.length === 0) {
+                container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">cleaning_services</span>Agrega tus productos de limpieza (detergente, jabón, etc.) y avisaremos cuando se estén por acabar según tu patrón de compra.</div>`;
+            } else {
+                data.products.forEach(p => {
+                    const status = computeProductStatus(p);
+                    const color = status.state === 'empty' ? 'var(--danger-color)' : (status.state === 'soon' ? 'var(--accent-orange)' : 'var(--text-secondary)');
+                    const div = document.createElement('div');
+                    div.className = 'card';
+                    div.style.cursor = 'default';
+                    div.innerHTML = `
+                        <div class="icon-container" style="background-color: var(--bg-input); cursor:pointer;" onclick="openEditProduct('${p.id}')">
+                            <span class="material-symbols-rounded">${p.icon}</span>
+                        </div>
+                        <div class="item-info" style="cursor:pointer;" onclick="openEditProduct('${p.id}')">
+                            <div class="item-title">${p.name}</div>
+                            <div style="font-size:12px; color:${color}; font-weight:600;">${status.label}</div>
+                        </div>
+                        <button class="btn-icon" style="color:var(--accent-color);" onclick="logProductPurchase('${p.id}')" title="Marcar comprado hoy">
+                            <span class="material-symbols-rounded">add_shopping_cart</span>
+                        </button>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            const badge = document.getElementById('dash-products-count');
+            if (badge) {
+                const needing = data.products.filter(p => ['empty', 'soon'].includes(computeProductStatus(p).state)).length;
+                badge.innerHTML = needing > 0
+                    ? `<span style="color:var(--accent-orange);">${needing} por reponer</span> <span class="material-symbols-rounded">chevron_right</span>`
+                    : `${data.products.length} <span class="material-symbols-rounded">chevron_right</span>`;
+            }
+        }
+
+        function openCreateProduct() {
+            editingProductId = null;
+            document.getElementById('modal-product-title').innerText = 'Agregar producto';
+            document.getElementById('product-delete-btn').classList.add('hidden');
+            document.getElementById('product-buy-btn').classList.add('hidden');
+            document.getElementById('product-name').value = '';
+            document.getElementById('product-estimated-days').value = '';
+            document.getElementById('product-lead-days').value = '3';
+            selectedProductIcon = 'cleaning_services';
+            renderIconGrid('product-icon-grid', 'product', productIconOptions);
+            openModal('modal-product');
+        }
+
+        function openEditProduct(id) {
+            const p = productById(id);
+            if (!p) return;
+            editingProductId = id;
+            document.getElementById('modal-product-title').innerText = 'Editar producto';
+            document.getElementById('product-delete-btn').classList.remove('hidden');
+            document.getElementById('product-buy-btn').classList.remove('hidden');
+            document.getElementById('product-name').value = p.name;
+            document.getElementById('product-estimated-days').value = p.estimatedDays || '';
+            document.getElementById('product-lead-days').value = (p.leadDays === undefined || p.leadDays === null) ? 3 : p.leadDays;
+            selectedProductIcon = p.icon || 'cleaning_services';
+            renderIconGrid('product-icon-grid', 'product', productIconOptions);
+            openModal('modal-product');
+        }
+
+        function saveProduct() {
+            const name = document.getElementById('product-name').value.trim();
+            if (!name) { alert('Ponle un nombre al producto.'); return; }
+            const estimatedDays = parseInt(document.getElementById('product-estimated-days').value) || null;
+            const leadDays = parseInt(document.getElementById('product-lead-days').value);
+            if (editingProductId) {
+                const p = productById(editingProductId);
+                p.name = name;
+                p.icon = selectedProductIcon;
+                p.estimatedDays = estimatedDays;
+                p.leadDays = isNaN(leadDays) ? 3 : leadDays;
+            } else {
+                data.products.push({
+                    id: 'p' + Date.now(), name, icon: selectedProductIcon, category: 'General',
+                    estimatedDays, leadDays: isNaN(leadDays) ? 3 : leadDays,
+                    purchaseHistory: [], reminderEnabled: true, lastNotifiedKey: null
+                });
+            }
+            saveData();
+            closeModal('modal-product');
+            renderProductsView();
+        }
+
+        function deleteProduct() {
+            if (!editingProductId) return;
+            if (!confirm('¿Eliminar este producto?')) return;
+            data.products = data.products.filter(p => p.id !== editingProductId);
+            saveData();
+            closeModal('modal-product');
+            renderProductsView();
+        }
+
+        // Registra una compra hoy y recalcula el patrón de gasto automáticamente.
+        function logProductPurchase(id) {
+            const p = productById(id);
+            if (!p) return;
+            const today = todayStr();
+            if (!p.purchaseHistory.includes(today)) p.purchaseHistory.push(today);
+            p.purchaseHistory.sort();
+            p.lastNotifiedKey = null;
+            saveData();
+            renderProductsView();
+        }
+
+        /* --- PUNTOS Y RECOMPENSAS --- */
+        function renderRewardsView() {
+            const balanceEl = document.getElementById('points-balance');
+            if (balanceEl) balanceEl.innerText = data.points;
+            const dashPoints = document.getElementById('dash-points-count');
+            if (dashPoints) dashPoints.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px; color:var(--accent-color);">stars</span> ${data.points} <span class="material-symbols-rounded">chevron_right</span>`;
+
+            const list = document.getElementById('rewards-list');
+            if (list) {
+                list.innerHTML = '';
+                if (data.rewards.length === 0) {
+                    list.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">redeem</span>Aún no tienes recompensas. Agrega una.</div>`;
+                } else {
+                    data.rewards.forEach(r => {
+                        const canAfford = data.points >= r.cost;
+                        const div = document.createElement('div');
+                        div.className = 'card';
+                        div.style.cursor = 'default';
+                        div.innerHTML = `
+                            <div class="icon-container" style="background-color: var(--bg-input); cursor:pointer;" onclick="openEditReward('${r.id}')">
+                                <span class="material-symbols-rounded">${r.icon}</span>
+                            </div>
+                            <div class="item-info" style="cursor:pointer;" onclick="openEditReward('${r.id}')">
+                                <div class="item-title">${r.name}</div>
+                                <div style="font-size:12px; color:var(--text-secondary);">${r.cost} pts</div>
+                            </div>
+                            <button class="btn-icon" style="color:${canAfford ? 'var(--accent-color)' : 'var(--text-secondary)'};" ${canAfford ? '' : 'disabled'} onclick="redeemReward('${r.id}')">
+                                <span class="material-symbols-rounded">${canAfford ? 'check_circle' : 'lock'}</span>
+                            </button>
+                        `;
+                        list.appendChild(div);
+                    });
+                }
+            }
+            const redemptionsList = document.getElementById('redemptions-list');
+            if (redemptionsList) {
+                redemptionsList.innerHTML = '';
+                if (data.redemptions.length === 0) {
+                    redemptionsList.innerHTML = `<div class="empty-state" style="margin-top:6px;"><span class="material-symbols-rounded">history</span>Aún no has canjeado recompensas.</div>`;
+                } else {
+                    [...data.redemptions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30).forEach(rd => {
+                        const div = document.createElement('div');
+                        div.className = 'task-item';
+                        div.innerHTML = `
+                            <div class="icon-container" style="background-color: #2c2c2e;">
+                                <span class="material-symbols-rounded" style="color:var(--accent-color)">${rd.icon || 'redeem'}</span>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-title">${rd.rewardName}</div>
+                                <div style="font-size:12px; color:var(--text-secondary)">${formatDateLabel(rd.date.slice(0, 10))} · -${rd.cost} pts</div>
+                            </div>
+                        `;
+                        redemptionsList.appendChild(div);
+                    });
+                }
+            }
+        }
+
+        function openCreateReward() {
+            editingRewardId = null;
+            document.getElementById('modal-reward-title').innerText = 'Agregar recompensa';
+            document.getElementById('reward-delete-btn').classList.add('hidden');
+            document.getElementById('reward-name').value = '';
+            document.getElementById('reward-cost').value = '';
+            selectedRewardIcon = 'redeem';
+            renderIconGrid('reward-icon-grid', 'reward', rewardIconOptions);
+            openModal('modal-reward');
+        }
+
+        function openEditReward(id) {
+            const r = data.rewards.find(x => x.id === id);
+            if (!r) return;
+            editingRewardId = id;
+            document.getElementById('modal-reward-title').innerText = 'Editar recompensa';
+            document.getElementById('reward-delete-btn').classList.remove('hidden');
+            document.getElementById('reward-name').value = r.name;
+            document.getElementById('reward-cost').value = r.cost;
+            selectedRewardIcon = r.icon || 'redeem';
+            renderIconGrid('reward-icon-grid', 'reward', rewardIconOptions);
+            openModal('modal-reward');
+        }
+
+        function saveReward() {
+            const name = document.getElementById('reward-name').value.trim();
+            const cost = parseInt(document.getElementById('reward-cost').value);
+            if (!name) { alert('Ponle un nombre a la recompensa.'); return; }
+            if (!cost || cost <= 0) { alert('Indica un coste en puntos válido.'); return; }
+            if (editingRewardId) {
+                const r = data.rewards.find(x => x.id === editingRewardId);
+                r.name = name; r.icon = selectedRewardIcon; r.cost = cost;
+            } else {
+                data.rewards.push({ id: 'rw' + Date.now(), name, icon: selectedRewardIcon, cost });
+            }
+            saveData();
+            closeModal('modal-reward');
+            renderRewardsView();
+        }
+
+        function deleteReward() {
+            if (!editingRewardId) return;
+            if (!confirm('¿Eliminar esta recompensa?')) return;
+            data.rewards = data.rewards.filter(r => r.id !== editingRewardId);
+            saveData();
+            closeModal('modal-reward');
+            renderRewardsView();
+        }
+
+        function redeemReward(id) {
+            const r = data.rewards.find(x => x.id === id);
+            if (!r) return;
+            if (data.points < r.cost) return;
+            if (!confirm(`¿Canjear "${r.name}" por ${r.cost} puntos?`)) return;
+            data.points -= r.cost;
+            data.redemptions.unshift({ id: Date.now(), rewardId: r.id, rewardName: r.name, icon: r.icon, cost: r.cost, date: new Date().toISOString() });
+            saveData();
+            renderRewardsView();
+            alert(`¡Recompensa canjeada! 🎉 Disfruta: ${r.name}`);
+        }
+
+        // Otorga puntos al completar tareas y bonus únicos al desbloquear logros de racha.
+        function awardPointsForCompletion() {
+            data.points += POINTS_PER_TASK;
+            const s = computeStats();
+            let bonusMsgs = [];
+            achievementDefs.forEach(a => {
+                let unlocked = false;
+                if (a.type === 'streak') unlocked = s.streak >= a.threshold;
+                else if (a.type === 'total') unlocked = s.totalCompleted >= a.threshold;
+                else if (a.type === 'members') unlocked = data.members.length >= a.threshold;
+                if (unlocked && !data.claimedAchievements.includes(a.id)) {
+                    data.claimedAchievements.push(a.id);
+                    const bonus = achievementPoints[a.id] || 0;
+                    data.points += bonus;
+                    bonusMsgs.push(`${a.label} (+${bonus} pts)`);
+                }
+            });
+            saveData();
+            if (bonusMsgs.length) {
+                setTimeout(() => alert(`🏆 ¡Logro desbloqueado!\n${bonusMsgs.join('\n')}`), 50);
+            }
+        }
+
         /* --- HISTORIAL Y ESTADÍSTICAS --- */
         function computeStats() {
             const t = todayStr();
@@ -2231,6 +2662,7 @@
                 const member = memberById(task.memberId);
                 data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedAt: now });
                 task.lastCompletedAt = now;
+                awardPointsForCompletion();
                 saveData();
                 refreshAll();
 
@@ -2262,6 +2694,7 @@
                 task.completed = false;
                 const idx = data.history.findIndex(h => h.taskId === task.id);
                 if (idx > -1) data.history.splice(idx, 1);
+                data.points = Math.max(0, data.points - POINTS_PER_TASK);
                 saveData();
                 refreshAll();
             }
@@ -2305,7 +2738,8 @@
             iconArr.forEach(icon => {
                 const item = document.createElement('div');
                 item.className = 'icon-select';
-                if ((type === 'room' && icon === selectedRoomIcon) || (type === 'task' && icon === selectedTaskIcon)) {
+                if ((type === 'room' && icon === selectedRoomIcon) || (type === 'task' && icon === selectedTaskIcon) ||
+                    (type === 'product' && icon === selectedProductIcon) || (type === 'reward' && icon === selectedRewardIcon)) {
                     item.classList.add('active');
                 }
                 item.innerHTML = `<span class="material-symbols-rounded">${icon}</span>`;
@@ -2314,6 +2748,8 @@
                     item.classList.add('active');
                     if (type === 'room') selectedRoomIcon = icon;
                     if (type === 'task') selectedTaskIcon = icon;
+                    if (type === 'product') selectedProductIcon = icon;
+                    if (type === 'reward') selectedRewardIcon = icon;
                 };
                 grid.appendChild(item);
             });
