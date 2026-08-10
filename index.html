@@ -1291,6 +1291,9 @@
             <button class="btn-text" onclick="saveMember()">Guardar</button>
         </div>
         <div class="modal-body">
+            <div id="member-linked-note" class="hidden" style="font-size:12px; color:var(--text-secondary); display:flex; align-items:center; gap:4px; margin-bottom:10px;">
+                <span class="material-symbols-rounded" style="font-size:15px;">link</span><span id="member-linked-note-text"></span>
+            </div>
             <div class="input-group">
                 <div class="input-row">
                     <input type="text" id="member-name" placeholder="Nombre">
@@ -1405,7 +1408,7 @@
         // tener todavía los campos nuevos (por ejemplo pointsByUser/userNames).
         function normalizeData(d) {
             d.history = d.history || [];
-            d.members = d.members || [];
+            d.members = (d.members || []).map(m => ({ fbKey: null, ...m }));
             d.homeName = d.homeName || 'Casa';
             d.rooms = (d.rooms || []).map(r => ({ location: '', ...r }));
             d.theme = d.theme || 'dark';
@@ -1712,23 +1715,40 @@
                     const remote = snap.data();
                     if (remote && remote.payload) {
                         fbApplyingRemote = true;
+                        let memberChanged = false;
                         try {
                             const parsed = JSON.parse(remote.payload);
                             data = normalizeData(parsed);
+                            memberChanged = ensureMemberForUser(fbUser);
                             localStorage.setItem('hogarMasterData', JSON.stringify(data));
                             refreshAll();
                             renderCalendarStrip();
                             renderSeasonBanner();
+                            updateFbCurrentUserLabel();
                         } catch (e) { console.warn('Error aplicando datos remotos', e); }
                         fbApplyingRemote = false;
+                        // Si al vincular la cuenta se creó o actualizó el miembro, se sube ese cambio.
+                        if (memberChanged) fbPushData(true);
                     }
                 } else {
-                    // Primer usuario del hogar: sube los datos locales actuales
+                    // Primer usuario del hogar: crea su miembro y sube los datos locales actuales
+                    ensureMemberForUser(fbUser);
+                    updateFbCurrentUserLabel();
+                    refreshAll();
                     fbPushData(true);
                 }
             }, function(err) {
                 console.warn('Error de sincronización Firebase:', err);
             });
+        }
+
+        // Muestra en Ajustes con qué miembro del hogar está vinculada la cuenta que ha iniciado sesión.
+        function updateFbCurrentUserLabel() {
+            const el = document.getElementById('fb-current-user-label');
+            if (!el || !fbUser) return;
+            const m = memberByFbKey(fbUser.email || fbUser.uid);
+            const base = fbUser.displayName ? (fbUser.displayName + ' · ' + fbUser.email) : fbUser.email;
+            el.innerText = m ? `${base} · vinculado al miembro "${m.name}"` : base;
         }
 
         function fbPushData(immediate) {
@@ -1744,16 +1764,58 @@
             if (immediate) doPush(); else fbPushTimer = setTimeout(doPush, 800);
         }
 
+        // Busca el miembro del hogar vinculado a una cuenta de Firebase (por email/uid).
+        function memberByFbKey(key) {
+            if (!key) return null;
+            return data.members.find(m => m.fbKey === key);
+        }
+
+        // Se asegura de que la cuenta de Firebase que acaba de iniciar sesión tenga un
+        // miembro del hogar vinculado: si ya existe uno (por email) lo usa; si no, lo crea.
+        // Así los "usuarios de Firebase" y los "miembros de la casa" son la misma persona.
+        function ensureMemberForUser(user) {
+            if (!user) return false;
+            const key = user.email || user.uid;
+            if (!key) return false;
+            let changed = false;
+            let m = memberByFbKey(key);
+            if (!m) {
+                const name = user.displayName || (user.email ? user.email.split('@')[0] : 'Miembro');
+                m = { id: Date.now() + Math.random(), name, color: memberColors[data.members.length % memberColors.length], fbKey: key };
+                data.members.push(m);
+                changed = true;
+            }
+            // Migra a la ficha del miembro los puntos/nombre que se hubieran guardado
+            // antes bajo el email (versión previa, antes de existir esta vinculación).
+            if (!data.pointsByUser) data.pointsByUser = {};
+            const memberKey = String(m.id);
+            if (data.pointsByUser[key] !== undefined && key !== memberKey) {
+                data.pointsByUser[memberKey] = (data.pointsByUser[memberKey] || 0) + data.pointsByUser[key];
+                delete data.pointsByUser[key];
+                changed = true;
+            }
+            setUserName(memberKey, m.name);
+            return changed;
+        }
+
         function fbCurrentUserName() {
-            if (fbUser) return fbUser.displayName || fbUser.email;
+            if (fbUser) {
+                const m = memberByFbKey(fbUser.email || fbUser.uid);
+                if (m) return m.name;
+                return fbUser.displayName || fbUser.email;
+            }
             return null;
         }
 
         // Identificador estable de la persona que está usando la app ahora mismo.
-        // Si hay sesión de Firebase, cada persona tiene su propia cuenta (y su propio identificador).
+        // Si hay sesión de Firebase, cada persona está vinculada a su miembro del hogar,
+        // y ese es el identificador que se usa (el mismo que usan las tareas asignadas).
         // Si no hay sincronización configurada, se usa un cajón único "local" (un solo dispositivo/persona).
         function fbCurrentUserKey() {
-            if (fbUser) return fbUser.email || fbUser.uid;
+            if (fbUser) {
+                const m = memberByFbKey(fbUser.email || fbUser.uid);
+                if (m) return String(m.id);
+            }
             return 'local';
         }
 
@@ -1767,6 +1829,8 @@
 
         function userDisplayName(key) {
             if (!key) return null;
+            const m = memberById(key);
+            if (m) return m.name;
             if (!data.userNames) data.userNames = {};
             return data.userNames[key] || (key === 'local' ? 'Tú' : key);
         }
@@ -2635,6 +2699,7 @@
                     <div class="member-avatar" style="width:38px; height:38px; font-size:15px; background-color:${m.color}">${m.name.charAt(0).toUpperCase()}</div>
                     <div class="item-info">
                         <div class="item-title">${m.name}</div>
+                        ${m.fbKey ? `<div style="font-size:11px; color:var(--text-secondary); display:flex; align-items:center; gap:3px;"><span class="material-symbols-rounded" style="font-size:13px;">link</span>${m.fbKey}</div>` : ''}
                     </div>
                     <div class="item-status">${count} PENDIENTES</div>
                 `;
@@ -2646,6 +2711,7 @@
             document.getElementById('modal-member-title').innerText = 'Agregar miembro';
             document.getElementById('member-delete-btn').classList.add('hidden');
             document.getElementById('member-name').value = '';
+            document.getElementById('member-linked-note').classList.add('hidden');
             selectedMemberColor = memberColors[data.members.length % memberColors.length];
             renderColorPalette('member-color-palette', memberColors, selectedMemberColor, (c) => { selectedMemberColor = c; renderColorPalette('member-color-palette', memberColors, selectedMemberColor, arguments.callee); });
             openModal('modal-member');
@@ -2657,6 +2723,13 @@
             document.getElementById('modal-member-title').innerText = 'Editar miembro';
             document.getElementById('member-delete-btn').classList.remove('hidden');
             document.getElementById('member-name').value = m.name;
+            const linkedNote = document.getElementById('member-linked-note');
+            if (m.fbKey) {
+                document.getElementById('member-linked-note-text').innerText = `Vinculado a la cuenta ${m.fbKey}`;
+                linkedNote.classList.remove('hidden');
+            } else {
+                linkedNote.classList.add('hidden');
+            }
             selectedMemberColor = m.color;
             renderColorPalette('member-color-palette', memberColors, selectedMemberColor, (c) => { selectedMemberColor = c; renderColorPalette('member-color-palette', memberColors, selectedMemberColor, arguments.callee); });
             openModal('modal-member');
@@ -2677,7 +2750,11 @@
         }
         function deleteMember() {
             if (!editingMemberId) return;
-            if (!confirm('¿Eliminar este miembro? Las tareas asignadas quedarán sin asignar.')) return;
+            const m = memberById(editingMemberId);
+            const warning = (m && m.fbKey)
+                ? `¿Eliminar este miembro? Está vinculado a la cuenta ${m.fbKey}; si esa persona vuelve a iniciar sesión se creará de nuevo. Las tareas asignadas quedarán sin asignar.`
+                : '¿Eliminar este miembro? Las tareas asignadas quedarán sin asignar.';
+            if (!confirm(warning)) return;
             data.tasks.forEach(t => { if (t.memberId == editingMemberId) t.memberId = null; });
             data.members = data.members.filter(m => m.id !== editingMemberId);
             saveData();
