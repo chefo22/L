@@ -1398,62 +1398,70 @@
         const POINTS_PER_TASK = 5;
 
         let data = JSON.parse(localStorage.getItem('hogarMasterData')) || defaultData();
-        // Migración / valores por defecto para datos antiguos
-        data.history = data.history || [];
-        data.members = data.members || [];
-        data.homeName = data.homeName || 'Casa';
-        data.rooms = (data.rooms || []).map(r => ({ location: '', ...r }));
-        data.theme = data.theme || 'dark';
-        data.fontSize = data.fontSize || 'medium';
-        data.weekStart = (data.weekStart === 0 || data.weekStart === 1) ? data.weekStart : 1;
-        data.soundEnabled = (data.soundEnabled === undefined) ? true : data.soundEnabled;
-        data.seasonalBannerEnabled = (data.seasonalBannerEnabled === undefined) ? true : data.seasonalBannerEnabled;
-        data.dismissedBanners = data.dismissedBanners || [];
-        data.hemisphere = data.hemisphere || 'north';
-        data.notificationsEnabled = data.notificationsEnabled || false;
-        data.defaultReminderLead = (data.defaultReminderLead === undefined || data.defaultReminderLead === null) ? 0 : data.defaultReminderLead;
-        data.timeFormat = data.timeFormat || '24h';
-        data.startView = data.startView || 'hogar';
-        data.listDensity = data.listDensity || 'comfortable';
-        data.products = (data.products || []).map(p => ({
-            purchaseHistory: [], estimatedDays: null, leadDays: 3, reminderEnabled: true,
-            lastNotifiedKey: null, category: 'General', icon: 'cleaning_services', ...p
-        }));
-        data.points = (data.points === undefined || data.points === null) ? 0 : data.points;
-        data.pointsByUser = data.pointsByUser || {};
-        data.userNames = data.userNames || {};
-        // Migración: si existían puntos compartidos antiguos y aún no hay puntos repartidos por persona,
-        // se asignan a un cajón "local" para no perderlos.
-        if (data.points > 0 && Object.keys(data.pointsByUser).length === 0) {
-            data.pointsByUser['local'] = data.points;
-        }
-        data.claimedAchievements = data.claimedAchievements || [];
-        data.rewards = (data.rewards && data.rewards.length) ? data.rewards : defaultRewardsPreset();
-        data.redemptions = data.redemptions || [];
-        data.tasks = (data.tasks || []).map(t => ({
-            notes: '', dueDate: null, frequencyDays: null, lastCompletedAt: null, createdAt: new Date().toISOString(),
-            tags: [], subtasks: [], memberId: null, favorite: false, duration: null, reminderTime: null, iconColor: null,
-            reminderLead: 0, link: null, lastNotifiedKey: null, points: POINTS_PER_TASK,
-            repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
-            repeatMode: 'afterComplete', repeatEndType: 'never', repeatEndDate: null, repeatEndCount: null,
-            ...t
-        }));
-        // Migración de pasos/subtareas antiguos: cada paso puede tener su propia persona asignada y sus propios puntos
-        data.tasks.forEach(t => {
-            t.subtasks = (t.subtasks || []).map(s => ({ memberId: null, points: 0, completedByKey: null, completedByName: null, ...s }));
-            if (t.points === undefined || t.points === null) t.points = POINTS_PER_TASK;
-        });
-        // Migración de tareas antiguas (frequencyDays) al nuevo sistema de repetición avanzado
-        data.tasks.forEach(t => {
-            if ((!t.repeatType || t.repeatType === 'none') && t.frequencyDays) {
-                if (t.frequencyDays === 1) t.repeatType = 'daily';
-                else if (t.frequencyDays === 7) t.repeatType = 'weekly';
-                else if (t.frequencyDays === 14) t.repeatType = 'biweekly';
-                else if (t.frequencyDays === 30) t.repeatType = 'monthly';
-                else { t.repeatType = 'custom'; t.repeatUnit = 'day'; t.repeatInterval = t.frequencyDays; }
+
+        // Migración / valores por defecto para datos antiguos o incompletos.
+        // Se aplica al cargar la página Y cada vez que llegan datos nuevos desde Firebase,
+        // porque un documento remoto guardado con una versión anterior de la app puede no
+        // tener todavía los campos nuevos (por ejemplo pointsByUser/userNames).
+        function normalizeData(d) {
+            d.history = d.history || [];
+            d.members = d.members || [];
+            d.homeName = d.homeName || 'Casa';
+            d.rooms = (d.rooms || []).map(r => ({ location: '', ...r }));
+            d.theme = d.theme || 'dark';
+            d.fontSize = d.fontSize || 'medium';
+            d.weekStart = (d.weekStart === 0 || d.weekStart === 1) ? d.weekStart : 1;
+            d.soundEnabled = (d.soundEnabled === undefined) ? true : d.soundEnabled;
+            d.seasonalBannerEnabled = (d.seasonalBannerEnabled === undefined) ? true : d.seasonalBannerEnabled;
+            d.dismissedBanners = d.dismissedBanners || [];
+            d.hemisphere = d.hemisphere || 'north';
+            d.notificationsEnabled = d.notificationsEnabled || false;
+            d.defaultReminderLead = (d.defaultReminderLead === undefined || d.defaultReminderLead === null) ? 0 : d.defaultReminderLead;
+            d.timeFormat = d.timeFormat || '24h';
+            d.startView = d.startView || 'hogar';
+            d.listDensity = d.listDensity || 'comfortable';
+            d.products = (d.products || []).map(p => ({
+                purchaseHistory: [], estimatedDays: null, leadDays: 3, reminderEnabled: true,
+                lastNotifiedKey: null, category: 'General', icon: 'cleaning_services', ...p
+            }));
+            d.points = (d.points === undefined || d.points === null) ? 0 : d.points;
+            d.pointsByUser = d.pointsByUser || {};
+            d.userNames = d.userNames || {};
+            // Migración: si existían puntos compartidos antiguos y aún no hay puntos repartidos por persona,
+            // se asignan a un cajón "local" para no perderlos.
+            if (d.points > 0 && Object.keys(d.pointsByUser).length === 0) {
+                d.pointsByUser['local'] = d.points;
             }
-            if (!Array.isArray(t.repeatWeekDays)) t.repeatWeekDays = [];
-        });
+            d.claimedAchievements = d.claimedAchievements || [];
+            d.rewards = (d.rewards && d.rewards.length) ? d.rewards : defaultRewardsPreset();
+            d.redemptions = d.redemptions || [];
+            d.tasks = (d.tasks || []).map(t => ({
+                notes: '', dueDate: null, frequencyDays: null, lastCompletedAt: null, createdAt: new Date().toISOString(),
+                tags: [], subtasks: [], memberId: null, favorite: false, duration: null, reminderTime: null, iconColor: null,
+                reminderLead: 0, link: null, lastNotifiedKey: null, points: POINTS_PER_TASK,
+                repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
+                repeatMode: 'afterComplete', repeatEndType: 'never', repeatEndDate: null, repeatEndCount: null,
+                ...t
+            }));
+            // Migración de pasos/subtareas antiguos: cada paso puede tener su propia persona asignada y sus propios puntos
+            d.tasks.forEach(t => {
+                t.subtasks = (t.subtasks || []).map(s => ({ memberId: null, points: 0, completedByKey: null, completedByName: null, ...s }));
+                if (t.points === undefined || t.points === null) t.points = POINTS_PER_TASK;
+            });
+            // Migración de tareas antiguas (frequencyDays) al nuevo sistema de repetición avanzado
+            d.tasks.forEach(t => {
+                if ((!t.repeatType || t.repeatType === 'none') && t.frequencyDays) {
+                    if (t.frequencyDays === 1) t.repeatType = 'daily';
+                    else if (t.frequencyDays === 7) t.repeatType = 'weekly';
+                    else if (t.frequencyDays === 14) t.repeatType = 'biweekly';
+                    else if (t.frequencyDays === 30) t.repeatType = 'monthly';
+                    else { t.repeatType = 'custom'; t.repeatUnit = 'day'; t.repeatInterval = t.frequencyDays; }
+                }
+                if (!Array.isArray(t.repeatWeekDays)) t.repeatWeekDays = [];
+            });
+            return d;
+        }
+        data = normalizeData(data);
 
         let currentRoomDetailId = null;
         let editingRoomId = null;
@@ -1706,7 +1714,7 @@
                         fbApplyingRemote = true;
                         try {
                             const parsed = JSON.parse(remote.payload);
-                            data = parsed;
+                            data = normalizeData(parsed);
                             localStorage.setItem('hogarMasterData', JSON.stringify(data));
                             refreshAll();
                             renderCalendarStrip();
@@ -1753,11 +1761,13 @@
         // (por ejemplo en el historial de canjes) aunque esa persona no tenga sesión iniciada en ese momento.
         function setUserName(key, name) {
             if (!key) return;
+            if (!data.userNames) data.userNames = {};
             data.userNames[key] = name || (key === 'local' ? 'Tú' : key);
         }
 
         function userDisplayName(key) {
             if (!key) return null;
+            if (!data.userNames) data.userNames = {};
             return data.userNames[key] || (key === 'local' ? 'Tú' : key);
         }
 
@@ -1765,12 +1775,14 @@
         // cada una gana y gasta únicamente los suyos.
         function getUserPoints(key) {
             if (!key) key = 'local';
+            if (!data.pointsByUser) data.pointsByUser = {};
             return data.pointsByUser[key] || 0;
         }
 
         function addUserPoints(key, amount) {
             if (!key) key = 'local';
             if (!amount) return;
+            if (!data.pointsByUser) data.pointsByUser = {};
             data.pointsByUser[key] = Math.max(0, (data.pointsByUser[key] || 0) + amount);
         }
 
@@ -3753,33 +3765,7 @@
                     const parsed = JSON.parse(e.target.result);
                     if (!parsed.rooms || !parsed.tasks) throw new Error('formato inválido');
                     if (!confirm('Esto reemplazará todos tus datos actuales. ¿Continuar?')) return;
-                    data = Object.assign(defaultData(), parsed);
-                    data.tasks = data.tasks.map(t => ({
-                        notes: '', dueDate: null, frequencyDays: null, lastCompletedAt: null, createdAt: new Date().toISOString(),
-                        tags: [], subtasks: [], memberId: null, favorite: false, duration: null, reminderTime: null, iconColor: null,
-                        reminderLead: 0, link: null, lastNotifiedKey: null,
-                        repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
-                        repeatMode: 'afterComplete', repeatEndType: 'never', repeatEndDate: null, repeatEndCount: null,
-                        ...t
-                    }));
-                    data.tasks.forEach(t => {
-                        if ((!t.repeatType || t.repeatType === 'none') && t.frequencyDays) {
-                            if (t.frequencyDays === 1) t.repeatType = 'daily';
-                            else if (t.frequencyDays === 7) t.repeatType = 'weekly';
-                            else if (t.frequencyDays === 14) t.repeatType = 'biweekly';
-                            else if (t.frequencyDays === 30) t.repeatType = 'monthly';
-                            else { t.repeatType = 'custom'; t.repeatUnit = 'day'; t.repeatInterval = t.frequencyDays; }
-                        }
-                        if (!Array.isArray(t.repeatWeekDays)) t.repeatWeekDays = [];
-                    });
-                    data.rooms = data.rooms.map(r => ({ location: '', ...r }));
-                    data.members = data.members || [];
-                    data.dismissedBanners = data.dismissedBanners || [];
-                    data.notificationsEnabled = data.notificationsEnabled || false;
-                    data.defaultReminderLead = (data.defaultReminderLead === undefined || data.defaultReminderLead === null) ? 0 : data.defaultReminderLead;
-                    data.timeFormat = data.timeFormat || '24h';
-                    data.startView = data.startView || 'hogar';
-                    data.listDensity = data.listDensity || 'comfortable';
+                    data = normalizeData(Object.assign(defaultData(), parsed));
                     saveData();
                     changeAccent(data.accent, false);
                     applyTheme(data.theme, false);
