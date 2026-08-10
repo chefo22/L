@@ -767,7 +767,8 @@
                 <div style="font-size:38px; font-weight:800; display:flex; align-items:center; gap:8px; color:var(--accent-color);">
                     <span class="material-symbols-rounded" style="font-size:32px;">stars</span><span id="points-balance">0</span>
                 </div>
-                <div style="font-size:12px; color:var(--text-secondary);">Gana puntos completando tareas y manteniendo tu racha</div>
+                <div id="points-owner-label" style="font-size:11px; color:var(--text-secondary);"></div>
+                <div style="font-size:12px; color:var(--text-secondary);">Gana puntos completando tareas y manteniendo tu racha. Tus puntos son solo tuyos: no se comparten con el resto.</div>
             </div>
 
             <div class="section-header"><h2>Canjear</h2></div>
@@ -1375,6 +1376,8 @@
                 listDensity: 'comfortable',
                 products: [],
                 points: 0,
+                pointsByUser: {},
+                userNames: {},
                 claimedAchievements: [],
                 rewards: defaultRewardsPreset(),
                 redemptions: []
@@ -1417,6 +1420,13 @@
             lastNotifiedKey: null, category: 'General', icon: 'cleaning_services', ...p
         }));
         data.points = (data.points === undefined || data.points === null) ? 0 : data.points;
+        data.pointsByUser = data.pointsByUser || {};
+        data.userNames = data.userNames || {};
+        // Migración: si existían puntos compartidos antiguos y aún no hay puntos repartidos por persona,
+        // se asignan a un cajón "local" para no perderlos.
+        if (data.points > 0 && Object.keys(data.pointsByUser).length === 0) {
+            data.pointsByUser['local'] = data.points;
+        }
         data.claimedAchievements = data.claimedAchievements || [];
         data.rewards = (data.rewards && data.rewards.length) ? data.rewards : defaultRewardsPreset();
         data.redemptions = data.redemptions || [];
@@ -1430,7 +1440,7 @@
         }));
         // Migración de pasos/subtareas antiguos: cada paso puede tener su propia persona asignada y sus propios puntos
         data.tasks.forEach(t => {
-            t.subtasks = (t.subtasks || []).map(s => ({ memberId: null, points: 0, ...s }));
+            t.subtasks = (t.subtasks || []).map(s => ({ memberId: null, points: 0, completedByKey: null, completedByName: null, ...s }));
             if (t.points === undefined || t.points === null) t.points = POINTS_PER_TASK;
         });
         // Migración de tareas antiguas (frequencyDays) al nuevo sistema de repetición avanzado
@@ -1729,6 +1739,39 @@
         function fbCurrentUserName() {
             if (fbUser) return fbUser.displayName || fbUser.email;
             return null;
+        }
+
+        // Identificador estable de la persona que está usando la app ahora mismo.
+        // Si hay sesión de Firebase, cada persona tiene su propia cuenta (y su propio identificador).
+        // Si no hay sincronización configurada, se usa un cajón único "local" (un solo dispositivo/persona).
+        function fbCurrentUserKey() {
+            if (fbUser) return fbUser.email || fbUser.uid;
+            return 'local';
+        }
+
+        // Guarda/actualiza el nombre visible de una persona para poder mostrarlo luego
+        // (por ejemplo en el historial de canjes) aunque esa persona no tenga sesión iniciada en ese momento.
+        function setUserName(key, name) {
+            if (!key) return;
+            data.userNames[key] = name || (key === 'local' ? 'Tú' : key);
+        }
+
+        function userDisplayName(key) {
+            if (!key) return null;
+            return data.userNames[key] || (key === 'local' ? 'Tú' : key);
+        }
+
+        // Puntos acumulados de una persona concreta. Los puntos NO se comparten entre personas:
+        // cada una gana y gasta únicamente los suyos.
+        function getUserPoints(key) {
+            if (!key) key = 'local';
+            return data.pointsByUser[key] || 0;
+        }
+
+        function addUserPoints(key, amount) {
+            if (!key) key = 'local';
+            if (!amount) return;
+            data.pointsByUser[key] = Math.max(0, (data.pointsByUser[key] || 0) + amount);
         }
 
         function refreshAll() {
@@ -2780,10 +2823,15 @@
 
         /* --- PUNTOS Y RECOMPENSAS --- */
         function renderRewardsView() {
+            const myKey = fbCurrentUserKey();
+            const myName = fbCurrentUserName();
+            const myPoints = getUserPoints(myKey);
             const balanceEl = document.getElementById('points-balance');
-            if (balanceEl) balanceEl.innerText = data.points;
+            if (balanceEl) balanceEl.innerText = myPoints;
+            const ownerEl = document.getElementById('points-owner-label');
+            if (ownerEl) ownerEl.innerText = myName ? `de ${myName}` : '';
             const dashPoints = document.getElementById('dash-points-count');
-            if (dashPoints) dashPoints.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px; color:var(--accent-color);">stars</span> ${data.points} <span class="material-symbols-rounded">chevron_right</span>`;
+            if (dashPoints) dashPoints.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px; color:var(--accent-color);">stars</span> ${myPoints} <span class="material-symbols-rounded">chevron_right</span>`;
 
             const list = document.getElementById('rewards-list');
             if (list) {
@@ -2792,7 +2840,7 @@
                     list.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">redeem</span>Aún no tienes recompensas. Agrega una.</div>`;
                 } else {
                     data.rewards.forEach(r => {
-                        const canAfford = data.points >= r.cost;
+                        const canAfford = myPoints >= r.cost;
                         const div = document.createElement('div');
                         div.className = 'card';
                         div.style.cursor = 'default';
@@ -2827,7 +2875,7 @@
                             </div>
                             <div class="item-info">
                                 <div class="item-title">${rd.rewardName}</div>
-                                <div style="font-size:12px; color:var(--text-secondary)">${formatDateLabel(rd.date.slice(0, 10))} · -${rd.cost} pts</div>
+                                <div style="font-size:12px; color:var(--text-secondary)">${formatDateLabel(rd.date.slice(0, 10))} · -${rd.cost} pts${rd.claimedBy ? ' · reclamado por <strong>' + rd.claimedBy + '</strong>' : ''}</div>
                             </div>
                         `;
                         redemptionsList.appendChild(div);
@@ -2888,10 +2936,15 @@
         function redeemReward(id) {
             const r = data.rewards.find(x => x.id === id);
             if (!r) return;
-            if (data.points < r.cost) return;
-            if (!confirm(`¿Canjear "${r.name}" por ${r.cost} puntos?`)) return;
-            data.points -= r.cost;
-            data.redemptions.unshift({ id: Date.now(), rewardId: r.id, rewardName: r.name, icon: r.icon, cost: r.cost, date: new Date().toISOString() });
+            const key = fbCurrentUserKey();
+            const name = fbCurrentUserName();
+            const myPoints = getUserPoints(key);
+            if (myPoints < r.cost) return;
+            const who = name ? ` (${name})` : '';
+            if (!confirm(`¿Canjear "${r.name}" por ${r.cost} puntos${who}?`)) return;
+            setUserName(key, name);
+            addUserPoints(key, -r.cost);
+            data.redemptions.unshift({ id: Date.now(), rewardId: r.id, rewardName: r.name, icon: r.icon, cost: r.cost, date: new Date().toISOString(), claimedByKey: key, claimedBy: name || 'Tú' });
             saveData();
             renderRewardsView();
             alert(`¡Recompensa canjeada! 🎉 Disfruta: ${r.name}`);
@@ -2909,6 +2962,7 @@
         // Revisa y desbloquea logros de racha/total/miembros (no otorga los puntos de la tarea en sí).
         function checkAchievements() {
             const s = computeStats();
+            const key = fbCurrentUserKey();
             let bonusMsgs = [];
             achievementDefs.forEach(a => {
                 let unlocked = false;
@@ -2918,7 +2972,7 @@
                 if (unlocked && !data.claimedAchievements.includes(a.id)) {
                     data.claimedAchievements.push(a.id);
                     const bonus = achievementPoints[a.id] || 0;
-                    data.points += bonus;
+                    addUserPoints(key, bonus);
                     bonusMsgs.push(`${a.label} (+${bonus} pts)`);
                 }
             });
@@ -3077,7 +3131,7 @@
                     </div>
                     <div class="item-info">
                         <div class="item-title">${h.taskName}</div>
-                        <div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''}${h.completedBy ? ' · por ' + h.completedBy : ''} · ${time}</div>
+                        <div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''}${h.completedBy ? ' · hecho por <strong>' + h.completedBy + '</strong>' : (h.completedByKey ? ' · hecho por <strong>' + userDisplayName(h.completedByKey) + '</strong>' : '')} · ${time}</div>
                     </div>
                     <span class="material-symbols-rounded" title="Deshacer" onclick="event.stopPropagation(); undoHistoryEntry('${h.id}')" style="color:var(--text-secondary); font-size:22px; cursor:pointer; margin-left:8px;">undo</span>
                 `;
@@ -3105,21 +3159,25 @@
             const room = data.rooms.find(r => r.id == task.roomId);
             const member = memberById(task.memberId);
             const completedByUser = fbCurrentUserName();
+            const completedByKey = fbCurrentUserKey();
+            setUserName(completedByKey, completedByUser);
 
             let pointsToAdd = 0;
             if (task.subtasks && task.subtasks.length) {
                 task.subtasks.forEach(s => {
                     if (!s.done) {
                         s.done = true;
+                        s.completedByKey = completedByKey;
+                        s.completedByName = completedByUser;
                         pointsToAdd += (s.points || 0);
                     }
                 });
             } else {
                 pointsToAdd = (task.points === undefined || task.points === null) ? POINTS_PER_TASK : task.points;
             }
-            if (pointsToAdd > 0) data.points += pointsToAdd;
+            if (pointsToAdd > 0) addUserPoints(completedByKey, pointsToAdd);
 
-            data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount });
+            data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedByKey: completedByKey, pointsEarned: pointsToAdd, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount });
             task.lastCompletedAt = now;
             checkAchievements();
             saveData();
@@ -3156,9 +3214,19 @@
         function uncompleteTaskFully(task) {
             task.completed = false;
             const idx = data.history.findIndex(h => h.taskId === task.id);
-            if (idx > -1) data.history.splice(idx, 1);
-            data.points = Math.max(0, data.points - taskTotalPoints(task));
-            if (task.subtasks && task.subtasks.length) task.subtasks.forEach(s => s.done = false);
+            let entry = null;
+            if (idx > -1) { entry = data.history[idx]; data.history.splice(idx, 1); }
+            if (task.subtasks && task.subtasks.length) {
+                task.subtasks.forEach(s => {
+                    if (s.done && s.points) addUserPoints(s.completedByKey || (entry && entry.completedByKey) || fbCurrentUserKey(), -s.points);
+                    s.done = false;
+                    s.completedByKey = null;
+                    s.completedByName = null;
+                });
+            } else {
+                const refundKey = (entry && entry.completedByKey) || fbCurrentUserKey();
+                addUserPoints(refundKey, -taskTotalPoints(task));
+            }
             saveData();
             refreshAll();
         }
@@ -3173,7 +3241,12 @@
 
             if (!step.done) {
                 step.done = true;
-                if (step.points) data.points += step.points;
+                const key = fbCurrentUserKey();
+                const name = fbCurrentUserName();
+                step.completedByKey = key;
+                step.completedByName = name;
+                setUserName(key, name);
+                if (step.points) addUserPoints(key, step.points);
                 const allDone = task.subtasks.every(s => s.done);
                 if (allDone && !task.completed) {
                     completeTaskFully(task);
@@ -3182,8 +3255,10 @@
                 saveData();
                 refreshAll();
             } else {
+                if (step.points) addUserPoints(step.completedByKey || fbCurrentUserKey(), -step.points);
                 step.done = false;
-                if (step.points) data.points = Math.max(0, data.points - step.points);
+                step.completedByKey = null;
+                step.completedByName = null;
                 if (task.completed) {
                     task.completed = false;
                     const idx = data.history.findIndex(h => h.taskId === task.id);
@@ -3204,12 +3279,23 @@
             data.history.splice(idx, 1);
 
             const task = data.tasks.find(t => t.id === h.taskId);
-            data.points = Math.max(0, data.points - (task ? taskTotalPoints(task) : POINTS_PER_TASK));
+            const refundKey = h.completedByKey || fbCurrentUserKey();
             if (task) {
+                if (task.subtasks && task.subtasks.length) {
+                    task.subtasks.forEach(s => {
+                        if (s.done && s.points) addUserPoints(s.completedByKey || refundKey, -s.points);
+                        s.done = false;
+                        s.completedByKey = null;
+                        s.completedByName = null;
+                    });
+                } else {
+                    addUserPoints(refundKey, -taskTotalPoints(task));
+                }
                 task.completed = false;
                 if (h.dueDateAtCompletion !== undefined) task.dueDate = h.dueDateAtCompletion;
                 if (h.repeatEndCountAtCompletion !== undefined) task.repeatEndCount = h.repeatEndCountAtCompletion;
-                if (task.subtasks && task.subtasks.length) task.subtasks.forEach(s => s.done = false);
+            } else {
+                addUserPoints(refundKey, -POINTS_PER_TASK);
             }
 
             saveData();
