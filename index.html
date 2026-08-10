@@ -10,6 +10,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Mi Hogar">
     <meta name="mobile-web-app-capable" content="yes">
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script>
         (function() {
             // Iconos embebidos como data URI (no requieren archivos externos)
@@ -967,6 +970,64 @@
             </div>
 
             <div class="section-header">
+                <h2>Sincronización entre dispositivos (Firebase)</h2>
+            </div>
+
+            <div id="fb-disconnected-panel">
+                <div class="card" style="flex-direction:column; align-items:stretch; gap:10px; cursor:default;">
+                    <p style="font-size:13px; color:var(--text-secondary); line-height:1.4;">
+                        Conecta tu propio proyecto de Firebase para que varios usuarios compartan las tareas del hogar en tiempo real y quede registrado quién ha completado cada una. Crea un proyecto gratis en
+                        <a href="https://console.firebase.google.com" target="_blank" style="color:var(--accent-color)">console.firebase.google.com</a>, activa <b>Firestore Database</b> y <b>Authentication → Email/contraseña</b>, y pega aquí el objeto <code>firebaseConfig</code> de tu app web.
+                    </p>
+                    <textarea id="fb-config-raw" rows="5" placeholder='Pega aquí el objeto completo, ej: { apiKey: "...", authDomain: "...", projectId: "...", storageBucket: "...", messagingSenderId: "...", appId: "..." }' style="background:var(--bg-input); color:var(--text-primary); border:none; border-radius:10px; padding:12px; font-size:13px; width:100%; resize:vertical; font-family:monospace;"></textarea>
+                    <button class="add-btn" style="justify-content:center; padding:12px;" onclick="connectFirebaseFromRaw()">Conectar Firebase</button>
+                    <p id="fb-connect-error" style="font-size:12px; color:var(--danger-color); display:none;"></p>
+                </div>
+            </div>
+
+            <div id="fb-connected-panel" class="hidden">
+                <div class="card" style="cursor:default;">
+                    <div>
+                        <div class="card-text">Firebase conectado</div>
+                        <p class="section-sub" style="margin-top:2px;" id="fb-project-label">—</p>
+                    </div>
+                    <span class="material-symbols-rounded" style="color:var(--accent-color)">check_circle</span>
+                </div>
+
+                <div id="fb-logged-out-panel">
+                    <div class="card" style="flex-direction:column; align-items:stretch; gap:10px; cursor:default;">
+                        <p style="font-size:13px; color:var(--text-secondary);">Inicia sesión o crea una cuenta para este hogar. Todas las personas del hogar deben usar el mismo proyecto Firebase, cada una con su propia cuenta.</p>
+                        <input type="email" id="fb-auth-email" placeholder="Correo electrónico" style="background:var(--bg-input); border:none; border-radius:10px; padding:12px; color:var(--text-primary); font-size:14px;">
+                        <input type="password" id="fb-auth-pass" placeholder="Contraseña (mín. 6 caracteres)" style="background:var(--bg-input); border:none; border-radius:10px; padding:12px; color:var(--text-primary); font-size:14px;">
+                        <input type="text" id="fb-auth-name" placeholder="Tu nombre (solo para registrarte)" style="background:var(--bg-input); border:none; border-radius:10px; padding:12px; color:var(--text-primary); font-size:14px;">
+                        <div style="display:flex; gap:10px;">
+                            <button class="add-btn" style="flex:1; justify-content:center; padding:12px;" onclick="fbLogin()">Iniciar sesión</button>
+                            <button class="add-btn" style="flex:1; justify-content:center; padding:12px; background:var(--bg-input); color:var(--text-primary);" onclick="fbRegister()">Crear cuenta</button>
+                        </div>
+                        <p id="fb-auth-error" style="font-size:12px; color:var(--danger-color); display:none;"></p>
+                    </div>
+                </div>
+
+                <div id="fb-logged-in-panel" class="hidden">
+                    <div class="card" style="cursor:default;">
+                        <div>
+                            <div class="card-text">Sesión iniciada</div>
+                            <p class="section-sub" style="margin-top:2px;" id="fb-current-user-label">—</p>
+                        </div>
+                    </div>
+                    <div class="card" onclick="fbLogout()">
+                        <div class="card-text">Cerrar sesión</div>
+                        <span class="material-symbols-rounded" style="color: var(--text-secondary)">logout</span>
+                    </div>
+                </div>
+
+                <div class="card" onclick="disconnectFirebase()">
+                    <div class="card-text" style="color: var(--danger-color);">Desconectar Firebase</div>
+                    <span class="material-symbols-rounded" style="color: var(--danger-color);">link_off</span>
+                </div>
+            </div>
+
+            <div class="section-header">
                 <h2>Copia de seguridad</h2>
             </div>
             <div class="card" onclick="exportData()">
@@ -1445,10 +1506,179 @@
                 startNotificationChecker();
             }
             if (data.startView && data.startView !== 'hogar') switchTab(data.startView);
+            fbInitIfConfigured();
         };
 
         function saveData() {
             localStorage.setItem('hogarMasterData', JSON.stringify(data));
+            fbPushData();
+        }
+
+        /* ============ SINCRONIZACIÓN FIREBASE (multi-usuario) ============ */
+        let fbApp = null, fbAuth = null, fbDB = null, fbUser = null, fbUnsub = null;
+        let fbApplyingRemote = false;
+        let fbPushTimer = null;
+
+        function fbLoadConfig() {
+            try { return JSON.parse(localStorage.getItem('mihogarFirebaseConfig') || 'null'); }
+            catch (e) { return null; }
+        }
+
+        function fbInitIfConfigured() {
+            const cfg = fbLoadConfig();
+            if (!cfg) { showFbPanel(false); return; }
+            fbBoot(cfg);
+        }
+
+        function fbBoot(cfg) {
+            try {
+                fbApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(cfg);
+                fbAuth = firebase.auth();
+                fbDB = firebase.firestore();
+                showFbPanel(true);
+                document.getElementById('fb-project-label').innerText = cfg.projectId || 'Proyecto conectado';
+                fbAuth.onAuthStateChanged(function(user) {
+                    fbUser = user;
+                    if (user) {
+                        document.getElementById('fb-logged-out-panel').classList.add('hidden');
+                        document.getElementById('fb-logged-in-panel').classList.remove('hidden');
+                        document.getElementById('fb-current-user-label').innerText = user.displayName ? (user.displayName + ' · ' + user.email) : user.email;
+                        fbStartSync();
+                    } else {
+                        document.getElementById('fb-logged-out-panel').classList.remove('hidden');
+                        document.getElementById('fb-logged-in-panel').classList.add('hidden');
+                        if (fbUnsub) { fbUnsub(); fbUnsub = null; }
+                    }
+                });
+            } catch (err) {
+                console.warn('Error al iniciar Firebase:', err);
+                showFbError('fb-connect-error', 'No se pudo conectar. Revisa que las Keys sean correctas.');
+            }
+        }
+
+        function showFbPanel(connected) {
+            document.getElementById('fb-disconnected-panel').classList.toggle('hidden', connected);
+            document.getElementById('fb-connected-panel').classList.toggle('hidden', !connected);
+        }
+
+        function showFbError(elId, msg) {
+            const el = document.getElementById(elId);
+            el.innerText = msg;
+            el.style.display = 'block';
+        }
+
+        function connectFirebaseFromRaw() {
+            const raw = document.getElementById('fb-config-raw').value.trim();
+            document.getElementById('fb-connect-error').style.display = 'none';
+            if (!raw) return showFbError('fb-connect-error', 'Pega el objeto de configuración de Firebase.');
+            let cfg;
+            try {
+                // Permite pegar el objeto tal cual lo da la consola de Firebase (con claves sin comillas)
+                cfg = Function('"use strict"; return (' + raw.replace(/^\s*const\s+\w+\s*=/, '').replace(/;\s*$/, '') + ')')();
+            } catch (e) {
+                return showFbError('fb-connect-error', 'No se pudo leer el objeto. Copia exactamente el que te da Firebase (incluyendo las llaves { }).');
+            }
+            if (!cfg || !cfg.apiKey || !cfg.projectId) {
+                return showFbError('fb-connect-error', 'Faltan campos. Asegúrate de incluir apiKey y projectId como mínimo.');
+            }
+            localStorage.setItem('mihogarFirebaseConfig', JSON.stringify(cfg));
+            fbBoot(cfg);
+        }
+
+        function disconnectFirebase() {
+            if (!confirm('Esto desconectará este dispositivo de la sincronización. Tus datos locales no se borrarán. ¿Continuar?')) return;
+            if (fbUnsub) { fbUnsub(); fbUnsub = null; }
+            if (fbAuth) { fbAuth.signOut().catch(function(){}); }
+            localStorage.removeItem('mihogarFirebaseConfig');
+            location.reload();
+        }
+
+        function fbRegister() {
+            document.getElementById('fb-auth-error').style.display = 'none';
+            const email = document.getElementById('fb-auth-email').value.trim();
+            const pass = document.getElementById('fb-auth-pass').value;
+            const name = document.getElementById('fb-auth-name').value.trim();
+            if (!email || !pass) return showFbError('fb-auth-error', 'Rellena correo y contraseña.');
+            fbAuth.createUserWithEmailAndPassword(email, pass)
+                .then(function(cred) {
+                    return name ? cred.user.updateProfile({ displayName: name }) : null;
+                })
+                .catch(function(err) { showFbError('fb-auth-error', fbFriendlyError(err)); });
+        }
+
+        function fbLogin() {
+            document.getElementById('fb-auth-error').style.display = 'none';
+            const email = document.getElementById('fb-auth-email').value.trim();
+            const pass = document.getElementById('fb-auth-pass').value;
+            if (!email || !pass) return showFbError('fb-auth-error', 'Rellena correo y contraseña.');
+            fbAuth.signInWithEmailAndPassword(email, pass)
+                .catch(function(err) { showFbError('fb-auth-error', fbFriendlyError(err)); });
+        }
+
+        function fbLogout() {
+            fbAuth.signOut();
+        }
+
+        function fbFriendlyError(err) {
+            const map = {
+                'auth/email-already-in-use': 'Ese correo ya tiene una cuenta. Inicia sesión en su lugar.',
+                'auth/invalid-email': 'Correo no válido.',
+                'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
+                'auth/wrong-password': 'Contraseña incorrecta.',
+                'auth/user-not-found': 'No existe una cuenta con ese correo.',
+                'auth/invalid-credential': 'Correo o contraseña incorrectos.'
+            };
+            return map[err.code] || ('Error: ' + err.message);
+        }
+
+        // Cada proyecto Firebase = un hogar. Todos los usuarios autenticados en ese
+        // proyecto comparten el mismo documento de datos en tiempo real.
+        function fbDocRef() {
+            return fbDB.collection('hogares').doc('compartido');
+        }
+
+        function fbStartSync() {
+            if (fbUnsub) fbUnsub();
+            fbUnsub = fbDocRef().onSnapshot(function(snap) {
+                if (snap.exists) {
+                    const remote = snap.data();
+                    if (remote && remote.payload) {
+                        fbApplyingRemote = true;
+                        try {
+                            const parsed = JSON.parse(remote.payload);
+                            data = parsed;
+                            localStorage.setItem('hogarMasterData', JSON.stringify(data));
+                            refreshAll();
+                            renderCalendarStrip();
+                            renderSeasonBanner();
+                        } catch (e) { console.warn('Error aplicando datos remotos', e); }
+                        fbApplyingRemote = false;
+                    }
+                } else {
+                    // Primer usuario del hogar: sube los datos locales actuales
+                    fbPushData(true);
+                }
+            }, function(err) {
+                console.warn('Error de sincronización Firebase:', err);
+            });
+        }
+
+        function fbPushData(immediate) {
+            if (!fbDB || !fbUser || fbApplyingRemote) return;
+            if (fbPushTimer) clearTimeout(fbPushTimer);
+            const doPush = function() {
+                fbDocRef().set({
+                    payload: JSON.stringify(data),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedBy: fbUser.displayName || fbUser.email
+                }, { merge: true }).catch(function(err) { console.warn('Error guardando en Firebase:', err); });
+            };
+            if (immediate) doPush(); else fbPushTimer = setTimeout(doPush, 800);
+        }
+
+        function fbCurrentUserName() {
+            if (fbUser) return fbUser.displayName || fbUser.email;
+            return null;
         }
 
         function refreshAll() {
@@ -2715,7 +2945,7 @@
                     </div>
                     <div class="item-info">
                         <div class="item-title">${h.taskName}</div>
-                        <div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''} · ${time}</div>
+                        <div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''}${h.completedBy ? ' · por ' + h.completedBy : ''} · ${time}</div>
                     </div>
                 `;
                 listEl.appendChild(div);
@@ -2732,7 +2962,8 @@
                 const now = new Date().toISOString();
                 const room = data.rooms.find(r => r.id == task.roomId);
                 const member = memberById(task.memberId);
-                data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedAt: now });
+                const completedByUser = fbCurrentUserName();
+                data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedAt: now });
                 task.lastCompletedAt = now;
                 awardPointsForCompletion();
                 saveData();
