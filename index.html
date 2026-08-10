@@ -345,6 +345,29 @@
         }
         .filter-pill span { font-size: 16px; color: var(--accent-color); }
         .filter-row { display:flex; gap:8px; flex-wrap:wrap; }
+        .filter-pill.active { background-color: var(--accent-color); color: #000; }
+        .filter-pill.active span { color: #000; }
+
+        /* --- AGRUPACIÓN POR HABITACIÓN (PROGRAMA) --- */
+        .schedule-room-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin: 18px 2px 8px 2px;
+        }
+        .schedule-room-header:first-child { margin-top: 4px; }
+        .schedule-room-header .room-count {
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: 0;
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
 
         /* --- CHIPS (filtros) --- */
         .chip-row { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 2px; }
@@ -773,6 +796,12 @@
                 </div>
                 <div class="filter-pill" onclick="toggleFavFilter('schedule')" id="fav-filter-schedule" style="cursor:pointer;">
                     <span class="material-symbols-rounded">star</span> Favoritas
+                </div>
+                <div class="filter-pill" onclick="toggleScheduleGroupByRoom()" id="group-room-filter-schedule" style="cursor:pointer;">
+                    <span class="material-symbols-rounded">meeting_room</span> Habitaciones
+                </div>
+                <div class="filter-pill active" onclick="toggleScheduleIndicators()" id="indicator-filter-schedule" style="cursor:pointer;">
+                    <span class="material-symbols-rounded" id="indicator-filter-icon">visibility</span> Indicadores
                 </div>
             </div>
 
@@ -1426,6 +1455,8 @@
         let allTasksTagFilter = 'all';
         let scheduleFavOnly = false;
         let allTasksFavOnly = false;
+        let scheduleGroupByRoom = false;
+        let scheduleShowRoomIndicators = true;
 
         // Días de la semana ordenados L-D con su índice real de JS Date.getDay() (0=domingo...6=sábado)
         const weekdayDefs = [
@@ -2287,6 +2318,35 @@
             return copy;
         }
 
+        function toggleScheduleGroupByRoom() {
+            scheduleGroupByRoom = !scheduleGroupByRoom;
+            const btn = document.getElementById('group-room-filter-schedule');
+            if (btn) btn.classList.toggle('active', scheduleGroupByRoom);
+            renderSchedule();
+        }
+
+        function toggleScheduleIndicators() {
+            scheduleShowRoomIndicators = !scheduleShowRoomIndicators;
+            const btn = document.getElementById('indicator-filter-schedule');
+            const icon = document.getElementById('indicator-filter-icon');
+            if (btn) btn.classList.toggle('active', scheduleShowRoomIndicators);
+            if (icon) icon.innerText = scheduleShowRoomIndicators ? 'visibility' : 'visibility_off';
+            renderSchedule();
+        }
+
+        function scheduleTaskItemEl(task, room, showRoomName) {
+            const div = document.createElement('div');
+            div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
+            div.onclick = () => openEditTask(task.id);
+            const indicatorHTML = scheduleShowRoomIndicators ? `
+                <div class="icon-container" style="background-color: ${task.iconColor || (room ? room.color : '#333')}">
+                    <span class="material-symbols-rounded">${task.icon}</span>
+                    ${task.favorite ? '<span class="material-symbols-rounded fav-star">star</span>' : ''}
+                </div>` : '';
+            div.innerHTML = indicatorHTML + taskItemHTML(task, room, showRoomName);
+            return div;
+        }
+
         function renderSchedule() {
             const container = document.getElementById('schedule-tasks-list');
             if (!container) return;
@@ -2309,14 +2369,37 @@
                 return;
             }
 
-            list.forEach(task => {
-                const room = data.rooms.find(r => r.id == task.roomId);
-                const div = document.createElement('div');
-                div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
-                div.onclick = () => openEditTask(task.id);
-                div.innerHTML = taskItemHTML(task, room, true);
-                container.appendChild(div);
-            });
+            if (scheduleGroupByRoom) {
+                const groups = new Map();
+                list.forEach(task => {
+                    const key = (task.roomId !== null && task.roomId !== undefined) ? String(task.roomId) : 'none';
+                    if (!groups.has(key)) groups.set(key, []);
+                    groups.get(key).push(task);
+                });
+                const orderedKeys = data.rooms.map(r => String(r.id)).filter(k => groups.has(k));
+                if (groups.has('none')) orderedKeys.push('none');
+
+                orderedKeys.forEach(key => {
+                    const room = key === 'none' ? null : data.rooms.find(r => String(r.id) === key);
+                    const tasksInGroup = groups.get(key);
+                    const header = document.createElement('div');
+                    header.className = 'schedule-room-header';
+                    header.innerHTML = `
+                        <span class="material-symbols-rounded" style="color:${room ? room.color : 'var(--text-secondary)'}; font-size:18px;">${room ? room.icon : 'home'}</span>
+                        <span>${room ? room.name : 'Sin habitación'}</span>
+                        <span class="room-count">· ${tasksInGroup.length}</span>
+                    `;
+                    container.appendChild(header);
+                    tasksInGroup.forEach(task => {
+                        container.appendChild(scheduleTaskItemEl(task, room, false));
+                    });
+                });
+            } else {
+                list.forEach(task => {
+                    const room = data.rooms.find(r => r.id == task.roomId);
+                    container.appendChild(scheduleTaskItemEl(task, room, true));
+                });
+            }
         }
 
         /* --- TODAS LAS TAREAS --- */
@@ -2949,6 +3032,7 @@
                         <div class="item-title">${h.taskName}</div>
                         <div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''}${h.completedBy ? ' · por ' + h.completedBy : ''} · ${time}</div>
                     </div>
+                    <span class="material-symbols-rounded" title="Deshacer" onclick="event.stopPropagation(); undoHistoryEntry('${h.id}')" style="color:var(--text-secondary); font-size:22px; cursor:pointer; margin-left:8px;">undo</span>
                 `;
                 listEl.appendChild(div);
             });
@@ -2965,7 +3049,7 @@
                 const room = data.rooms.find(r => r.id == task.roomId);
                 const member = memberById(task.memberId);
                 const completedByUser = fbCurrentUserName();
-                data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedAt: now });
+                data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount });
                 task.lastCompletedAt = now;
                 awardPointsForCompletion();
                 saveData();
@@ -3003,6 +3087,28 @@
                 saveData();
                 refreshAll();
             }
+        }
+
+        /* --- DESHACER TAREA COMPLETADA (desde el Historial) --- */
+        function undoHistoryEntry(historyId) {
+            const idx = data.history.findIndex(h => String(h.id) === String(historyId));
+            if (idx === -1) return;
+            const h = data.history[idx];
+            if (!confirm(`¿Deshacer "${h.taskName}" como completada?`)) return;
+
+            data.history.splice(idx, 1);
+            data.points = Math.max(0, data.points - POINTS_PER_TASK);
+
+            const task = data.tasks.find(t => t.id === h.taskId);
+            if (task) {
+                task.completed = false;
+                if (h.dueDateAtCompletion !== undefined) task.dueDate = h.dueDateAtCompletion;
+                if (h.repeatEndCountAtCompletion !== undefined) task.repeatEndCount = h.repeatEndCountAtCompletion;
+                if (task.subtasks && task.subtasks.length) task.subtasks.forEach(s => s.done = false);
+            }
+
+            saveData();
+            refreshAll();
         }
 
         /* --- MODALES Y AGREGADO --- */
