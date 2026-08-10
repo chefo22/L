@@ -2,987 +2,2757 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Dashboard · 16:9 con Historial</title>
-    <!-- PWA Meta -->
-    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkRhc2hib2FyZCAxNjo5IiwKICAic2hvcnRfbmFtZSI6ICJEYXNoYm9hcmQiLAogICJkZXNjcmlwdGlvbiI6ICJEYXNoYm9hcmQgZGUgc3RyZWFtcyBjb24gaGlzdG9yaWFsIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwYTBhMGEiLAogICJ0aGVtZV9jb2xvciI6ICIjZmJiZDE0IiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sLDxzdmcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgNTEyIDUxMic+PHJlY3Qgd2lkdGg9JzUxMicgaGVpZ2h0PSc1MTInIHJ4PSc2MCcgZmlsbD0nJTBhMGEwYScvPjxwYXRoIGQ9J00yNTYgMTI4Yy03MC43IDAtMTI4IDU3LjMtMTI4IDEyOHM1Ny4zIDEyOCAxMjggMTI4IDEyOC01Ny4zIDEyOC0xMjhTMzI2LjcgMTI4IDI1NiAxMjh6bTAgMjI0Yy01MyAwLTk2LTQzLTk2LTk2czQzLTk2IDk2LTk2IDk2IDQzIDk2IDk2LTQzIDk2LTk2IDk2eicgZmlsbD0nI2ZiYmQxNCcvPjxwYXRoIGQ9J00yNTYgNjRDMzUyIDY0IDQ0OCAxNjAgNDQ4IDI1NnMtOTYgMTkyLTE5MiAxOTJTNjQgMzUyIDY0IDI1NiAxNjAgNjQgMjU2IDY0em0wIDMyYy04OCAwLTE2MCA3Mi0xNjAgMTYwczcyIDE2MCAxNjAgMTYwIDE2MC03MiAxNjAtMTYwUzM0NCA5NiAyNTYgOTZ6JyBmaWxsPScjZmJiZDE0Jy8+PC9zdmc+IgogICAgfQogIF0KfQ==">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='60' fill='%230a0a0a'/%3E%3Cpath d='M256 128c-70.7 0-128 57.3-128 128s57.3 128 128 128 128-57.3 128-128S326.7 128 256 128zm0 224c-53 0-96-43-96-96s43-96 96-96 96 43 96 96-43 96-96 96z' fill='%23fbbd14'/%3E%3Cpath d='M256 64C352 64 448 160 448 256s-96 192-192 192S64 352 64 256 160 64 256 64zm0 32c-88 0-160 72-160 160s72 160 160 160 160-72 160-160S344 96 256 96z' fill='%23fbbd14'/%3E%3C/svg%3E">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <title>Mi Hogar</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
+
     <style>
-        /* ===== ESTILOS EXISTENTES (sin cambios) ===== */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-main: #000000;
+            --bg-card: #1c1c1e;
+            --bg-input: #2c2c2e;
+            --text-primary: #ffffff;
+            --text-secondary: #8e8e93;
+            --accent-color: #4ade80; /* Dinámico por JS */
+            --accent-orange: #ffb340;
+            --danger-color: #ff453a;
+            --border-color: #2c2c2e;
+            --shadow-color: rgba(0,0,0,0.3);
+        }
+
+        html[data-theme="light"] {
+            --bg-main: #f2f2f7;
+            --bg-card: #ffffff;
+            --bg-input: #e9e9eb;
+            --text-primary: #1c1c1e;
+            --text-secondary: #6e6e73;
+            --border-color: #e5e5ea;
+            --shadow-color: rgba(0,0,0,0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
-            background: #0a0a0a;
-            font-family: system-ui, -apple-system, sans-serif;
-            min-height: 100vh;
-            padding: 20px;
-            padding-bottom: 80px;
-            display: flex;
-            flex-direction: column;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            padding-bottom: 110px;
+            transition: background-color 0.2s ease, color 0.2s ease;
         }
-        #dashboard {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            flex: 1;
-            align-content: flex-start;
-            align-items: flex-start;
-        }
-        .card {
-            position: relative;
-            background: #16161e;
-            border-radius: 16px;
-            border: 1px solid #2a2a3a;
-            overflow: visible;
-            min-width: 180px;
-            width: 300px;
-            aspect-ratio: 16 / 9;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            cursor: default;
-            touch-action: none;
-            flex-shrink: 0;
-            flex-grow: 0;
-        }
-        .card:hover {
-            border-color: #4a4a6a;
-            box-shadow: 0 0 0 1px #4a4a6a;
-        }
-        .card-inner {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            flex-direction: column;
-            border-radius: 16px;
-            overflow: hidden;
-            background: #16161e;
-            pointer-events: none;
-        }
-        .card-inner > * { pointer-events: auto; }
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 6px 10px;
-            background: #1a1a26;
-            border-bottom: 1px solid #2a2a3a;
-            gap: 6px;
-            cursor: grab;
+
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
             user-select: none;
-            flex-shrink: 0;
-            touch-action: none;
         }
-        .card-header:active { cursor: grabbing; }
-        .card-header .label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #fbbd14;
+
+        /* --- TOP BAR --- */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 20px 10px 20px;
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-main);
+            z-index: 10;
+        }
+
+        .title-group {
             display: flex;
             align-items: center;
             gap: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex: 1;
+            font-size: 26px;
+            font-weight: 700;
         }
-        .card-header .controls {
+
+        .top-btn-orange {
+            background-color: var(--accent-orange);
+            color: #000;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: none;
+            cursor: pointer;
+        }
+        .top-actions { display:flex; gap:8px; align-items:center; }
+
+        .container {
+            padding: 0 16px;
+        }
+
+        /* --- CARDS & DASHBOARD --- */
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .card-text { font-size: 16px; font-weight: 500; }
+        .card-value { color: var(--text-secondary); display: flex; align-items: center; font-size: 15px;}
+        .card-value span { font-size: 20px; margin-left: 2px; color: var(--text-secondary); }
+
+        .summary-card { flex-direction: column; align-items: flex-start; gap: 6px; }
+        .summary-subtitle {
+            color: var(--text-secondary);
+            font-size: 13px;
             display: flex;
             align-items: center;
-            gap: 4px;
-            flex-shrink: 0;
+            gap: 6px;
         }
-        .card-header .controls button {
-            background: #2a2a3a;
+        .summary-subtitle .material-symbols-rounded { font-size: 16px; color: var(--accent-color); }
+
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .dash-mini {
+            background-color: var(--bg-card);
+            border-radius: 14px;
+            padding: 12px 14px;
+        }
+        .dash-mini-value { font-size: 20px; font-weight: 700; display:flex; align-items:center; gap:6px; }
+        .dash-mini-label { font-size: 12px; color: var(--text-secondary); margin-top:2px; }
+
+        /* --- SECTIONS --- */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0 12px 0;
+        }
+        .section-header h2 { font-size: 20px; font-weight: 600; }
+        .section-header p.section-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+        .add-btn {
+            color: var(--accent-color);
+            background: none;
             border: none;
-            border-radius: 6px;
-            padding: 2px 6px;
-            color: #ccc;
-            font-size: 0.7rem;
-            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
             display: flex;
             align-items: center;
             gap: 2px;
-            transition: 0.15s;
+            cursor: pointer;
         }
-        .card-header .controls button:hover {
-            background: #3a3a4e;
-            color: #fff;
-        }
-        .card-header .controls button.close-btn {
-            background: #3a1a1a;
-            color: #f88;
-        }
-        .card-header .controls button.close-btn:hover {
-            background: #5a2222;
-        }
-        .card-body {
-            flex: 1;
-            position: relative;
-            background: #000;
-            min-height: 0;
-        }
-        .card-body iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: #000;
-        }
-        .card-body .placeholder {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+
+        /* --- LIST ITEMS --- */
+        .room-item, .task-item {
+            background-color: var(--bg-card);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
+            cursor: pointer;
+        }
+
+        .icon-container {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
             justify-content: center;
-            flex-direction: column;
-            color: #555;
-            background: #0a0a0a;
-            pointer-events: none;
-            gap: 8px;
+            align-items: center;
+            margin-right: 14px;
+            flex-shrink: 0;
+            position: relative;
         }
-        .card-body .placeholder .material-symbols-outlined {
-            font-size: 2.5rem;
-            color: #333;
-        }
-        .resize-handle {
+        .icon-container .material-symbols-rounded { color: white; font-size: 24px; }
+        .fav-star {
             position: absolute;
-            bottom: 0;
-            right: 0;
+            top: -4px; right: -14px;
+            font-size: 15px !important;
+            color: var(--accent-orange) !important;
+        }
+
+        .item-info { flex-grow: 1; min-width: 0; }
+        .item-title-row { display:flex; align-items:center; gap:6px; }
+        .item-title { font-size: 16px; font-weight: 500; }
+        .item-status { font-size: 11px; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.3px; white-space: nowrap; margin-left: 8px; }
+        .tag-mini { font-size: 10px; background-color: var(--bg-input); color: var(--text-secondary); padding: 2px 6px; border-radius: 8px; font-weight:600; }
+
+        .task-completed .item-title { text-decoration: line-through; color: var(--text-secondary); }
+        .checkbox { color: var(--text-secondary); font-size: 26px !important; cursor: pointer; flex-shrink: 0; margin-left: 10px; }
+        .checkbox.checked { color: var(--accent-color); }
+
+        .member-avatar {
+            width: 22px; height: 22px; border-radius: 50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size: 10px; font-weight:700; color:#000; flex-shrink:0;
+        }
+
+        /* --- PANTALLA PROGRAMA (CALENDARIO) --- */
+        .calendar-strip {
+            display: flex;
+            justify-content: space-between;
+            background-color: var(--bg-main);
+            padding: 10px 0 20px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+        .calendar-day {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 13%;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .day-name { font-size: 11px; color: var(--text-secondary); font-weight: 600; }
+        .day-number {
+            font-size: 16px;
+            font-weight: 600;
             width: 32px;
             height: 32px;
-            cursor: nw-resize;
-            touch-action: none;
-            z-index: 10;
-            background: transparent;
-            border-right: 4px solid #888;
-            border-bottom: 4px solid #888;
-            border-radius: 0 0 14px 0;
-            opacity: 0.5;
-            transition: opacity 0.2s, border-color 0.2s;
-            pointer-events: auto;
-        }
-        .card:hover .resize-handle {
-            opacity: 1;
-            border-color: #fbbd14;
-        }
-        .resize-handle:active {
-            border-color: #fbbd14;
-            opacity: 1;
-        }
-        #minimizedBar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #0f0f18;
-            border-top: 1px solid #2a2a3a;
-            padding: 8px 16px;
-            display: none;
-            gap: 10px;
-            flex-wrap: wrap;
-            z-index: 1000;
-            align-items: center;
-            min-height: 48px;
-            backdrop-filter: blur(6px);
-        }
-        #minimizedBar .minimized-item {
             display: flex;
+            justify-content: center;
             align-items: center;
-            gap: 8px;
-            padding: 4px 12px 4px 8px;
-            background: #1a1a26;
-            border-radius: 20px;
-            border: 1px solid #2a2a3a;
-            cursor: pointer;
-            transition: background 0.15s;
-            user-select: none;
-        }
-        #minimizedBar .minimized-item:hover { background: #26263a; }
-        #minimizedBar .minimized-item .label-text {
-            color: #fbbd14;
-            font-size: 0.8rem;
-            font-weight: 500;
-            max-width: 150px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        #minimizedBar .minimized-item .restore-icon {
-            font-size: 1rem;
-            color: #888;
-            transition: color 0.15s;
-            cursor: pointer;
-        }
-        #minimizedBar .minimized-item .restore-icon:hover { color: #fbbd14; }
-        .fab {
-            position: fixed;
-            bottom: 80px;
-            right: 30px;
-            background: #fbbd14;
-            color: #000;
-            border: none;
             border-radius: 50%;
-            width: 64px;
-            height: 64px;
-            font-size: 2rem;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.2s;
-            z-index: 1001;
         }
-        .fab:hover {
-            transform: scale(1.08);
-            background: #f5a800;
+        .calendar-day.active .day-number {
+            background-color: transparent;
+            color: var(--accent-color);
+            border-bottom: 2px solid var(--accent-color);
+            border-radius: 0;
         }
-        .fab:active { transform: scale(0.92); }
-        .empty-state {
-            flex: 1;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #555;
-            gap: 16px;
-            text-align: center;
-        }
-        .empty-state .material-symbols-outlined {
-            font-size: 4rem;
-            color: #333;
-        }
-        .empty-state button {
-            background: #fbbd14;
-            color: #000;
-            border: none;
-            padding: 12px 32px;
-            border-radius: 40px;
-            font-weight: bold;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: 0.15s;
-        }
-        .empty-state button:hover {
-            background: #f5a800;
-            transform: scale(1.02);
-        }
-        .card.dragging {
-            opacity: 0.4;
-            border-color: #fbbd14;
-            transform: scale(0.98);
-        }
-        .card.drag-over {
-            border-color: #fbbd14;
-            background: #1a1a2e;
-            box-shadow: 0 0 0 2px #fbbd14;
-        }
-        .history-panel {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 2000;
-            background: #16161e;
-            border: 1px solid #2a2a3a;
+        .calendar-day.has-tasks .day-number::after { content:''; }
+        .day-dot { width:4px; height:4px; border-radius:50%; background: var(--accent-color); margin-top:-2px; visibility:hidden; }
+        .calendar-day.has-tasks .day-dot { visibility: visible; }
+
+        /* Banner promocional estacional */
+        .season-banner {
             border-radius: 16px;
             padding: 16px;
-            max-width: 320px;
-            width: 100%;
-            max-height: 70vh;
-            overflow-y: auto;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.8);
-            backdrop-filter: blur(8px);
+            color: #1c1c1e;
+            position: relative;
+            margin-bottom: 20px;
+            display:flex; align-items:center; gap: 12px;
+        }
+        .season-banner-icon { font-size: 34px !important; color:#1c1c1e; opacity:0.75; }
+        .season-banner h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+        .season-banner p { font-size: 13px; color: #4a4a4a; font-weight: 500; }
+        .close-banner { position: absolute; top: 12px; right: 12px; color: #4a4a4a; font-size: 18px !important; cursor: pointer; }
+
+        .info-banner {
+            background-color: var(--bg-card);
+            border: 1px solid var(--accent-orange);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .info-banner h3 { font-size: 15px; font-weight: 700; color: var(--accent-orange); margin-bottom: 4px; }
+        .info-banner p { font-size: 13px; color: var(--text-secondary); }
+
+        .filter-pill {
+            background-color: var(--bg-card);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+        .filter-pill span { font-size: 16px; color: var(--accent-color); }
+        .filter-row { display:flex; gap:8px; flex-wrap:wrap; }
+
+        /* --- CHIPS (filtros) --- */
+        .chip-row { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 2px; }
+        .chip-row::-webkit-scrollbar { display: none; }
+        .chip {
+            flex-shrink: 0;
+            background-color: var(--bg-card);
+            color: var(--text-secondary);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            display:flex; align-items:center; gap:4px;
+        }
+        .chip.active { background-color: var(--accent-color); color: #000; }
+        .chip .material-symbols-rounded { font-size: 15px; }
+
+        /* --- PANTALLA AJUSTES --- */
+        .color-palette {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .color-dot {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+        }
+        .color-dot.selected {
+            border-color: var(--text-primary);
+        }
+        .color-dot.small { width: 30px; height: 30px; }
+
+        .segmented {
+            display:flex;
+            background-color: var(--bg-input);
+            border-radius: 10px;
+            padding: 3px;
+            gap: 2px;
+        }
+        .segmented button {
+            flex:1;
+            border:none;
+            background:transparent;
+            color: var(--text-secondary);
+            padding: 8px 6px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor:pointer;
+        }
+        .segmented button.active { background-color: var(--bg-card); color: var(--text-primary); }
+        html[data-theme="light"] .segmented button.active { background-color: #fff; box-shadow: 0 1px 3px var(--shadow-color); }
+
+        .toggle-switch {
+            width: 46px; height: 28px; border-radius: 14px;
+            background-color: var(--bg-input);
+            position: relative;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background-color 0.15s;
+        }
+        .toggle-switch.on { background-color: var(--accent-color); }
+        .toggle-knob {
+            width: 22px; height: 22px; border-radius: 50%;
+            background-color: white;
+            position: absolute; top: 3px; left: 3px;
+            transition: left 0.15s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .toggle-switch.on .toggle-knob { left: 21px; }
+
+        .member-row { display:flex; align-items:center; gap:12px; }
+        .member-row .item-info { flex-grow:1; }
+
+        /* --- STATS --- */
+        .stat-item { display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .stat-value { font-size: 22px; font-weight: 700; }
+        .stat-label { font-size: 11px; color: var(--text-secondary); margin-top: 2px; text-align: center; letter-spacing: 0.3px; }
+        .history-date-label { font-size: 13px; color: var(--text-secondary); font-weight: 600; margin: 14px 0 6px 4px; }
+
+        .chart-card { background-color: var(--bg-card); border-radius: 14px; padding: 16px; margin-bottom: 10px; }
+        .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 14px; display:flex; justify-content:space-between; align-items:center; }
+        .bar-chart { display:flex; align-items:flex-end; justify-content:space-between; height: 100px; gap: 6px; }
+        .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+        .bar-fill { width: 100%; max-width: 26px; border-radius: 6px 6px 3px 3px; background-color: var(--accent-color); min-height: 4px; transition: height 0.3s; }
+        .bar-label { font-size: 10px; color: var(--text-secondary); font-weight:600; }
+        .bar-count { font-size: 10px; color: var(--text-secondary); }
+
+        .ranking-row { display:flex; align-items:center; gap:10px; padding: 8px 0; border-bottom: 1px solid var(--border-color); }
+        .ranking-row:last-child { border-bottom:none; }
+        .ranking-rank { width:20px; font-size:13px; font-weight:700; color: var(--text-secondary); }
+        .ranking-name { flex-grow:1; font-size:14px; font-weight:500; }
+        .ranking-count { font-size:13px; color: var(--accent-color); font-weight:700; }
+
+        .badge-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+        .badge-item { display:flex; flex-direction:column; align-items:center; gap:4px; opacity: 0.3; }
+        .badge-item.unlocked { opacity: 1; }
+        .badge-icon-wrap {
+            width: 52px; height: 52px; border-radius: 50%;
+            background-color: var(--bg-input);
+            display:flex; align-items:center; justify-content:center;
+        }
+        .badge-item.unlocked .badge-icon-wrap { background-color: var(--accent-color); }
+        .badge-item.unlocked .badge-icon-wrap span { color:#000; }
+        .badge-label { font-size: 9.5px; text-align:center; color: var(--text-secondary); line-height:1.2; }
+
+        /* --- BOTTOM NAV --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%;
+            background-color: #121212;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 24px 0;
+            border-top: 1px solid var(--border-color);
+            z-index: 20;
+        }
+        html[data-theme="light"] .bottom-nav { background-color: #ffffff; }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 11px;
+            gap: 4px;
+            cursor: pointer;
+            width: 25%;
+        }
+        .nav-item.active { color: var(--accent-color); }
+        .nav-item .material-symbols-rounded { font-size: 24px; }
+
+        /* FLOATING ACTION BUTTON (PANTALLA PROGRAMA) */
+        .fab {
+            position: fixed;
+            bottom: 85px;
+            right: 20px;
+            background-color: var(--accent-color);
+            color: #000000;
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: none;
+            cursor: pointer;
+            z-index: 15;
+        }
+        .fab span { font-size: 28px; font-weight: bold; }
+
+        /* --- MODALES FULLSCREEN --- */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg-main);
+            z-index: 100;
             display: none;
             flex-direction: column;
-            gap: 8px;
+            overflow-y: auto;
         }
-        .history-panel.open { display: flex; }
-        .history-panel h3 {
-            color: #fbbd14;
-            font-size: 0.9rem;
-            font-weight: 600;
+        .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #2a2a3a;
-            padding-bottom: 8px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-main);
         }
-        .history-panel h3 button {
-            background: none;
-            border: none;
-            color: #888;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-        .history-panel h3 button:hover { color: #fbbd14; }
-        .history-item {
+        .modal-title { font-size: 17px; font-weight: 600; }
+        .btn-icon { background: none; border: none; color: var(--accent-color); font-size: 24px; cursor: pointer; display: flex; align-items: center;}
+        .btn-text { background: none; border: none; color: var(--accent-color); font-size: 16px; cursor: pointer; font-weight: 600; }
+
+        .modal-body { padding: 20px; }
+        .input-group { background-color: var(--bg-card); border-radius: 14px; padding: 0 16px; margin-bottom: 20px; }
+        .input-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 6px 8px;
-            border-radius: 8px;
-            background: #0f0f18;
-            border: 1px solid #222;
-            cursor: pointer;
-            transition: background 0.15s;
-            gap: 8px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border-color);
+            gap: 10px;
         }
-        .history-item:hover { background: #1a1a2e; }
-        .history-item .h-label {
-            color: #ddd;
-            font-size: 0.8rem;
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .history-item .h-url {
-            color: #666;
-            font-size: 0.65rem;
-            max-width: 100px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .history-item .h-actions {
-            display: flex;
-            gap: 4px;
-        }
-        .history-item .h-actions button {
+        .input-row:last-child { border-bottom: none; }
+        .input-row input, .input-row select, .input-row textarea {
             background: transparent;
             border: none;
-            color: #555;
-            cursor: pointer;
-            font-size: 0.8rem;
-            padding: 2px;
-            border-radius: 4px;
-            transition: 0.15s;
+            color: var(--text-primary);
+            font-size: 16px;
+            width: 100%;
+            outline: none;
         }
-        .history-item .h-actions button:hover {
-            color: #fbbd14;
-            background: #222;
+        .input-row textarea { resize: vertical; font-family: inherit; padding: 0; line-height: 1.4; }
+        .input-row select { text-align: right; color: var(--text-secondary); direction: rtl; appearance: none;}
+        .input-row input[type="date"], .input-row input[type="number"], .input-row input[type="time"], .input-row input[type="url"] { text-align: right; color: var(--text-secondary); }
+        .input-row select.select-ltr { direction: ltr; text-align: left; width: auto; }
+
+        /* --- SELECTOR DE DÍAS DE LA SEMANA --- */
+        .weekday-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+        .weekday-chip {
+            width: 38px; height: 38px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background-color: var(--bg-input); color: var(--text-secondary);
+            font-size: 13px; font-weight: 700; cursor: pointer;
+            border: 2px solid transparent;
+            transition: background-color 0.15s ease, color 0.15s ease;
         }
-        .history-empty {
-            color: #555;
+        .weekday-chip.active { background-color: var(--accent-color); color: #000; }
+
+        .btn-secondary-block {
+            color: var(--accent-color);
+            width: 100%;
             text-align: center;
-            padding: 16px;
-            font-size: 0.9rem;
-        }
-        .history-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 2001;
-            background: #16161e;
-            border: 1px solid #2a2a3a;
-            border-radius: 40px;
-            padding: 8px 16px;
-            color: #fbbd14;
+            margin-top: 10px;
+            padding: 14px;
+            background-color: var(--bg-card);
+            border-radius: 14px;
+            font-size: 16px;
+            border: none;
             cursor: pointer;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            backdrop-filter: blur(4px);
-            transition: 0.15s;
         }
-        .history-toggle:hover {
-            background: #1a1a2e;
-            border-color: #4a4a6a;
+
+        /* --- DENSIDAD COMPACTA --- */
+        body.density-compact .task-item, body.density-compact .room-item { padding: 8px 10px; margin-bottom: 6px; }
+        body.density-compact .icon-container { width: 36px; height: 36px; margin-right: 10px; }
+        body.density-compact .icon-container .material-symbols-rounded { font-size: 20px; }
+        body.density-compact .card { padding: 10px 14px; margin-bottom: 6px; }
+        body.density-compact .item-title { font-size: 15px; }
+        input[type="date"]::-webkit-calendar-picker-indicator, input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.6); }
+        .row-label { font-size: 16px; color: var(--text-primary); white-space: nowrap; }
+        .row-label small { display:block; font-size: 11px; color: var(--text-secondary); font-weight:400; }
+
+        .section-title-sm { margin: 16px 0 8px 0; font-size: 15px; color: var(--text-secondary); font-weight:600; }
+
+        .subtask-row { display:flex; align-items:center; gap:10px; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+        .subtask-row:last-child { border-bottom:none; }
+        .subtask-row input[type="text"] { background:transparent; border:none; color:var(--text-primary); font-size:15px; flex-grow:1; outline:none; }
+        .subtask-add-row { display:flex; align-items:center; gap:8px; padding-top: 10px; }
+        .subtask-add-row input { flex-grow:1; background: transparent; border:none; color:var(--text-primary); font-size:15px; outline:none; border-bottom: 1px dashed var(--border-color); padding: 6px 0;}
+
+        .btn-danger-block {
+            color: var(--danger-color);
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+            padding: 14px;
+            background-color: var(--bg-card);
+            border-radius: 14px;
+            font-size: 16px;
         }
-        @media (max-width: 640px) {
-            body { padding: 10px; padding-bottom: 70px; }
-            .card {
-                width: 100% !important;
-                min-width: 0;
-                flex-grow: 1;
-            }
-            .resize-handle { display: none; }
-            .fab {
-                width: 56px;
-                height: 56px;
-                font-size: 1.8rem;
-                bottom: 70px;
-                right: 16px;
-            }
-            #minimizedBar {
-                padding: 6px 10px;
-                min-height: 44px;
-            }
-            #minimizedBar .minimized-item .label-text {
-                max-width: 100px;
-            }
-            .history-panel {
-                top: 70px;
-                right: 10px;
-                max-width: 280px;
-                max-height: 50vh;
-            }
-            .history-toggle {
-                top: 10px;
-                right: 10px;
-                padding: 4px 12px;
-                font-size: 0.7rem;
-            }
+
+        /* GRID DE ICONOS */
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 10px;
         }
+        .icon-select {
+            height: 52px;
+            background-color: var(--bg-input);
+            border-radius: 12px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+            color: var(--text-primary);
+        }
+        .icon-select.active { background-color: var(--accent-color); color: #000; }
+
+        .icon-cat-row { display:flex; gap:8px; overflow-x:auto; margin-top:12px; padding-bottom:2px; }
+        .icon-cat-row::-webkit-scrollbar { display:none; }
+        .icon-cat-chip {
+            flex-shrink:0; padding:6px 12px; border-radius: 16px; font-size:12px; font-weight:600;
+            background-color: var(--bg-input); color: var(--text-secondary); cursor:pointer; white-space:nowrap;
+        }
+        .icon-cat-chip.active { background-color: var(--accent-color); color:#000; }
+
+        .empty-state { text-align:center; color:var(--text-secondary); margin-top:30px; font-size:14px; line-height:1.5; padding: 0 20px; }
+        .empty-state .material-symbols-rounded { font-size: 40px; display:block; margin: 0 auto 10px; opacity:0.5; }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="dashboard"></div>
+    <div id="view-hogar" class="view-screen">
+        <header class="top-bar">
+            <div class="title-group" onclick="switchTab('ajustes')" style="cursor:pointer;">
+                <span id="home-title-text">Casa</span> <span class="material-symbols-rounded" style="color: var(--text-secondary)">expand_more</span>
+            </div>
+        </header>
 
-<div class="empty-state" id="emptyState">
-    <span class="material-symbols-outlined">live_tv</span>
-    <p>No hay streams aún.</p>
-    <button id="emptyAddBtn">+ Añadir stream</button>
-</div>
+        <div class="container">
+            <div class="dash-grid" style="margin-bottom:10px;">
+                <div class="dash-mini">
+                    <div class="dash-mini-value"><span class="material-symbols-rounded" style="color:var(--accent-color); font-size:20px;">local_fire_department</span><span id="dash-streak">0</span></div>
+                    <div class="dash-mini-label">RACHA ACTUAL</div>
+                </div>
+                <div class="dash-mini">
+                    <div class="dash-mini-value"><span class="material-symbols-rounded" style="color:var(--accent-color); font-size:20px;">task_alt</span><span id="dash-rate">0%</span></div>
+                    <div class="dash-mini-label">COMPLETADO</div>
+                </div>
+            </div>
 
-<button class="fab" id="fabAddBtn" title="Añadir stream">
-    <span class="material-symbols-outlined" style="font-size:2rem;">add</span>
-</button>
+            <div class="card" onclick="showScreen('view-all-tasks'); renderAllTasksView();">
+                <div class="card-text">Todas las tareas</div>
+                <div class="card-value" id="dash-all-count">0 <span class="material-symbols-rounded">chevron_right</span></div>
+            </div>
+            <div class="card" onclick="showScreen('view-history'); renderHistoryView();">
+                <div class="card-text">Historial y estadísticas</div>
+                <div class="card-value" id="dash-history-count">0 <span class="material-symbols-rounded">chevron_right</span></div>
+            </div>
+            <div class="card summary-card" onclick="showScreen('view-history'); renderHistoryView();">
+                <div class="card-text" style="display: flex; justify-content: space-between; width: 100%;">
+                    Resumen <span class="material-symbols-rounded" style="color: var(--text-secondary)">chevron_right</span>
+                </div>
+                <div class="summary-subtitle">
+                    <span class="material-symbols-rounded">north_east</span> <span id="summary-subtitle-text">No se completaron tareas en 7 días</span>
+                </div>
+            </div>
 
-<div id="minimizedBar"></div>
+            <div class="section-header">
+                <h2>Habitaciones</h2>
+                <button class="add-btn" onclick="openCreateRoom()">
+                    <span class="material-symbols-rounded">add</span> Agregar
+                </button>
+            </div>
 
-<button class="history-toggle" id="historyToggle">
-    <span class="material-symbols-outlined" style="font-size:1rem;">history</span>
-    Historial
-</button>
+            <div id="rooms-list"></div>
+        </div>
+    </div>
 
-<div class="history-panel" id="historyPanel">
-    <h3>
-        <span>📺 Historial</span>
-        <button id="clearHistoryBtn">Limpiar</button>
-    </h3>
-    <div id="historyList"></div>
-</div>
+    <div id="view-room-detail" class="view-screen hidden">
+        <header class="top-bar">
+            <button class="btn-icon" onclick="hideRoomDetail()" style="color: var(--text-primary);">
+                <span class="material-symbols-rounded">arrow_back</span>
+            </button>
+            <div class="title-group" id="detail-room-title">Habitación</div>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <button class="btn-icon" onclick="openEditRoom(currentRoomDetailId)" style="color: var(--text-secondary);">
+                    <span class="material-symbols-rounded">edit</span>
+                </button>
+                <button class="add-btn" onclick="openCreateTask(currentRoomDetailId)">
+                    <span class="material-symbols-rounded">add</span>
+                </button>
+            </div>
+        </header>
+        <div class="container" id="room-tasks-list" style="margin-top: 16px;"></div>
+    </div>
 
-<script>
-    (function() {
-        "use strict";
+    <div id="view-programa" class="view-screen hidden">
+        <header class="top-bar">
+            <div class="title-group" style="cursor:pointer; font-size:22px;" onclick="jumpToToday()">
+                <span id="programa-date-label">Hoy</span> <span class="material-symbols-rounded" style="color: var(--text-secondary); font-size: 20px;">expand_more</span>
+            </div>
+            <button class="btn-icon" style="color: var(--accent-color);" onclick="toggleScheduleSearch()"><span class="material-symbols-rounded">search</span></button>
+        </header>
 
-        // ===== REGISTRO DEL SERVICE WORKER =====
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('✅ SW registrado:', reg))
-                .catch(err => console.warn('❌ SW falló:', err));
-        }
+        <div class="container">
+            <div class="calendar-strip" id="calendar-strip"></div>
 
-        // ===== CÓDIGO DE LA APP (sin cambios funcionales) =====
-        const dashboard = document.getElementById('dashboard');
-        const emptyState = document.getElementById('emptyState');
-        const fabAddBtn = document.getElementById('fabAddBtn');
-        const emptyAddBtn = document.getElementById('emptyAddBtn');
-        const minimizedBar = document.getElementById('minimizedBar');
-        const historyPanel = document.getElementById('historyPanel');
-        const historyList = document.getElementById('historyList');
-        const historyToggle = document.getElementById('historyToggle');
-        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+            <div id="promo-banner-wrap"></div>
 
-        let cardCounter = 0;
+            <div class="input-group hidden" id="schedule-search-row" style="margin-bottom:12px;">
+                <div class="input-row"><input type="text" id="schedule-search-input" placeholder="Buscar tarea..." oninput="onScheduleSearchInput(this.value)"></div>
+            </div>
 
-        // ---- HISTORIAL ----
-        const HISTORY_KEY = 'streamHistory';
-        let history = [];
+            <div class="filter-row">
+                <div class="filter-pill" onclick="cycleSortMode()" style="cursor:pointer;">
+                    <span class="material-symbols-rounded">swap_vert</span> <span id="sort-pill-label">Fecha de Vencimiento</span>
+                </div>
+                <div class="filter-pill" onclick="toggleFavFilter('schedule')" id="fav-filter-schedule" style="cursor:pointer;">
+                    <span class="material-symbols-rounded">star</span> Favoritas
+                </div>
+            </div>
 
-        function loadHistory() {
-            try {
-                const stored = localStorage.getItem(HISTORY_KEY);
-                history = stored ? JSON.parse(stored) : [];
-            } catch { history = []; }
-            renderHistory();
-        }
+            <div id="schedule-tasks-list"></div>
+        </div>
 
-        function saveHistory() {
-            try {
-                localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-            } catch {}
-            renderHistory();
-        }
+        <button class="fab" onclick="openCreateTask(null)"><span class="material-symbols-rounded">add</span></button>
+    </div>
 
-        function addHistoryEntry(url, label) {
-            if (!url || url === 'about:blank') return;
-            const existing = history.findIndex(h => h.url === url);
-            if (existing !== -1) {
-                const entry = history.splice(existing, 1)[0];
-                entry.label = label || entry.label || 'Stream';
-                history.unshift(entry);
-            } else {
-                history.unshift({ url, label: label || 'Stream', timestamp: Date.now() });
-            }
-            if (history.length > 50) history = history.slice(0, 50);
-            saveHistory();
-        }
+    <div id="view-all-tasks" class="view-screen hidden">
+        <header class="top-bar">
+            <button class="btn-icon" onclick="switchTab('hogar')" style="color: var(--text-primary);">
+                <span class="material-symbols-rounded">arrow_back</span>
+            </button>
+            <div class="title-group" style="font-size:20px;">Todas las tareas</div>
+            <button class="add-btn" onclick="openCreateTask(null)"><span class="material-symbols-rounded">add</span></button>
+        </header>
+        <div class="container" style="margin-top: 16px;">
+            <div class="input-group" style="margin-bottom:14px;">
+                <div class="input-row"><input type="text" id="all-tasks-search" placeholder="Buscar tarea..." oninput="onAllTasksSearch(this.value)"></div>
+            </div>
+            <div class="chip-row" id="all-tasks-room-chips"></div>
+            <div class="chip-row" id="all-tasks-member-chips"></div>
+            <div class="chip-row" id="all-tasks-tag-chips"></div>
+            <div class="filter-row" style="margin-bottom:12px;">
+                <div class="filter-pill" onclick="toggleFavFilter('all')" id="fav-filter-all" style="cursor:pointer;">
+                    <span class="material-symbols-rounded">star</span> Favoritas
+                </div>
+                <div class="filter-pill" onclick="cycleAllTasksSort()" style="cursor:pointer;">
+                    <span class="material-symbols-rounded">swap_vert</span> <span id="all-sort-pill-label">Nombre (A-Z)</span>
+                </div>
+            </div>
+            <div id="all-tasks-list"></div>
+        </div>
+    </div>
 
-        function renderHistory() {
-            if (!historyList) return;
-            if (history.length === 0) {
-                historyList.innerHTML = '<div class="history-empty">No hay historial aún.</div>';
-                return;
-            }
-            historyList.innerHTML = history.map((item, index) => `
-                <div class="history-item" data-index="${index}">
-                    <span class="h-label">${item.label || 'Stream'}</span>
-                    <span class="h-url" title="${item.url}">${item.url.replace(/^https?:\/\//, '').slice(0, 30)}</span>
-                    <div class="h-actions">
-                        <button class="h-load" title="Cargar">▶</button>
-                        <button class="h-remove" title="Eliminar">✕</button>
+    <div id="view-history" class="view-screen hidden">
+        <header class="top-bar">
+            <button class="btn-icon" onclick="switchTab('hogar')" style="color: var(--text-primary);">
+                <span class="material-symbols-rounded">arrow_back</span>
+            </button>
+            <div class="title-group" style="font-size:20px;">Historial</div>
+            <div style="width:36px;"></div>
+        </header>
+        <div class="container" style="margin-top: 16px;">
+            <div class="card" style="flex-direction: column; align-items: flex-start; gap: 10px; cursor: default;">
+                <div class="card-text">Resumen de actividad</div>
+                <div id="stats-grid" style="width:100%; display:flex; justify-content:space-between;"></div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-title">Últimos 7 días <span id="chart-total-7" style="color:var(--text-secondary); font-weight:400; font-size:12px;"></span></div>
+                <div class="bar-chart" id="week-bar-chart"></div>
+            </div>
+
+            <div class="section-header"><h2>Logros</h2></div>
+            <div class="card" style="cursor:default;">
+                <div class="badge-grid" id="badge-grid"></div>
+            </div>
+
+            <div class="section-header"><h2>Ranking por habitación</h2></div>
+            <div class="card" style="flex-direction:column; align-items:stretch; cursor:default;" id="room-ranking-card">
+                <div id="room-ranking-list"></div>
+            </div>
+
+            <div id="member-ranking-section">
+                <div class="section-header"><h2>Ranking por miembro</h2></div>
+                <div class="card" style="flex-direction:column; align-items:stretch; cursor:default;">
+                    <div id="member-ranking-list"></div>
+                </div>
+            </div>
+
+            <div class="section-header"><h2>Actividad reciente</h2></div>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <div id="view-ajustes" class="view-screen hidden">
+        <header class="top-bar">
+            <div class="title-group">Ajustes</div>
+        </header>
+        <div class="container">
+            <div class="section-header">
+                <h2>Nombre del hogar</h2>
+            </div>
+            <div class="card" style="cursor:default;">
+                <input type="text" id="home-name-input" placeholder="Casa" oninput="updateHomeName(this.value)" style="background:transparent; border:none; color:var(--text-primary); font-size:16px; width:100%; outline:none;">
+            </div>
+
+            <div class="section-header">
+                <h2>Color del tema</h2>
+            </div>
+            <div class="card" style="flex-direction: column; align-items: flex-start; gap: 14px; cursor:default;">
+                <p style="font-size: 14px; color: var(--text-secondary);">Selecciona tu color de acento preferido:</p>
+                <div class="color-palette" id="accent-palette"></div>
+            </div>
+
+            <div class="section-header">
+                <h2>Apariencia</h2>
+            </div>
+            <div class="card" style="flex-direction: column; align-items: stretch; gap: 12px; cursor:default;">
+                <p style="font-size: 13px; color: var(--text-secondary);">Tema</p>
+                <div class="segmented" id="theme-segmented">
+                    <button onclick="applyTheme('dark')" data-v="dark">Oscuro</button>
+                    <button onclick="applyTheme('light')" data-v="light">Claro</button>
+                    <button onclick="applyTheme('auto')" data-v="auto">Auto</button>
+                </div>
+                <p style="font-size: 13px; color: var(--text-secondary); margin-top:6px;">Tamaño de fuente</p>
+                <div class="segmented" id="fontsize-segmented">
+                    <button onclick="applyFontSize('small')" data-v="small">Pequeña</button>
+                    <button onclick="applyFontSize('medium')" data-v="medium">Media</button>
+                    <button onclick="applyFontSize('large')" data-v="large">Grande</button>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h2>Miembros del hogar</h2>
+                <button class="add-btn" onclick="openCreateMember()"><span class="material-symbols-rounded">add</span> Agregar</button>
+            </div>
+            <div id="members-list"></div>
+
+            <div class="section-header">
+                <h2>Estación y recordatorios</h2>
+            </div>
+            <div class="card" style="cursor:pointer;" onclick="toggleSeasonalBanner()">
+                <div>
+                    <div class="card-text">Consejos de temporada</div>
+                    <p class="section-sub" style="margin-top:2px;">Muestra banners con tareas según la estación</p>
+                </div>
+                <div class="toggle-switch" id="seasonal-toggle"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="card" style="flex-direction: column; align-items: stretch; gap: 10px; cursor:default;">
+                <p style="font-size: 13px; color: var(--text-secondary);">Hemisferio (para calcular la estación)</p>
+                <div class="segmented" id="hemisphere-segmented">
+                    <button onclick="setHemisphere('north')" data-v="north">Norte</button>
+                    <button onclick="setHemisphere('south')" data-v="south">Sur</button>
+                </div>
+            </div>
+            <div class="card" style="flex-direction: column; align-items: stretch; gap: 10px; cursor:default;">
+                <p style="font-size: 13px; color: var(--text-secondary);">Primer día de la semana</p>
+                <div class="segmented" id="weekstart-segmented">
+                    <button onclick="setWeekStart(1)" data-v="1">Lunes</button>
+                    <button onclick="setWeekStart(0)" data-v="0">Domingo</button>
+                </div>
+            </div>
+            <div class="card" onclick="toggleSound()">
+                <div class="card-text">Sonido de notificaciones</div>
+                <div class="toggle-switch" id="sound-toggle"><div class="toggle-knob"></div></div>
+            </div>
+
+            <div class="section-header">
+                <h2>Notificaciones</h2>
+            </div>
+            <div class="card" onclick="toggleNotifications()">
+                <div>
+                    <div class="card-text">Notificaciones del navegador</div>
+                    <p class="section-sub" style="margin-top:2px;">Avisos de tareas mientras la app está abierta</p>
+                </div>
+                <div class="toggle-switch" id="notifications-toggle"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="card" style="flex-direction: column; align-items: stretch; gap: 10px; cursor:default;">
+                <p style="font-size: 13px; color: var(--text-secondary);">Antelación por defecto para tareas nuevas</p>
+                <select id="default-reminder-lead-select" onchange="setDefaultReminderLead(this.value)" style="background-color: var(--bg-input); color:var(--text-primary); border:none; border-radius:10px; padding:12px; font-size:14px;">
+                    <option value="0">El mismo día</option>
+                    <option value="1">1 día antes</option>
+                    <option value="2">2 días antes</option>
+                    <option value="7">1 semana antes</option>
+                </select>
+            </div>
+            <div class="card" style="flex-direction: column; align-items: stretch; gap: 10px; cursor:default;">
+                <p style="font-size: 13px; color: var(--text-secondary);">Formato de hora</p>
+                <div class="segmented" id="timeformat-segmented">
+                    <button onclick="setTimeFormat('24h')" data-v="24h">24 horas</button>
+                    <button onclick="setTimeFormat('12h')" data-v="12h">12 horas</button>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h2>Preferencias de la app</h2>
+            </div>
+            <div class="card" style="flex-direction: column; align-items: stretch; gap: 10px; cursor:default;">
+                <p style="font-size: 13px; color: var(--text-secondary);">Pantalla de inicio</p>
+                <div class="segmented" id="startview-segmented">
+                    <button onclick="setStartView('hogar')" data-v="hogar">Mi Hogar</button>
+                    <button onclick="setStartView('programa')" data-v="programa">Programa</button>
+                    <button onclick="setStartView('historial')" data-v="historial">Estadísticas</button>
+                </div>
+            </div>
+            <div class="card" style="flex-direction: column; align-items: stretch; gap: 10px; cursor:default;">
+                <p style="font-size: 13px; color: var(--text-secondary);">Densidad de las listas</p>
+                <div class="segmented" id="density-segmented">
+                    <button onclick="setListDensity('comfortable')" data-v="comfortable">Cómoda</button>
+                    <button onclick="setListDensity('compact')" data-v="compact">Compacta</button>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h2>Copia de seguridad</h2>
+            </div>
+            <div class="card" onclick="exportData()">
+                <div class="card-text">Exportar datos</div>
+                <span class="material-symbols-rounded" style="color: var(--text-secondary)">download</span>
+            </div>
+            <div class="card" onclick="document.getElementById('import-file-input').click()">
+                <div class="card-text">Importar datos</div>
+                <span class="material-symbols-rounded" style="color: var(--text-secondary)">upload</span>
+            </div>
+            <input type="file" id="import-file-input" accept="application/json" class="hidden" onchange="importData(this.files[0])">
+
+            <div class="section-header">
+                <h2>Datos</h2>
+            </div>
+            <div class="card" style="cursor:default;">
+                <div class="card-text">Tareas completadas (total)</div>
+                <div class="card-value" id="settings-total-completed">0</div>
+            </div>
+            <div class="card" onclick="resetData()">
+                <div class="card-text" style="color: var(--danger-color);">Restablecer todos los datos</div>
+                <span class="material-symbols-rounded" style="color: var(--danger-color);">delete_forever</span>
+            </div>
+
+            <div class="section-header">
+                <h2>Acerca de</h2>
+            </div>
+            <div class="card" style="cursor:default;">
+                <div class="card-text">Mi Hogar Pro</div>
+                <div class="card-value">v3.0</div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" id="nav-hogar" onclick="switchTab('hogar')">
+            <span class="material-symbols-rounded">home</span>Mi Hogar
+        </div>
+        <div class="nav-item" id="nav-programa" onclick="switchTab('programa')">
+            <span class="material-symbols-rounded">calendar_month</span>Programa
+        </div>
+        <div class="nav-item" id="nav-history-nav" onclick="switchTab('historial')">
+            <span class="material-symbols-rounded">bar_chart</span>Estadísticas
+        </div>
+        <div class="nav-item" id="nav-ajustes" onclick="switchTab('ajustes')">
+            <span class="material-symbols-rounded">settings</span>Ajustes
+        </div>
+    </nav>
+
+    <div id="modal-room" class="modal">
+        <div class="modal-header">
+            <button class="btn-icon" style="color:var(--text-secondary);" onclick="closeModal('modal-room')"><span class="material-symbols-rounded">close</span></button>
+            <div class="modal-title" id="modal-room-title">Crear habitación</div>
+            <button class="btn-text" onclick="saveRoom()">Guardar</button>
+        </div>
+        <div class="modal-body">
+            <div class="input-group">
+                <div class="input-row">
+                    <input type="text" id="room-name" placeholder="Nombre de la habitación (ej. Cocina)">
+                </div>
+                <div class="input-row">
+                    <input type="text" id="room-location" placeholder="Planta / ubicación (opcional)">
+                </div>
+            </div>
+            <h3 class="section-title-sm">COLOR</h3>
+            <div class="color-palette" id="room-color-palette"></div>
+
+            <h3 class="section-title-sm">ICONO</h3>
+            <div class="icon-grid" id="room-icon-grid"></div>
+
+            <button class="btn-danger-block hidden" id="room-delete-btn" onclick="deleteRoom()">Eliminar habitación</button>
+        </div>
+    </div>
+
+    <div id="modal-task" class="modal">
+        <div class="modal-header">
+            <button class="btn-icon" style="color:var(--text-secondary);" onclick="closeModal('modal-task')"><span class="material-symbols-rounded">close</span></button>
+            <div class="modal-title" id="modal-task-title">Crear nueva tarea</div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <button class="btn-icon" id="task-fav-btn" onclick="toggleFavoriteEditing()"><span class="material-symbols-rounded">star_border</span></button>
+                <button class="btn-text" onclick="saveTask()">Guardar</button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="input-group">
+                <div class="input-row">
+                    <input type="text" id="task-name" placeholder="Título">
+                </div>
+                <div class="input-row">
+                    <textarea id="task-notes" placeholder="Notas (Opcional)" rows="2"></textarea>
+                </div>
+                <div class="input-row">
+                    <input type="text" id="task-tags" placeholder="Etiquetas separadas por coma (ej. urgente, semanal)">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="input-row">
+                    <div class="row-label">Ubicación / Habitación</div>
+                    <select id="task-room-select"></select>
+                </div>
+                <div class="input-row">
+                    <div class="row-label">Asignar a</div>
+                    <select id="task-member-select"></select>
+                </div>
+                <div class="input-row">
+                    <div class="row-label">Importancia</div>
+                    <select id="task-importance">
+                        <option value="Baja">Baja</option>
+                        <option value="Media" selected>Media</option>
+                        <option value="Alta">Alta</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="input-row">
+                    <div class="row-label">Repetir</div>
+                    <select id="task-repeat-type" onchange="updateRepeatUI()">
+                        <option value="none">No se repite</option>
+                        <option value="daily">Cada día</option>
+                        <option value="weekdays">Días laborables (L-V)</option>
+                        <option value="weekend">Fines de semana (S-D)</option>
+                        <option value="customDays">Días concretos...</option>
+                        <option value="weekly">Cada semana</option>
+                        <option value="biweekly">Cada 2 semanas</option>
+                        <option value="monthly">Cada mes</option>
+                        <option value="custom">Intervalo personalizado</option>
+                    </select>
+                </div>
+                <div class="input-row hidden" id="repeat-weekdays-row" style="flex-direction:column; align-items:stretch;">
+                    <div class="row-label" style="margin-bottom:10px;">Elige los días</div>
+                    <div class="weekday-picker" id="repeat-weekday-picker"></div>
+                </div>
+                <div class="input-row hidden" id="repeat-custom-row">
+                    <div class="row-label">Cada</div>
+                    <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end;">
+                        <input type="number" id="task-repeat-interval" min="1" placeholder="1" style="width:56px; text-align:right; flex:none;">
+                        <select id="task-repeat-unit" class="select-ltr" style="flex:none;">
+                            <option value="day">día(s)</option>
+                            <option value="week">semana(s)</option>
+                            <option value="month">mes(es)</option>
+                        </select>
                     </div>
                 </div>
-            `).join('');
+                <div class="input-row hidden" id="repeat-mode-row" style="flex-direction:column; align-items:stretch;">
+                    <div class="row-label" style="margin-bottom:10px;">Calcular próxima fecha</div>
+                    <div class="segmented" id="repeat-mode-segmented">
+                        <button type="button" onclick="setRepeatMode('afterComplete')" data-v="afterComplete">Tras completar</button>
+                        <button type="button" onclick="setRepeatMode('fixed')" data-v="fixed">Fecha fija</button>
+                    </div>
+                </div>
+                <div class="input-row hidden" id="repeat-end-type-row">
+                    <div class="row-label">Finaliza</div>
+                    <select id="task-repeat-end-type" onchange="updateRepeatUI()">
+                        <option value="never">Nunca</option>
+                        <option value="until">En una fecha</option>
+                        <option value="count">Tras N repeticiones</option>
+                    </select>
+                </div>
+                <div class="input-row hidden" id="repeat-end-date-row">
+                    <div class="row-label">Repetir hasta</div>
+                    <input type="date" id="task-repeat-end-date">
+                </div>
+                <div class="input-row hidden" id="repeat-end-count-row">
+                    <div class="row-label">Nº de repeticiones</div>
+                    <input type="number" id="task-repeat-end-count" min="1" placeholder="ej. 5">
+                </div>
+                <div class="input-row">
+                    <div class="row-label">Vencimiento</div>
+                    <input type="date" id="task-due-date">
+                </div>
+                <div class="input-row">
+                    <div class="row-label">Hora recordatorio</div>
+                    <input type="time" id="task-reminder-time">
+                </div>
+                <div class="input-row">
+                    <div class="row-label">Avisar<small>antelación del recordatorio</small></div>
+                    <select id="task-reminder-lead">
+                        <option value="0">El mismo día</option>
+                        <option value="1">1 día antes</option>
+                        <option value="2">2 días antes</option>
+                        <option value="7">1 semana antes</option>
+                    </select>
+                </div>
+                <div class="input-row">
+                    <div class="row-label">Duración estimada<small>en minutos</small></div>
+                    <input type="number" id="task-duration" min="1" placeholder="ej. 20">
+                </div>
+                <div class="input-row">
+                    <div class="row-label">Enlace<small>manual, garantía, tienda...</small></div>
+                    <input type="url" id="task-link" placeholder="https://...">
+                </div>
+            </div>
 
-            historyList.querySelectorAll('.history-item').forEach(el => {
-                const idx = parseInt(el.dataset.index);
-                const item = history[idx];
-                if (!item) return;
+            <h3 class="section-title-sm">SUBTAREAS</h3>
+            <div class="input-group" style="padding: 8px 16px;">
+                <div id="subtask-list"></div>
+                <div class="subtask-add-row">
+                    <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:20px;">add_circle</span>
+                    <input type="text" id="subtask-input" placeholder="Añadir subtarea..." onkeydown="if(event.key==='Enter'){event.preventDefault(); addSubtaskFromInput();}">
+                </div>
+            </div>
 
-                el.querySelector('.h-load').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    loadFromHistory(idx);
-                });
-                el.querySelector('.h-remove').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    history.splice(idx, 1);
-                    saveHistory();
-                });
-                el.addEventListener('dblclick', () => loadFromHistory(idx));
+            <h3 class="section-title-sm">ICONO DE TAREA</h3>
+            <div class="icon-cat-row" id="task-icon-cats"></div>
+            <div class="icon-grid" id="task-icon-grid"></div>
+
+            <h3 class="section-title-sm">COLOR DEL ICONO</h3>
+            <div class="color-palette" id="task-icon-color-palette"></div>
+
+            <button class="btn-secondary-block hidden" id="task-duplicate-btn" onclick="duplicateTask()">Duplicar tarea</button>
+            <button class="btn-danger-block hidden" id="task-delete-btn" onclick="deleteTask()">Eliminar tarea</button>
+        </div>
+    </div>
+
+    <div id="modal-member" class="modal">
+        <div class="modal-header">
+            <button class="btn-icon" style="color:var(--text-secondary);" onclick="closeModal('modal-member')"><span class="material-symbols-rounded">close</span></button>
+            <div class="modal-title" id="modal-member-title">Agregar miembro</div>
+            <button class="btn-text" onclick="saveMember()">Guardar</button>
+        </div>
+        <div class="modal-body">
+            <div class="input-group">
+                <div class="input-row">
+                    <input type="text" id="member-name" placeholder="Nombre">
+                </div>
+            </div>
+            <h3 class="section-title-sm">COLOR</h3>
+            <div class="color-palette" id="member-color-palette"></div>
+
+            <button class="btn-danger-block hidden" id="member-delete-btn" onclick="deleteMember()">Eliminar miembro</button>
+        </div>
+    </div>
+
+    <script>
+        /* ============ DATOS Y MIGRACIÓN ============ */
+        function defaultData() {
+            return {
+                rooms: [
+                    { id: 1, name: 'Baño', icon: 'bathtub', color: '#78c5d6', location: '' },
+                    { id: 2, name: 'Casa completa', icon: 'home', color: '#8fc351', location: '' },
+                    { id: 3, name: 'Cocina', icon: 'kitchen', color: '#f2bc43', location: '' }
+                ],
+                tasks: [],
+                history: [],
+                members: [],
+                accent: '#4ade80',
+                homeName: 'Casa',
+                theme: 'dark',
+                fontSize: 'medium',
+                weekStart: 1,
+                soundEnabled: true,
+                seasonalBannerEnabled: true,
+                dismissedBanners: [],
+                hemisphere: 'north',
+                notificationsEnabled: false,
+                defaultReminderLead: 0,
+                timeFormat: '24h',
+                startView: 'hogar',
+                listDensity: 'comfortable'
+            };
+        }
+
+        let data = JSON.parse(localStorage.getItem('hogarMasterData')) || defaultData();
+        // Migración / valores por defecto para datos antiguos
+        data.history = data.history || [];
+        data.members = data.members || [];
+        data.homeName = data.homeName || 'Casa';
+        data.rooms = (data.rooms || []).map(r => ({ location: '', ...r }));
+        data.theme = data.theme || 'dark';
+        data.fontSize = data.fontSize || 'medium';
+        data.weekStart = (data.weekStart === 0 || data.weekStart === 1) ? data.weekStart : 1;
+        data.soundEnabled = (data.soundEnabled === undefined) ? true : data.soundEnabled;
+        data.seasonalBannerEnabled = (data.seasonalBannerEnabled === undefined) ? true : data.seasonalBannerEnabled;
+        data.dismissedBanners = data.dismissedBanners || [];
+        data.hemisphere = data.hemisphere || 'north';
+        data.notificationsEnabled = data.notificationsEnabled || false;
+        data.defaultReminderLead = (data.defaultReminderLead === undefined || data.defaultReminderLead === null) ? 0 : data.defaultReminderLead;
+        data.timeFormat = data.timeFormat || '24h';
+        data.startView = data.startView || 'hogar';
+        data.listDensity = data.listDensity || 'comfortable';
+        data.tasks = (data.tasks || []).map(t => ({
+            notes: '', dueDate: null, frequencyDays: null, lastCompletedAt: null, createdAt: new Date().toISOString(),
+            tags: [], subtasks: [], memberId: null, favorite: false, duration: null, reminderTime: null, iconColor: null,
+            reminderLead: 0, link: null, lastNotifiedKey: null,
+            repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
+            repeatMode: 'afterComplete', repeatEndType: 'never', repeatEndDate: null, repeatEndCount: null,
+            ...t
+        }));
+        // Migración de tareas antiguas (frequencyDays) al nuevo sistema de repetición avanzado
+        data.tasks.forEach(t => {
+            if ((!t.repeatType || t.repeatType === 'none') && t.frequencyDays) {
+                if (t.frequencyDays === 1) t.repeatType = 'daily';
+                else if (t.frequencyDays === 7) t.repeatType = 'weekly';
+                else if (t.frequencyDays === 14) t.repeatType = 'biweekly';
+                else if (t.frequencyDays === 30) t.repeatType = 'monthly';
+                else { t.repeatType = 'custom'; t.repeatUnit = 'day'; t.repeatInterval = t.frequencyDays; }
+            }
+            if (!Array.isArray(t.repeatWeekDays)) t.repeatWeekDays = [];
+        });
+
+        let currentRoomDetailId = null;
+        let editingRoomId = null;
+        let editingTaskId = null;
+        let editingMemberId = null;
+        let selectedRoomIcon = 'bathtub';
+        let selectedTaskIcon = 'mop';
+        let selectedRoomColor = '#78c5d6';
+        let selectedMemberColor = '#78c5d6';
+        let selectedTaskIconColor = null;
+        let selectedTaskCategory = 'Limpieza';
+        let editingFavorite = false;
+        let editingSubtasks = [];
+        let editingRepeatWeekDays = [];
+        let notificationCheckInterval = null;
+        let selectedScheduleDate = todayStr();
+        let sortMode = 'fecha';
+        let allTasksSortMode = 'nombre';
+        let scheduleSearchQuery = '';
+        let allTasksQuery = '';
+        let allTasksRoomFilter = 'all';
+        let allTasksMemberFilter = 'all';
+        let allTasksTagFilter = 'all';
+        let scheduleFavOnly = false;
+        let allTasksFavOnly = false;
+
+        // Días de la semana ordenados L-D con su índice real de JS Date.getDay() (0=domingo...6=sábado)
+        const weekdayDefs = [
+            { day: 1, label: 'L' }, { day: 2, label: 'M' }, { day: 3, label: 'X' }, { day: 4, label: 'J' },
+            { day: 5, label: 'V' }, { day: 6, label: 'S' }, { day: 0, label: 'D' }
+        ];
+        const repeatTypeLabels = {
+            none: 'No se repite', daily: 'cada día', weekdays: 'días laborables', weekend: 'fines de semana',
+            weekly: 'cada semana', biweekly: 'cada 2 semanas', monthly: 'cada mes'
+        };
+
+        const roomColors = ['#78c5d6', '#8fc351', '#f2bc43', '#5c8aea', '#85c441', '#a584d4', '#ff9f0a', '#ff6482', '#5ac8b8', '#c77dff'];
+        const memberColors = ['#4ade80', '#32ade6', '#ff9f0a', '#ff453a', '#bf5af2', '#ffd60a', '#5ac8b8', '#ff6482'];
+
+        const iconCategories = {
+            'Limpieza': ['mop', 'cleaning_services', 'vacuum', 'local_laundry_service', 'dry_cleaning', 'iron', 'water_drop', 'sanitizer', 'soap', 'delete', 'recycling'],
+            'Cocina': ['kitchen', 'countertops', 'microwave', 'blender', 'coffee_maker', 'dining', 'local_pizza', 'egg', 'set_meal', 'icecream'],
+            'Exterior': ['yard', 'grass', 'local_florist', 'pool', 'garage', 'solar_power', 'park', 'directions_car'],
+            'Mantenimiento': ['handyman', 'build', 'plumbing', 'electrical_services', 'construction', 'home_repair_service', 'hardware'],
+            'Mascotas': ['pets', 'cruelty_free'],
+            'General': ['home', 'bed', 'chair', 'weekend', 'desk', 'tv', 'bathtub', 'shower', 'checkroom', 'door_front', 'stairs', 'lightbulb', 'toys', 'crib', 'computer', 'shopping_cart', 'spa']
+        };
+        const allIconsFlat = [...new Set(Object.values(iconCategories).flat())];
+
+        const sortLabels = { fecha: 'Fecha de Vencimiento', importancia: 'Importancia', nombre: 'Nombre (A-Z)' };
+        const allTasksSortLabels = { nombre: 'Nombre (A-Z)', fecha: 'Fecha de Vencimiento', importancia: 'Importancia', duracion: 'Duración' };
+
+        const achievementDefs = [
+            { id: 'streak3', type: 'streak', threshold: 3, label: '3 días seguidos', icon: 'local_fire_department' },
+            { id: 'streak7', type: 'streak', threshold: 7, label: 'Semana completa', icon: 'local_fire_department' },
+            { id: 'streak30', type: 'streak', threshold: 30, label: 'Racha de oro', icon: 'military_tech' },
+            { id: 'total10', type: 'total', threshold: 10, label: '10 tareas', icon: 'emoji_events' },
+            { id: 'total50', type: 'total', threshold: 50, label: '50 tareas', icon: 'emoji_events' },
+            { id: 'total100', type: 'total', threshold: 100, label: 'Maestro del hogar', icon: 'workspace_premium' },
+            { id: 'total250', type: 'total', threshold: 250, label: 'Leyenda doméstica', icon: 'diamond' },
+            { id: 'members1', type: 'members', threshold: 1, label: 'Equipo en casa', icon: 'group' }
+        ];
+
+        const seasonContent = {
+            verano: { title: 'Limpieza de verano', desc: '¡Revitaliza tu hogar para la temporada de sol! Ventila armarios y limpia ventanas.', icon: 'wb_sunny', grad: 'linear-gradient(135deg,#ffcfe3 0%,#ffebb3 100%)' },
+            otono: { title: 'Preparación de otoño', desc: 'Organiza armarios, revisa la calefacción y limpia canalones antes del frío.', icon: 'eco', grad: 'linear-gradient(135deg,#ffd9a0 0%,#f8b195 100%)' },
+            invierno: { title: 'Limpieza de invierno', desc: 'Cuida la calefacción, ventila a diario y mantén tu hogar acogedor.', icon: 'ac_unit', grad: 'linear-gradient(135deg,#c9def0 0%,#e0e7ff 100%)' },
+            primavera: { title: 'Limpieza de primavera', desc: 'Renueva cada rincón, abre las ventanas y airea colchones y cortinas.', icon: 'local_florist', grad: 'linear-gradient(135deg,#d7f2d2 0%,#c9f0e8 100%)' }
+        };
+
+        window.onload = function() {
+            changeAccent(data.accent || '#4ade80', false);
+            applyTheme(data.theme, false);
+            applyFontSize(data.fontSize, false);
+            renderIconGrid('room-icon-grid', 'room', allIconsFlat);
+            renderTaskIconCats();
+            renderColorPalette('room-color-palette', roomColors, selectedRoomColor, (c) => { selectedRoomColor = c; renderColorPalette('room-color-palette', roomColors, selectedRoomColor, arguments.callee); });
+            document.getElementById('home-title-text').innerText = data.homeName;
+            document.getElementById('home-name-input').value = data.homeName;
+            renderAccentPalette();
+            renderSegmented('theme-segmented', data.theme);
+            renderSegmented('fontsize-segmented', data.fontSize);
+            renderSegmented('hemisphere-segmented', data.hemisphere);
+            renderSegmented('weekstart-segmented', String(data.weekStart));
+            updateToggle('seasonal-toggle', data.seasonalBannerEnabled);
+            updateToggle('sound-toggle', data.soundEnabled);
+            updateToggle('notifications-toggle', data.notificationsEnabled);
+            renderSegmented('timeformat-segmented', data.timeFormat);
+            renderSegmented('startview-segmented', data.startView);
+            renderSegmented('density-segmented', data.listDensity);
+            document.getElementById('default-reminder-lead-select').value = String(data.defaultReminderLead);
+            document.body.classList.toggle('density-compact', data.listDensity === 'compact');
+            renderCalendarStrip();
+            updateProgramaLabel();
+            renderSeasonBanner();
+            refreshAll();
+            if (data.notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                startNotificationChecker();
+            }
+            if (data.startView && data.startView !== 'hogar') switchTab(data.startView);
+        };
+
+        function saveData() {
+            localStorage.setItem('hogarMasterData', JSON.stringify(data));
+        }
+
+        function refreshAll() {
+            renderRooms();
+            renderSchedule();
+            updateSelectRooms();
+            updateSelectMembers();
+            renderAllTasksView();
+            renderHistoryView();
+            renderMembersList();
+            updateDashboardCounts();
+            if (currentRoomDetailId) renderRoomTasks();
+        }
+
+        function updateDashboardCounts() {
+            const allCount = document.getElementById('dash-all-count');
+            if (allCount) allCount.innerHTML = `${data.tasks.length} <span class="material-symbols-rounded">chevron_right</span>`;
+            const histCount = document.getElementById('dash-history-count');
+            if (histCount) histCount.innerHTML = `${data.history.length} <span class="material-symbols-rounded">chevron_right</span>`;
+            const s = computeStats();
+            const streakEl = document.getElementById('dash-streak');
+            if (streakEl) streakEl.innerText = s.streak;
+            const rateEl = document.getElementById('dash-rate');
+            if (rateEl) rateEl.innerText = s.completionRate + '%';
+            const totalCompletedEl = document.getElementById('settings-total-completed');
+            if (totalCompletedEl) totalCompletedEl.innerText = s.totalCompleted;
+        }
+
+        /* --- FECHAS --- */
+        function todayStr() {
+            const d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+        function addDays(dateStr, n) {
+            const d = new Date(dateStr + 'T00:00:00');
+            d.setDate(d.getDate() + n);
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+        function addMonths(dateStr, n) {
+            const d = new Date(dateStr + 'T00:00:00');
+            const originalDay = d.getDate();
+            d.setDate(1);
+            d.setMonth(d.getMonth() + n);
+            const lastDayOfTargetMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+            d.setDate(Math.min(originalDay, lastDayOfTargetMonth));
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+        function formatDateLabel(dateStr) {
+            const t = todayStr();
+            if (dateStr === t) return 'Hoy';
+            if (dateStr === addDays(t, 1)) return 'Mañana';
+            if (dateStr === addDays(t, -1)) return 'Ayer';
+            const d = new Date(dateStr + 'T00:00:00');
+            const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+            return `${d.getDate()} ${months[d.getMonth()]}`;
+        }
+
+        /* --- MOTOR DE REPETICIÓN AVANZADO --- */
+        function computeNextDueDate(task, baseDateStr) {
+            const type = task.repeatType || 'none';
+            if (type === 'none') return null;
+            if (type === 'daily') return addDays(baseDateStr, 1);
+            if (type === 'weekly') return addDays(baseDateStr, 7);
+            if (type === 'biweekly') return addDays(baseDateStr, 14);
+            if (type === 'monthly') return addMonths(baseDateStr, 1);
+            if (type === 'weekdays') {
+                let d = addDays(baseDateStr, 1);
+                let guard = 0;
+                while (guard < 8) {
+                    const dow = new Date(d + 'T00:00:00').getDay();
+                    if (dow !== 0 && dow !== 6) return d;
+                    d = addDays(d, 1);
+                    guard++;
+                }
+                return d;
+            }
+            if (type === 'weekend') {
+                let d = addDays(baseDateStr, 1);
+                let guard = 0;
+                while (guard < 8) {
+                    const dow = new Date(d + 'T00:00:00').getDay();
+                    if (dow === 0 || dow === 6) return d;
+                    d = addDays(d, 1);
+                    guard++;
+                }
+                return d;
+            }
+            if (type === 'customDays') {
+                const chosen = (task.repeatWeekDays && task.repeatWeekDays.length) ? task.repeatWeekDays : [new Date(baseDateStr + 'T00:00:00').getDay()];
+                let d = addDays(baseDateStr, 1);
+                let guard = 0;
+                while (guard < 8) {
+                    const dow = new Date(d + 'T00:00:00').getDay();
+                    if (chosen.includes(dow)) return d;
+                    d = addDays(d, 1);
+                    guard++;
+                }
+                return d;
+            }
+            if (type === 'custom') {
+                const n = Math.max(1, parseInt(task.repeatInterval, 10) || 1);
+                const unit = task.repeatUnit || 'day';
+                if (unit === 'week') return addDays(baseDateStr, n * 7);
+                if (unit === 'month') return addMonths(baseDateStr, n);
+                return addDays(baseDateStr, n);
+            }
+            return null;
+        }
+        function repeatSummaryLabel(task) {
+            const type = task.repeatType || 'none';
+            if (type === 'none') return '';
+            if (repeatTypeLabels[type]) return repeatTypeLabels[type];
+            if (type === 'customDays') {
+                const names = { 0: 'D', 1: 'L', 2: 'M', 3: 'X', 4: 'J', 5: 'V', 6: 'S' };
+                const order = [1, 2, 3, 4, 5, 6, 0];
+                const chosen = order.filter(d => (task.repeatWeekDays || []).includes(d)).map(d => names[d]);
+                return chosen.length ? `los ${chosen.join('/')}` : 'días concretos';
+            }
+            if (type === 'custom') {
+                const n = task.repeatInterval || 1;
+                const unit = task.repeatUnit || 'day';
+                const unitLabel = unit === 'week' ? (n > 1 ? 'semanas' : 'semana') : (unit === 'month' ? (n > 1 ? 'meses' : 'mes') : (n > 1 ? 'días' : 'día'));
+                return `cada ${n} ${unitLabel}`;
+            }
+            return '';
+        }
+
+        /* --- APARIENCIA --- */
+        function changeAccent(color, persist = true) {
+            data.accent = color;
+            document.documentElement.style.setProperty('--accent-color', color);
+            renderAccentPalette();
+            if (persist) saveData();
+        }
+        function renderAccentPalette() {
+            const el = document.getElementById('accent-palette');
+            if (!el) return;
+            el.innerHTML = '';
+            memberColors.concat(['#ff453a']).filter((v, i, a) => a.indexOf(v) === i).forEach(c => {
+                const dot = document.createElement('div');
+                dot.className = 'color-dot' + (data.accent === c ? ' selected' : '');
+                dot.style.backgroundColor = c;
+                dot.onclick = () => changeAccent(c);
+                el.appendChild(dot);
             });
         }
 
-        function loadFromHistory(index) {
-            const item = history[index];
-            if (!item) return;
-            const card = createCard(item.url, item.label);
-            dashboard.appendChild(card);
-            updateEmptyState();
-            const entry = history.splice(index, 1)[0];
-            history.unshift(entry);
-            saveHistory();
-            historyPanel.classList.remove('open');
+        function applyTheme(mode, persist = true) {
+            data.theme = mode;
+            const resolved = mode === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : mode;
+            document.documentElement.setAttribute('data-theme', resolved);
+            renderSegmented('theme-segmented', mode);
+            if (persist) saveData();
+        }
+        window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if (data.theme === 'auto') applyTheme('auto', false);
+        });
+
+        function applyFontSize(size, persist = true) {
+            data.fontSize = size;
+            const zoomMap = { small: 0.9, medium: 1, large: 1.12 };
+            document.body.style.zoom = zoomMap[size] || 1;
+            renderSegmented('fontsize-segmented', size);
+            if (persist) saveData();
         }
 
-        // ---- UI ----
-        function updateEmptyState() {
-            const cards = dashboard.querySelectorAll('.card:not([style*="display: none"])');
-            if (cards.length === 0 && minimizedBar.children.length === 0) {
-                emptyState.style.display = 'flex';
-                dashboard.style.display = 'none';
-            } else {
-                emptyState.style.display = 'none';
-                dashboard.style.display = 'flex';
-            }
+        function renderSegmented(containerId, value) {
+            const c = document.getElementById(containerId);
+            if (!c) return;
+            Array.from(c.children).forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-v') === String(value)));
         }
 
-        function minimizeCard(card) {
-            if (card.dataset.minimized === 'true') return;
-            card.dataset.minimized = 'true';
-            card.style.display = 'none';
-
-            const labelEl = card.querySelector('.label');
-            const labelText = labelEl ? labelEl.textContent.trim() : 'Stream';
-
-            const miniItem = document.createElement('div');
-            miniItem.className = 'minimized-item';
-            miniItem.dataset.cardId = card.dataset.id;
-            miniItem.innerHTML = `
-                <span class="material-symbols-outlined" style="font-size:1rem; color:#fbbd14;">play_arrow</span>
-                <span class="label-text">${labelText}</span>
-                <span class="material-symbols-outlined restore-icon">expand_content</span>
-            `;
-            miniItem.addEventListener('click', (e) => {
-                if (e.target.closest('.restore-icon')) return;
-                restoreCard(card);
-            });
-            const restoreIcon = miniItem.querySelector('.restore-icon');
-            restoreIcon.addEventListener('click', (e) => {
-                e.stopPropagation();
-                restoreCard(card);
-            });
-
-            minimizedBar.appendChild(miniItem);
-            minimizedBar.style.display = 'flex';
-            card._miniItem = miniItem;
-            updateEmptyState();
+        function updateToggle(id, on) {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('on', !!on);
         }
 
-        function restoreCard(card) {
-            if (card.dataset.minimized !== 'true') return;
-            card.dataset.minimized = 'false';
-            card.style.display = '';
-            if (card._miniItem) {
-                card._miniItem.remove();
-                delete card._miniItem;
-            }
-            if (minimizedBar.children.length === 0) {
-                minimizedBar.style.display = 'none';
-            }
-            updateEmptyState();
+        function toggleSeasonalBanner() {
+            data.seasonalBannerEnabled = !data.seasonalBannerEnabled;
+            updateToggle('seasonal-toggle', data.seasonalBannerEnabled);
+            saveData();
+            renderSeasonBanner();
+        }
+        function toggleSound() {
+            data.soundEnabled = !data.soundEnabled;
+            updateToggle('sound-toggle', data.soundEnabled);
+            saveData();
+        }
+        function setHemisphere(h) {
+            data.hemisphere = h;
+            renderSegmented('hemisphere-segmented', h);
+            saveData();
+            renderSeasonBanner();
+        }
+        function setWeekStart(v) {
+            data.weekStart = v;
+            renderSegmented('weekstart-segmented', String(v));
+            saveData();
+            renderCalendarStrip();
         }
 
-        // ---- Crear tarjeta ----
-        function createCard(url, label) {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.draggable = false;
-            card.dataset.id = ++cardCounter;
-            card.dataset.minimized = 'false';
-            card.style.width = '300px';
+        /* --- PREFERENCIAS AVANZADAS --- */
+        function setDefaultReminderLead(v) {
+            data.defaultReminderLead = parseInt(v, 10) || 0;
+            saveData();
+        }
+        function setTimeFormat(v) {
+            data.timeFormat = v;
+            renderSegmented('timeformat-segmented', v);
+            saveData();
+            refreshAll();
+        }
+        function setStartView(v) {
+            data.startView = v;
+            renderSegmented('startview-segmented', v);
+            saveData();
+        }
+        function setListDensity(v) {
+            data.listDensity = v;
+            renderSegmented('density-segmented', v);
+            document.body.classList.toggle('density-compact', v === 'compact');
+            saveData();
+        }
+        function formatTimeDisplay(t) {
+            if (!t) return '';
+            if (data.timeFormat !== '12h') return t;
+            const [h, m] = t.split(':').map(Number);
+            const period = h >= 12 ? 'PM' : 'AM';
+            let h12 = h % 12; if (h12 === 0) h12 = 12;
+            return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+        }
 
-            const inner = document.createElement('div');
-            inner.className = 'card-inner';
-
-            const header = document.createElement('div');
-            header.className = 'card-header';
-
-            const labelSpan = document.createElement('span');
-            labelSpan.className = 'label';
-            labelSpan.innerHTML = `<span class="material-symbols-outlined" style="font-size:1rem;">play_circle</span> ${label || 'Stream'}`;
-
-            const controls = document.createElement('div');
-            controls.className = 'controls';
-
-            const minBtn = document.createElement('button');
-            minBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:0.9rem;">minimize</span>';
-            minBtn.title = 'Minimizar';
-            minBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (card.dataset.minimized === 'true') restoreCard(card);
-                else minimizeCard(card);
-            });
-
-            const reloadBtn = document.createElement('button');
-            reloadBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:0.9rem;">refresh</span>';
-            reloadBtn.title = 'Recargar / Editar URL';
-
-            const openBtn = document.createElement('button');
-            openBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:0.9rem;">open_in_new</span>';
-            openBtn.title = 'Abrir en nueva pestaña';
-
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'close-btn';
-            closeBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:0.9rem;">close</span>';
-            closeBtn.title = 'Eliminar stream';
-
-            controls.appendChild(minBtn);
-            controls.appendChild(reloadBtn);
-            controls.appendChild(openBtn);
-            controls.appendChild(closeBtn);
-
-            header.appendChild(labelSpan);
-            header.appendChild(controls);
-
-            const body = document.createElement('div');
-            body.className = 'card-body';
-
-            const iframe = document.createElement('iframe');
-            iframe.allow = 'autoplay; fullscreen; encrypted-media';
-            iframe.referrerPolicy = 'strict-origin-when-cross-origin';
-            iframe.title = label || 'Stream';
-            iframe.src = url ? url : 'about:blank';
-
-            const placeholder = document.createElement('div');
-            placeholder.className = 'placeholder';
-            placeholder.innerHTML = `
-                <span class="material-symbols-outlined">play_circle</span>
-                <span>Sin URL</span>
-            `;
-            if (url) {
-                placeholder.style.display = 'none';
-            } else {
-                placeholder.style.display = 'flex';
-            }
-
-            body.appendChild(iframe);
-            body.appendChild(placeholder);
-
-            inner.appendChild(header);
-            inner.appendChild(body);
-            card.appendChild(inner);
-
-            // Handle resize
-            const handle = document.createElement('div');
-            handle.className = 'resize-handle';
-            card.appendChild(handle);
-
-            let isResizing = false;
-            let startX, startWidth;
-
-            function startResize(e) {
-                e.preventDefault();
-                const touch = e.touches ? e.touches[0] : e;
-                isResizing = true;
-                startX = touch.clientX;
-                startWidth = card.offsetWidth;
-                document.addEventListener('pointermove', onResize);
-                document.addEventListener('pointerup', stopResize);
-                document.addEventListener('touchmove', onResizeTouch, { passive: false });
-                document.addEventListener('touchend', stopResizeTouch);
-                handle.style.borderColor = '#fbbd14';
-            }
-
-            function onResize(e) {
-                if (!isResizing) return;
-                const dx = e.clientX - startX;
-                let newWidth = startWidth + dx;
-                newWidth = Math.max(180, newWidth);
-                card.style.width = newWidth + 'px';
-            }
-
-            function onResizeTouch(e) {
-                e.preventDefault();
-                if (!isResizing) return;
-                const touch = e.touches[0];
-                const dx = touch.clientX - startX;
-                let newWidth = startWidth + dx;
-                newWidth = Math.max(180, newWidth);
-                card.style.width = newWidth + 'px';
-            }
-
-            function stopResize() {
-                isResizing = false;
-                document.removeEventListener('pointermove', onResize);
-                document.removeEventListener('pointerup', stopResize);
-                handle.style.borderColor = '';
-            }
-
-            function stopResizeTouch() {
-                isResizing = false;
-                document.removeEventListener('touchmove', onResizeTouch);
-                document.removeEventListener('touchend', stopResizeTouch);
-                handle.style.borderColor = '';
-            }
-
-            handle.addEventListener('pointerdown', startResize);
-            handle.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                startResize(e);
-            }, { passive: false });
-
-            // ---- Botones ----
-            reloadBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const currentSrc = iframe.src;
-                const newUrl = prompt('Introduce la URL del stream:', currentSrc === 'about:blank' ? '' : currentSrc);
-                if (newUrl !== null && newUrl.trim() !== '') {
-                    let final = newUrl.trim();
-                    if (!/^https?:\/\//i.test(final)) final = 'https://' + final;
-                    iframe.src = final;
-                    placeholder.style.display = 'none';
-                    const lbl = card.querySelector('.label');
-                    if (lbl) {
-                        const text = lbl.textContent.replace(/^[^\s]+\s*/, '').trim();
-                        lbl.innerHTML = `<span class="material-symbols-outlined" style="font-size:1rem;">play_circle</span> ${text || 'Stream'}`;
+        /* --- NOTIFICACIONES DEL NAVEGADOR --- */
+        function toggleNotifications() {
+            if (!data.notificationsEnabled) {
+                if (typeof Notification === 'undefined') {
+                    alert('Este navegador no soporta notificaciones.');
+                    return;
+                }
+                Notification.requestPermission().then(perm => {
+                    if (perm === 'granted') {
+                        data.notificationsEnabled = true;
+                        saveData();
+                        updateToggle('notifications-toggle', true);
+                        startNotificationChecker();
+                        new Notification('Notificaciones activadas', { body: 'Te avisaremos de tus tareas mientras Mi Hogar esté abierto.' });
+                    } else {
+                        updateToggle('notifications-toggle', false);
+                        alert('No se concedió el permiso de notificaciones. Puedes activarlo desde los ajustes de tu navegador.');
                     }
-                    addHistoryEntry(final, labelSpan.textContent.replace(/^[^\s]+\s*/, '').trim());
-                } else if (newUrl === '') {
-                    iframe.src = 'about:blank';
-                    placeholder.style.display = 'flex';
+                });
+            } else {
+                data.notificationsEnabled = false;
+                saveData();
+                updateToggle('notifications-toggle', false);
+                if (notificationCheckInterval) { clearInterval(notificationCheckInterval); notificationCheckInterval = null; }
+            }
+        }
+        function startNotificationChecker() {
+            if (notificationCheckInterval) clearInterval(notificationCheckInterval);
+            notificationCheckInterval = setInterval(checkDueNotifications, 30000);
+            checkDueNotifications();
+        }
+        function checkDueNotifications() {
+            if (!data.notificationsEnabled || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+            const now = new Date();
+            const nowHM = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            const today = todayStr();
+            let changed = false;
+            data.tasks.forEach(task => {
+                if (task.completed || !task.dueDate || !task.reminderTime) return;
+                const notifyDate = addDays(task.dueDate, -(task.reminderLead || 0));
+                if (notifyDate !== today || task.reminderTime !== nowHM) return;
+                const notifKey = today + '_' + task.reminderTime;
+                if (task.lastNotifiedKey === notifKey) return;
+                const room = data.rooms.find(r => r.id == task.roomId);
+                try {
+                    new Notification(task.name, {
+                        body: `${room ? room.name + ' · ' : ''}Vence ${formatDateLabel(task.dueDate)}`
+                    });
+                } catch (e) { /* silenciar entornos sin soporte total */ }
+                task.lastNotifiedKey = notifKey;
+                changed = true;
+            });
+            if (changed) saveData();
+        }
+
+        /* --- BANNER ESTACIONAL --- */
+        function getCurrentSeason() {
+            const month = new Date().getMonth() + 1; // 1-12
+            let season;
+            if ([12, 1, 2].includes(month)) season = 'invierno';
+            else if ([3, 4, 5].includes(month)) season = 'primavera';
+            else if ([6, 7, 8].includes(month)) season = 'verano';
+            else season = 'otono';
+            if (data.hemisphere === 'south') {
+                const swap = { invierno: 'verano', verano: 'invierno', primavera: 'otono', otono: 'primavera' };
+                season = swap[season];
+            }
+            return season;
+        }
+        function renderSeasonBanner() {
+            const wrap = document.getElementById('promo-banner-wrap');
+            if (!wrap) return;
+            wrap.innerHTML = '';
+            if (!data.seasonalBannerEnabled) return;
+            const season = getCurrentSeason();
+            const year = new Date().getFullYear();
+            const key = `${season}-${year}`;
+            if (data.dismissedBanners.includes(key)) return;
+            const info = seasonContent[season];
+            const div = document.createElement('div');
+            div.className = 'season-banner';
+            div.style.background = info.grad;
+            div.id = 'promo-banner';
+            div.innerHTML = `
+                <span class="material-symbols-rounded season-banner-icon">${info.icon}</span>
+                <div>
+                    <h3>${info.title}</h3>
+                    <p>${info.desc}</p>
+                </div>
+                <span class="material-symbols-rounded close-banner" onclick="dismissSeasonBanner('${key}')">close</span>
+            `;
+            wrap.appendChild(div);
+        }
+        function dismissSeasonBanner(key) {
+            data.dismissedBanners.push(key);
+            saveData();
+            document.getElementById('promo-banner-wrap').innerHTML = '';
+        }
+
+        /* --- MENÚ DE PANTALLAS --- */
+        function switchTab(tab) {
+            document.querySelectorAll('.view-screen').forEach(s => s.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+            if (tab === 'hogar') {
+                document.getElementById('view-hogar').classList.remove('hidden');
+                document.getElementById('nav-hogar').classList.add('active');
+            } else if (tab === 'programa') {
+                document.getElementById('view-programa').classList.remove('hidden');
+                document.getElementById('nav-programa').classList.add('active');
+                renderCalendarStrip();
+                updateProgramaLabel();
+                renderSchedule();
+                renderSeasonBanner();
+            } else if (tab === 'historial') {
+                showScreen('view-history');
+                document.getElementById('nav-history-nav').classList.add('active');
+                renderHistoryView();
+            } else if (tab === 'ajustes') {
+                document.getElementById('view-ajustes').classList.remove('hidden');
+                document.getElementById('nav-ajustes').classList.add('active');
+            }
+            currentRoomDetailId = null;
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.view-screen').forEach(s => s.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        /* --- HABITACIONES --- */
+        function renderRooms() {
+            const container = document.getElementById('rooms-list');
+            container.innerHTML = '';
+            if (data.rooms.length === 0) {
+                container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">meeting_room</span>Añade tu primera habitación para empezar.</div>`;
+                return;
+            }
+            data.rooms.forEach(room => {
+                const pending = data.tasks.filter(t => t.roomId == room.id && !t.completed).length;
+                const statusText = pending === 0 ? 'NO HAY TAREAS' : `${pending} PENDIENTES`;
+
+                const div = document.createElement('div');
+                div.className = 'room-item';
+                div.onclick = () => showRoomDetail(room.id, room.name);
+                div.innerHTML = `
+                    <div class="icon-container" style="background-color: ${room.color || '#333'}">
+                        <span class="material-symbols-rounded">${room.icon}</span>
+                    </div>
+                    <div class="item-info">
+                        <div class="item-title">${room.name}</div>
+                        ${room.location ? `<div style="font-size:12px; color:var(--text-secondary);">${room.location}</div>` : ''}
+                    </div>
+                    <div class="item-status">${statusText}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function showRoomDetail(id, name) {
+            currentRoomDetailId = id;
+            document.getElementById('detail-room-title').innerText = name;
+            showScreen('view-room-detail');
+            renderRoomTasks();
+        }
+
+        function hideRoomDetail() {
+            currentRoomDetailId = null;
+            switchTab('hogar');
+            refreshAll();
+        }
+
+        function memberById(id) {
+            return data.members.find(m => String(m.id) === String(id));
+        }
+
+        function taskSubtitle(task) {
+            const parts = [`Prioridad ${task.importance}`];
+            if (task.dueDate) parts.push(formatDateLabel(task.dueDate));
+            const rep = repeatSummaryLabel(task);
+            if (rep) parts.push(rep);
+            if (task.reminderTime) {
+                const lead = task.reminderLead || 0;
+                const leadTxt = lead === 0 ? '' : (lead === 7 ? ' (1 sem. antes)' : ` (${lead}d antes)`);
+                parts.push(`⏰ ${formatTimeDisplay(task.reminderTime)}${leadTxt}`);
+            }
+            if (task.duration) parts.push(`${task.duration} min`);
+            if (task.subtasks && task.subtasks.length) {
+                const done = task.subtasks.filter(s => s.done).length;
+                parts.push(`${done}/${task.subtasks.length} subtareas`);
+            }
+            if (task.link) parts.push('🔗 enlace');
+            return parts.join(' · ');
+        }
+
+        function taskItemHTML(task, room, showRoomName) {
+            const overdue = task.dueDate && task.dueDate < todayStr() && !task.completed;
+            const member = memberById(task.memberId);
+            const memberHTML = member ? `<div class="member-avatar" style="background-color:${member.color}">${member.name.charAt(0).toUpperCase()}</div>` : '';
+            const tagsHTML = (task.tags && task.tags.length) ? task.tags.slice(0, 2).map(tg => `<span class="tag-mini">${tg}</span>`).join('') : '';
+            const roomPrefix = showRoomName ? `${room ? room.name : 'Casa'} · ` : '';
+            const linkHTML = task.link ? `<span class="material-symbols-rounded" title="Abrir enlace" onclick="event.stopPropagation(); openTaskLink('${task.id}')" style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px;">link</span>` : '';
+            const snoozeHTML = (!task.completed && task.dueDate) ? `<span class="material-symbols-rounded" title="Posponer 1 día" onclick="event.stopPropagation(); snoozeTask(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px;">snooze</span>` : '';
+            return `
+                <div class="item-info" style="padding-left:${showRoomName ? '4px' : '0'};">
+                    <div class="item-title-row">
+                        <div class="item-title">${task.name}</div>
+                        ${task.favorite ? '<span class="material-symbols-rounded" style="font-size:15px; color:var(--accent-orange);">star</span>' : ''}
+                        ${tagsHTML}
+                    </div>
+                    <div style="font-size:12px; color:${overdue ? 'var(--danger-color)' : 'var(--text-secondary)'}">${roomPrefix}${taskSubtitle(task)}</div>
+                </div>
+                ${memberHTML}
+                ${linkHTML}
+                ${snoozeHTML}
+                <span class="material-symbols-rounded checkbox ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleTask(${task.id})" style="margin-left:10px;">
+                    ${task.completed ? 'check_circle' : 'radio_button_unchecked'}
+                </span>
+            `;
+        }
+        function openTaskLink(id) {
+            const task = data.tasks.find(t => String(t.id) === String(id));
+            if (task && task.link) {
+                let url = task.link.trim();
+                if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+                window.open(url, '_blank', 'noopener');
+            }
+        }
+        function snoozeTask(id) {
+            const task = data.tasks.find(t => t.id === id);
+            if (!task) return;
+            const base = (task.dueDate && task.dueDate > todayStr()) ? task.dueDate : todayStr();
+            task.dueDate = addDays(base, 1);
+            saveData();
+            refreshAll();
+        }
+
+        function renderRoomTasks() {
+            const container = document.getElementById('room-tasks-list');
+            container.innerHTML = '';
+            const filtered = sortTasks(data.tasks.filter(t => t.roomId == currentRoomDetailId), sortMode);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">checklist</span>No hay tareas aquí. Toca "+" para añadir una.</div>`;
+                return;
+            }
+
+            filtered.forEach(task => {
+                let impColor = task.importance === 'Alta' ? '#ff453a' : (task.importance === 'Media' ? '#ff9f0a' : '#32ade6');
+                const div = document.createElement('div');
+                div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
+                div.onclick = () => openEditTask(task.id);
+                div.innerHTML = `
+                    <div class="icon-container" style="background-color: ${task.iconColor || '#2c2c2e'};">
+                        <span class="material-symbols-rounded" style="color:${task.iconColor ? 'white' : impColor}">${task.icon}</span>
+                        ${task.favorite ? '<span class="material-symbols-rounded fav-star">star</span>' : ''}
+                    </div>
+                    ${taskItemHTML(task, null, false)}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        /* --- PANTALLA PROGRAMA --- */
+        function renderCalendarStrip() {
+            const container = document.getElementById('calendar-strip');
+            if (!container) return;
+            container.innerHTML = '';
+            const dayNamesMon = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
+            const dayNamesSun = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+            const dayNames = data.weekStart === 1 ? dayNamesMon : dayNamesSun;
+            const t = todayStr();
+            for (let i = -2; i <= 4; i++) {
+                const dateStr = addDays(t, i);
+                const d = new Date(dateStr + 'T00:00:00');
+                const hasTasks = data.tasks.some(x => x.dueDate === dateStr && !x.completed);
+                const div = document.createElement('div');
+                div.className = 'calendar-day' + (dateStr === selectedScheduleDate ? ' active' : '') + (hasTasks ? ' has-tasks' : '');
+                div.onclick = () => {
+                    selectedScheduleDate = dateStr;
+                    renderCalendarStrip();
+                    updateProgramaLabel();
+                    renderSchedule();
+                };
+                let dow = d.getDay(); // 0=domingo
+                const label = data.weekStart === 1 ? dayNamesMon[(dow + 6) % 7] : dayNamesSun[dow];
+                div.innerHTML = `<span class="day-name">${label}</span><span class="day-number">${d.getDate()}</span><span class="day-dot"></span>`;
+                container.appendChild(div);
+            }
+        }
+
+        function updateProgramaLabel() {
+            const el = document.getElementById('programa-date-label');
+            if (el) el.innerText = formatDateLabel(selectedScheduleDate);
+        }
+
+        function jumpToToday() {
+            selectedScheduleDate = todayStr();
+            renderCalendarStrip();
+            updateProgramaLabel();
+            renderSchedule();
+        }
+
+        function toggleScheduleSearch() {
+            const row = document.getElementById('schedule-search-row');
+            row.classList.toggle('hidden');
+            if (!row.classList.contains('hidden')) {
+                document.getElementById('schedule-search-input').focus();
+            } else {
+                scheduleSearchQuery = '';
+                document.getElementById('schedule-search-input').value = '';
+                renderSchedule();
+            }
+        }
+        function onScheduleSearchInput(v) {
+            scheduleSearchQuery = v.toLowerCase();
+            renderSchedule();
+        }
+
+        function toggleFavFilter(scope) {
+            if (scope === 'schedule') {
+                scheduleFavOnly = !scheduleFavOnly;
+                document.getElementById('fav-filter-schedule').classList.toggle('active', scheduleFavOnly);
+                renderSchedule();
+            } else {
+                allTasksFavOnly = !allTasksFavOnly;
+                document.getElementById('fav-filter-all').classList.toggle('active', allTasksFavOnly);
+                renderAllTasksView();
+            }
+        }
+
+        function cycleSortMode() {
+            const order = ['fecha', 'importancia', 'nombre'];
+            sortMode = order[(order.indexOf(sortMode) + 1) % order.length];
+            const label = document.getElementById('sort-pill-label');
+            if (label) label.innerText = sortLabels[sortMode];
+            renderSchedule();
+            renderRoomTasks();
+        }
+        function cycleAllTasksSort() {
+            const order = ['nombre', 'fecha', 'importancia', 'duracion'];
+            allTasksSortMode = order[(order.indexOf(allTasksSortMode) + 1) % order.length];
+            const label = document.getElementById('all-sort-pill-label');
+            if (label) label.innerText = allTasksSortLabels[allTasksSortMode];
+            renderAllTasksView();
+        }
+
+        function sortTasks(list, mode) {
+            const impRank = { Alta: 0, Media: 1, Baja: 2 };
+            const copy = [...list];
+            if (mode === 'importancia') copy.sort((a, b) => impRank[a.importance] - impRank[b.importance]);
+            else if (mode === 'nombre') copy.sort((a, b) => a.name.localeCompare(b.name));
+            else if (mode === 'duracion') copy.sort((a, b) => (b.duration || 0) - (a.duration || 0));
+            else copy.sort((a, b) => (a.dueDate || '9999-99-99').localeCompare(b.dueDate || '9999-99-99'));
+            return copy;
+        }
+
+        function renderSchedule() {
+            const container = document.getElementById('schedule-tasks-list');
+            if (!container) return;
+            container.innerHTML = '';
+            const t = todayStr();
+            let list;
+            if (selectedScheduleDate === t) {
+                const overdue = data.tasks.filter(x => x.dueDate && x.dueDate < t && !x.completed);
+                const dueToday = data.tasks.filter(x => x.dueDate === t);
+                list = [...overdue, ...dueToday];
+            } else {
+                list = data.tasks.filter(x => x.dueDate === selectedScheduleDate);
+            }
+            if (scheduleSearchQuery) list = list.filter(x => x.name.toLowerCase().includes(scheduleSearchQuery));
+            if (scheduleFavOnly) list = list.filter(x => x.favorite);
+            list = sortTasks(list, sortMode);
+
+            if (list.length === 0) {
+                container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">event_available</span>No hay tareas programadas para este día.</div>`;
+                return;
+            }
+
+            list.forEach(task => {
+                const room = data.rooms.find(r => r.id == task.roomId);
+                const div = document.createElement('div');
+                div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
+                div.onclick = () => openEditTask(task.id);
+                div.innerHTML = taskItemHTML(task, room, true);
+                container.appendChild(div);
+            });
+        }
+
+        /* --- TODAS LAS TAREAS --- */
+        function onAllTasksSearch(v) {
+            allTasksQuery = v.toLowerCase();
+            renderAllTasksView();
+        }
+        function setAllTasksRoomFilter(id) {
+            allTasksRoomFilter = id;
+            renderAllTasksView();
+        }
+        function setAllTasksMemberFilter(id) {
+            allTasksMemberFilter = id;
+            renderAllTasksView();
+        }
+        function setAllTasksTagFilter(tag) {
+            allTasksTagFilter = tag;
+            renderAllTasksView();
+        }
+        function renderAllTasksRoomChips() {
+            const c = document.getElementById('all-tasks-room-chips');
+            if (!c) return;
+            c.innerHTML = '';
+            const allChip = document.createElement('div');
+            allChip.className = 'chip' + (allTasksRoomFilter === 'all' ? ' active' : '');
+            allChip.innerText = 'Todas las habitaciones';
+            allChip.onclick = () => setAllTasksRoomFilter('all');
+            c.appendChild(allChip);
+            data.rooms.forEach(r => {
+                const chip = document.createElement('div');
+                chip.className = 'chip' + (String(allTasksRoomFilter) === String(r.id) ? ' active' : '');
+                chip.innerText = r.name;
+                chip.onclick = () => setAllTasksRoomFilter(r.id);
+                c.appendChild(chip);
+            });
+        }
+        function renderAllTasksMemberChips() {
+            const c = document.getElementById('all-tasks-member-chips');
+            if (!c) return;
+            c.innerHTML = '';
+            if (data.members.length === 0) { c.classList.add('hidden'); return; }
+            c.classList.remove('hidden');
+            const allChip = document.createElement('div');
+            allChip.className = 'chip' + (allTasksMemberFilter === 'all' ? ' active' : '');
+            allChip.innerText = 'Todos';
+            allChip.onclick = () => setAllTasksMemberFilter('all');
+            c.appendChild(allChip);
+            data.members.forEach(m => {
+                const chip = document.createElement('div');
+                chip.className = 'chip' + (String(allTasksMemberFilter) === String(m.id) ? ' active' : '');
+                chip.innerHTML = `<span class="material-symbols-rounded" style="color:${m.color}; font-size:14px;">person</span>${m.name}`;
+                chip.onclick = () => setAllTasksMemberFilter(m.id);
+                c.appendChild(chip);
+            });
+        }
+        function renderAllTasksTagChips() {
+            const c = document.getElementById('all-tasks-tag-chips');
+            if (!c) return;
+            const allTags = [...new Set(data.tasks.flatMap(t => t.tags || []))];
+            if (allTags.length === 0) { c.innerHTML = ''; c.classList.add('hidden'); return; }
+            c.classList.remove('hidden');
+            c.innerHTML = '';
+            const allChip = document.createElement('div');
+            allChip.className = 'chip' + (allTasksTagFilter === 'all' ? ' active' : '');
+            allChip.innerText = 'Todas las etiquetas';
+            allChip.onclick = () => setAllTasksTagFilter('all');
+            c.appendChild(allChip);
+            allTags.forEach(tg => {
+                const chip = document.createElement('div');
+                chip.className = 'chip' + (allTasksTagFilter === tg ? ' active' : '');
+                chip.innerText = tg;
+                chip.onclick = () => setAllTasksTagFilter(tg);
+                c.appendChild(chip);
+            });
+        }
+        function renderAllTasksView() {
+            const container = document.getElementById('all-tasks-list');
+            if (!container) return;
+            renderAllTasksRoomChips();
+            renderAllTasksMemberChips();
+            renderAllTasksTagChips();
+            let list = data.tasks.filter(t =>
+                (allTasksRoomFilter === 'all' || String(t.roomId) === String(allTasksRoomFilter)) &&
+                (allTasksMemberFilter === 'all' || String(t.memberId) === String(allTasksMemberFilter)) &&
+                (allTasksTagFilter === 'all' || (t.tags || []).includes(allTasksTagFilter)) &&
+                (!allTasksFavOnly || t.favorite) &&
+                t.name.toLowerCase().includes(allTasksQuery)
+            );
+            list = sortTasks(list, allTasksSortMode);
+            container.innerHTML = '';
+            if (list.length === 0) {
+                container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">search_off</span>No se encontraron tareas.</div>`;
+                return;
+            }
+            list.forEach(task => {
+                const room = data.rooms.find(r => r.id == task.roomId);
+                const div = document.createElement('div');
+                div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
+                div.onclick = () => openEditTask(task.id);
+                div.innerHTML = `
+                    <div class="icon-container" style="background-color: ${task.iconColor || (room ? room.color : '#333')}">
+                        <span class="material-symbols-rounded">${task.icon}</span>
+                        ${task.favorite ? '<span class="material-symbols-rounded fav-star">star</span>' : ''}
+                    </div>
+                    ${taskItemHTML(task, room, true)}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        /* --- MIEMBROS --- */
+        function updateSelectMembers() {
+            const select = document.getElementById('task-member-select');
+            if (!select) return;
+            const prevValue = select.value;
+            select.innerHTML = '<option value="">Sin asignar</option>';
+            data.members.forEach(m => {
+                select.innerHTML += `<option value="${m.id}">${m.name}</option>`;
+            });
+            if (prevValue) select.value = prevValue;
+        }
+        function renderMembersList() {
+            const container = document.getElementById('members-list');
+            if (!container) return;
+            container.innerHTML = '';
+            const section = document.getElementById('member-ranking-section');
+            if (section) section.classList.toggle('hidden', data.members.length === 0);
+            if (data.members.length === 0) {
+                container.innerHTML = `<div class="card" style="cursor:default;"><p style="font-size:13px; color:var(--text-secondary);">Añade a las personas de tu hogar para repartir tareas y ver estadísticas por persona.</p></div>`;
+                return;
+            }
+            data.members.forEach(m => {
+                const count = data.tasks.filter(t => t.memberId == m.id && !t.completed).length;
+                const div = document.createElement('div');
+                div.className = 'card member-row';
+                div.onclick = () => openEditMember(m.id);
+                div.innerHTML = `
+                    <div class="member-avatar" style="width:38px; height:38px; font-size:15px; background-color:${m.color}">${m.name.charAt(0).toUpperCase()}</div>
+                    <div class="item-info">
+                        <div class="item-title">${m.name}</div>
+                    </div>
+                    <div class="item-status">${count} PENDIENTES</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        function openCreateMember() {
+            editingMemberId = null;
+            document.getElementById('modal-member-title').innerText = 'Agregar miembro';
+            document.getElementById('member-delete-btn').classList.add('hidden');
+            document.getElementById('member-name').value = '';
+            selectedMemberColor = memberColors[data.members.length % memberColors.length];
+            renderColorPalette('member-color-palette', memberColors, selectedMemberColor, (c) => { selectedMemberColor = c; renderColorPalette('member-color-palette', memberColors, selectedMemberColor, arguments.callee); });
+            openModal('modal-member');
+        }
+        function openEditMember(id) {
+            const m = memberById(id);
+            if (!m) return;
+            editingMemberId = id;
+            document.getElementById('modal-member-title').innerText = 'Editar miembro';
+            document.getElementById('member-delete-btn').classList.remove('hidden');
+            document.getElementById('member-name').value = m.name;
+            selectedMemberColor = m.color;
+            renderColorPalette('member-color-palette', memberColors, selectedMemberColor, (c) => { selectedMemberColor = c; renderColorPalette('member-color-palette', memberColors, selectedMemberColor, arguments.callee); });
+            openModal('modal-member');
+        }
+        function saveMember() {
+            const name = document.getElementById('member-name').value.trim();
+            if (!name) { alert('Ponle un nombre al miembro.'); return; }
+            if (editingMemberId) {
+                const m = memberById(editingMemberId);
+                m.name = name;
+                m.color = selectedMemberColor;
+            } else {
+                data.members.push({ id: Date.now(), name, color: selectedMemberColor });
+            }
+            saveData();
+            closeModal('modal-member');
+            refreshAll();
+        }
+        function deleteMember() {
+            if (!editingMemberId) return;
+            if (!confirm('¿Eliminar este miembro? Las tareas asignadas quedarán sin asignar.')) return;
+            data.tasks.forEach(t => { if (t.memberId == editingMemberId) t.memberId = null; });
+            data.members = data.members.filter(m => m.id !== editingMemberId);
+            saveData();
+            closeModal('modal-member');
+            refreshAll();
+        }
+
+        /* --- HISTORIAL Y ESTADÍSTICAS --- */
+        function computeStats() {
+            const t = todayStr();
+            const in7 = addDays(t, -6);
+            const in30 = addDays(t, -29);
+            const completedLast7 = data.history.filter(h => h.completedAt.slice(0, 10) >= in7).length;
+            const completedLast30 = data.history.filter(h => h.completedAt.slice(0, 10) >= in30).length;
+            const completedToday = data.history.filter(h => h.completedAt.slice(0, 10) === t).length;
+            const totalCompleted = data.history.length;
+
+            const daysWithActivity = new Set(data.history.map(h => h.completedAt.slice(0, 10)));
+            let streak = 0;
+            let cursor = daysWithActivity.has(t) ? t : addDays(t, -1);
+            while (daysWithActivity.has(cursor)) {
+                streak++;
+                cursor = addDays(cursor, -1);
+            }
+
+            const totalTasks = data.tasks.length;
+            const completedNow = data.tasks.filter(x => x.completed).length;
+            const completionRate = totalTasks ? Math.round((completedNow / totalTasks) * 100) : 0;
+
+            return { completedToday, completedLast7, completedLast30, streak, totalCompleted, completionRate };
+        }
+
+        function renderWeekBarChart() {
+            const el = document.getElementById('week-bar-chart');
+            const totalEl = document.getElementById('chart-total-7');
+            if (!el) return;
+            const t = todayStr();
+            const days = [];
+            for (let i = 6; i >= 0; i--) days.push(addDays(t, -i));
+            const dayNames = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+            const counts = days.map(d => data.history.filter(h => h.completedAt.slice(0, 10) === d).length);
+            const max = Math.max(...counts, 1);
+            let total = 0;
+            el.innerHTML = counts.map((c, i) => {
+                total += c;
+                const d = new Date(days[i] + 'T00:00:00');
+                const heightPct = Math.round((c / max) * 100);
+                return `
+                    <div class="bar-col">
+                        <span class="bar-count">${c > 0 ? c : ''}</span>
+                        <div class="bar-fill" style="height:${Math.max(heightPct, 3)}%;"></div>
+                        <span class="bar-label">${dayNames[d.getDay()]}</span>
+                    </div>
+                `;
+            }).join('');
+            if (totalEl) totalEl.innerText = `${total} completadas`;
+        }
+
+        function renderRankings() {
+            const roomEl = document.getElementById('room-ranking-list');
+            if (roomEl) {
+                const counts = {};
+                data.history.forEach(h => { counts[h.roomName] = (counts[h.roomName] || 0) + 1; });
+                const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+                if (sorted.length === 0) {
+                    roomEl.innerHTML = `<p style="font-size:13px; color:var(--text-secondary); padding:6px 0;">Sin datos todavía.</p>`;
+                } else {
+                    roomEl.innerHTML = sorted.map(([name, count], i) => `
+                        <div class="ranking-row">
+                            <div class="ranking-rank">${i + 1}</div>
+                            <div class="ranking-name">${name}</div>
+                            <div class="ranking-count">${count}</div>
+                        </div>
+                    `).join('');
                 }
-            });
+            }
+            const memberEl = document.getElementById('member-ranking-list');
+            if (memberEl) {
+                const counts = {};
+                data.history.forEach(h => { if (h.memberName) counts[h.memberName] = (counts[h.memberName] || 0) + 1; });
+                const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+                if (sorted.length === 0) {
+                    memberEl.innerHTML = `<p style="font-size:13px; color:var(--text-secondary); padding:6px 0;">Sin datos todavía.</p>`;
+                } else {
+                    memberEl.innerHTML = sorted.map(([name, count], i) => `
+                        <div class="ranking-row">
+                            <div class="ranking-rank">${i + 1}</div>
+                            <div class="ranking-name">${name}</div>
+                            <div class="ranking-count">${count}</div>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
 
-            openBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const src = iframe.src;
-                if (src && src !== 'about:blank') window.open(src, '_blank');
-                else alert('No hay URL cargada.');
-            });
+        function renderBadges() {
+            const grid = document.getElementById('badge-grid');
+            if (!grid) return;
+            const s = computeStats();
+            grid.innerHTML = achievementDefs.map(a => {
+                let unlocked = false;
+                if (a.type === 'streak') unlocked = s.streak >= a.threshold;
+                else if (a.type === 'total') unlocked = s.totalCompleted >= a.threshold;
+                else if (a.type === 'members') unlocked = data.members.length >= a.threshold;
+                return `
+                    <div class="badge-item ${unlocked ? 'unlocked' : ''}">
+                        <div class="badge-icon-wrap"><span class="material-symbols-rounded">${a.icon}</span></div>
+                        <div class="badge-label">${a.label}</div>
+                    </div>
+                `;
+            }).join('');
+        }
 
-            closeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (card.dataset.minimized === 'true') {
-                    if (card._miniItem) {
-                        card._miniItem.remove();
-                        delete card._miniItem;
+        function renderHistoryView() {
+            const grid = document.getElementById('stats-grid');
+            const listEl = document.getElementById('history-list');
+            if (!grid || !listEl) return;
+            const s = computeStats();
+            grid.innerHTML = `
+                <div class="stat-item"><div class="stat-value">${s.completedToday}</div><div class="stat-label">HOY</div></div>
+                <div class="stat-item"><div class="stat-value">${s.completedLast7}</div><div class="stat-label">7 DÍAS</div></div>
+                <div class="stat-item"><div class="stat-value">${s.completedLast30}</div><div class="stat-label">30 DÍAS</div></div>
+                <div class="stat-item"><div class="stat-value">${s.streak}🔥</div><div class="stat-label">RACHA</div></div>
+                <div class="stat-item"><div class="stat-value">${s.completionRate}%</div><div class="stat-label">TASA</div></div>
+            `;
+            const sub = document.getElementById('summary-subtitle-text');
+            if (sub) sub.innerText = s.completedLast7 === 0 ? 'No se completaron tareas en 7 días' : `${s.completedLast7} tarea(s) completadas en 7 días`;
+
+            renderWeekBarChart();
+            renderRankings();
+            renderBadges();
+
+            listEl.innerHTML = '';
+            if (data.history.length === 0) {
+                listEl.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">history</span>Aún no has completado ninguna tarea.</div>`;
+                return;
+            }
+            const sorted = [...data.history].sort((a, b) => b.completedAt.localeCompare(a.completedAt)).slice(0, 150);
+            let lastDate = '';
+            sorted.forEach(h => {
+                const dateKey = h.completedAt.slice(0, 10);
+                if (dateKey !== lastDate) {
+                    lastDate = dateKey;
+                    const label = document.createElement('div');
+                    label.className = 'history-date-label';
+                    label.innerText = formatDateLabel(dateKey);
+                    listEl.appendChild(label);
+                }
+                const time = new Date(h.completedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const div = document.createElement('div');
+                div.className = 'task-item';
+                div.innerHTML = `
+                    <div class="icon-container" style="background-color: #2c2c2e;">
+                        <span class="material-symbols-rounded" style="color:var(--accent-color)">check_circle</span>
+                    </div>
+                    <div class="item-info">
+                        <div class="item-title">${h.taskName}</div>
+                        <div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''} · ${time}</div>
+                    </div>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        /* --- COMPLETAR TAREA (con soporte de repetición) --- */
+        function toggleTask(id) {
+            const task = data.tasks.find(t => t.id === id);
+            if (!task) return;
+
+            if (!task.completed) {
+                task.completed = true;
+                const now = new Date().toISOString();
+                const room = data.rooms.find(r => r.id == task.roomId);
+                const member = memberById(task.memberId);
+                data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedAt: now });
+                task.lastCompletedAt = now;
+                saveData();
+                refreshAll();
+
+                if (task.repeatType && task.repeatType !== 'none') {
+                    let stop = false;
+                    if (task.repeatEndType === 'count') {
+                        if (task.repeatEndCount === null || task.repeatEndCount === undefined) task.repeatEndCount = 0;
+                        if (task.repeatEndCount <= 0) stop = true;
                     }
-                    if (minimizedBar.children.length === 0) minimizedBar.style.display = 'none';
+                    if (!stop) {
+                        const base = (task.repeatMode === 'fixed' && task.dueDate) ? task.dueDate : todayStr();
+                        const next = computeNextDueDate(task, base);
+                        if (!next) stop = true;
+                        if (!stop && task.repeatEndType === 'until' && task.repeatEndDate && next > task.repeatEndDate) stop = true;
+                        if (!stop) {
+                            setTimeout(() => {
+                                task.completed = false;
+                                task.dueDate = next;
+                                task.lastNotifiedKey = null;
+                                if (task.repeatEndType === 'count') task.repeatEndCount = Math.max(0, (task.repeatEndCount || 0) - 1);
+                                if (task.subtasks) task.subtasks.forEach(s => s.done = false);
+                                saveData();
+                                refreshAll();
+                            }, 600);
+                        }
+                    }
                 }
-                card.remove();
-                updateEmptyState();
+            } else {
+                task.completed = false;
+                const idx = data.history.findIndex(h => h.taskId === task.id);
+                if (idx > -1) data.history.splice(idx, 1);
+                saveData();
+                refreshAll();
+            }
+        }
+
+        /* --- MODALES Y AGREGADO --- */
+        function openModal(id) {
+            document.getElementById(id).style.display = 'flex';
+        }
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function updateSelectRooms() {
+            const select = document.getElementById('task-room-select');
+            const prevValue = select.value;
+            select.innerHTML = '';
+            data.rooms.forEach(r => {
+                select.innerHTML += `<option value="${r.id}">${r.name}</option>`;
             });
+            if (prevValue) select.value = prevValue;
+        }
 
-            iframe.addEventListener('dblclick', () => {
-                const current = iframe.src;
-                const newUrl = prompt('Editar URL del stream:', current === 'about:blank' ? '' : current);
-                if (newUrl !== null && newUrl.trim() !== '') {
-                    let final = newUrl.trim();
-                    if (!/^https?:\/\//i.test(final)) final = 'https://' + final;
-                    iframe.src = final;
-                    placeholder.style.display = 'none';
-                } else if (newUrl === '') {
-                    iframe.src = 'about:blank';
-                    placeholder.style.display = 'flex';
-                }
+        function renderColorPalette(containerId, colors, selected, onPick) {
+            const el = document.getElementById(containerId);
+            if (!el) return;
+            el.innerHTML = '';
+            colors.forEach(c => {
+                const dot = document.createElement('div');
+                dot.className = 'color-dot small' + (selected === c ? ' selected' : '');
+                dot.style.backgroundColor = c;
+                dot.onclick = () => onPick(c);
+                el.appendChild(dot);
             });
-
-            // ---- Drag reorder ----
-            let isDragging = false;
-            let ghostCard = null;
-            let dragOffsetX = 0, dragOffsetY = 0;
-
-            function startDrag(e) {
-                if (e.target.closest('.controls')) return;
-                const touch = e.touches ? e.touches[0] : e;
-                isDragging = true;
-                const rect = card.getBoundingClientRect();
-                dragOffsetX = touch.clientX - rect.left;
-                dragOffsetY = touch.clientY - rect.top;
-                ghostCard = card.cloneNode(true);
-                ghostCard.style.position = 'fixed';
-                ghostCard.style.width = card.offsetWidth + 'px';
-                ghostCard.style.pointerEvents = 'none';
-                ghostCard.style.opacity = '0.7';
-                ghostCard.style.zIndex = '9999';
-                ghostCard.style.transform = 'scale(0.98)';
-                ghostCard.style.borderColor = '#fbbd14';
-                document.body.appendChild(ghostCard);
-                card.classList.add('dragging');
-
-                document.addEventListener('pointermove', onDrag);
-                document.addEventListener('pointerup', endDrag);
-                document.addEventListener('touchmove', onDragTouch, { passive: false });
-                document.addEventListener('touchend', endDragTouch);
-            }
-
-            function onDrag(e) {
-                if (!isDragging) return;
-                ghostCard.style.left = (e.clientX - dragOffsetX) + 'px';
-                ghostCard.style.top = (e.clientY - dragOffsetY) + 'px';
-                const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
-                const cardBelow = elemBelow ? elemBelow.closest('.card') : null;
-                document.querySelectorAll('.card.drag-over').forEach(c => c.classList.remove('drag-over'));
-                if (cardBelow && cardBelow !== card && cardBelow.dataset.minimized !== 'true') {
-                    cardBelow.classList.add('drag-over');
-                }
-            }
-
-            function onDragTouch(e) {
-                e.preventDefault();
-                if (!isDragging) return;
-                const touch = e.touches[0];
-                ghostCard.style.left = (touch.clientX - dragOffsetX) + 'px';
-                ghostCard.style.top = (touch.clientY - dragOffsetY) + 'px';
-                const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-                const cardBelow = elemBelow ? elemBelow.closest('.card') : null;
-                document.querySelectorAll('.card.drag-over').forEach(c => c.classList.remove('drag-over'));
-                if (cardBelow && cardBelow !== card && cardBelow.dataset.minimized !== 'true') {
-                    cardBelow.classList.add('drag-over');
-                }
-            }
-
-            function endDrag(e) {
-                if (!isDragging) return;
-                isDragging = false;
-                card.classList.remove('dragging');
-                if (ghostCard) { ghostCard.remove(); ghostCard = null; }
-                const touch = e.changedTouches ? e.changedTouches[0] : e;
-                const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-                const cardBelow = elemBelow ? elemBelow.closest('.card') : null;
-                document.querySelectorAll('.card.drag-over').forEach(c => c.classList.remove('drag-over'));
-                if (cardBelow && cardBelow !== card && cardBelow.dataset.minimized !== 'true') {
-                    const rect = cardBelow.getBoundingClientRect();
-                    const midY = rect.top + rect.height / 2;
-                    if (touch.clientY < midY) dashboard.insertBefore(card, cardBelow);
-                    else dashboard.insertBefore(card, cardBelow.nextSibling);
-                }
-                document.removeEventListener('pointermove', onDrag);
-                document.removeEventListener('pointerup', endDrag);
-                document.removeEventListener('touchmove', onDragTouch);
-                document.removeEventListener('touchend', endDragTouch);
-            }
-
-            function endDragTouch(e) {
-                if (!isDragging) return;
-                isDragging = false;
-                card.classList.remove('dragging');
-                if (ghostCard) { ghostCard.remove(); ghostCard = null; }
-                const touch = e.changedTouches[0];
-                const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-                const cardBelow = elemBelow ? elemBelow.closest('.card') : null;
-                document.querySelectorAll('.card.drag-over').forEach(c => c.classList.remove('drag-over'));
-                if (cardBelow && cardBelow !== card && cardBelow.dataset.minimized !== 'true') {
-                    const rect = cardBelow.getBoundingClientRect();
-                    const midY = rect.top + rect.height / 2;
-                    if (touch.clientY < midY) dashboard.insertBefore(card, cardBelow);
-                    else dashboard.insertBefore(card, cardBelow.nextSibling);
-                }
-                document.removeEventListener('pointermove', onDrag);
-                document.removeEventListener('pointerup', endDrag);
-                document.removeEventListener('touchmove', onDragTouch);
-                document.removeEventListener('touchend', endDragTouch);
-            }
-
-            header.addEventListener('pointerdown', startDrag);
-            header.addEventListener('touchstart', (e) => {
-                if (e.target.closest('.controls')) return;
-                e.preventDefault();
-                startDrag(e);
-            }, { passive: false });
-
-            if (url && url !== 'about:blank') {
-                addHistoryEntry(url, label || 'Stream');
-            }
-
-            return card;
         }
 
-        // ---- Añadir stream ----
-        function addStreamFromPrompt() {
-            const url = prompt('Introduce la URL del stream:');
-            if (url !== null && url.trim() !== '') {
-                let finalUrl = url.trim();
-                if (!/^https?:\/\//i.test(finalUrl)) finalUrl = 'https://' + finalUrl;
-                const label = prompt('Etiqueta (opcional):') || 'Stream';
-                const card = createCard(finalUrl, label);
-                dashboard.appendChild(card);
-                updateEmptyState();
-            }
-        }
-
-        // ---- Eventos ----
-        fabAddBtn.addEventListener('click', addStreamFromPrompt);
-        emptyAddBtn.addEventListener('click', addStreamFromPrompt);
-
-        historyToggle.addEventListener('click', () => {
-            historyPanel.classList.toggle('open');
-        });
-
-        clearHistoryBtn.addEventListener('click', () => {
-            if (confirm('¿Eliminar todo el historial?')) {
-                history = [];
-                saveHistory();
-            }
-        });
-
-        document.addEventListener('click', (e) => {
-            if (historyPanel.classList.contains('open')) {
-                if (!historyPanel.contains(e.target) && e.target !== historyToggle && !historyToggle.contains(e.target)) {
-                    historyPanel.classList.remove('open');
+        function renderIconGrid(id, type, iconArr) {
+            const grid = document.getElementById(id);
+            if (!grid) return;
+            grid.innerHTML = '';
+            iconArr.forEach(icon => {
+                const item = document.createElement('div');
+                item.className = 'icon-select';
+                if ((type === 'room' && icon === selectedRoomIcon) || (type === 'task' && icon === selectedTaskIcon)) {
+                    item.classList.add('active');
                 }
-            }
-        });
-
-        // ---- Inicialización ----
-        loadHistory();
-        updateEmptyState();
-
-        const params = new URLSearchParams(window.location.search);
-        const preUrl = params.get('url');
-        if (preUrl) {
-            setTimeout(() => {
-                const card = createCard(preUrl, 'Precargado');
-                dashboard.appendChild(card);
-                updateEmptyState();
-            }, 300);
+                item.innerHTML = `<span class="material-symbols-rounded">${icon}</span>`;
+                item.onclick = () => {
+                    Array.from(grid.children).forEach(c => c.classList.remove('active'));
+                    item.classList.add('active');
+                    if (type === 'room') selectedRoomIcon = icon;
+                    if (type === 'task') selectedTaskIcon = icon;
+                };
+                grid.appendChild(item);
+            });
         }
 
-        console.log('✅ Dashboard PWA con historial persistente.');
-    })();
-</script>
+        function renderTaskIconCats() {
+            const row = document.getElementById('task-icon-cats');
+            if (!row) return;
+            row.innerHTML = '';
+            Object.keys(iconCategories).forEach(cat => {
+                const chip = document.createElement('div');
+                chip.className = 'icon-cat-chip' + (selectedTaskCategory === cat ? ' active' : '');
+                chip.innerText = cat;
+                chip.onclick = () => {
+                    selectedTaskCategory = cat;
+                    renderTaskIconCats();
+                    renderIconGrid('task-icon-grid', 'task', iconCategories[cat]);
+                };
+                row.appendChild(chip);
+            });
+        }
+
+        /* --- CREAR / EDITAR / ELIMINAR HABITACIÓN --- */
+        function openCreateRoom() {
+            editingRoomId = null;
+            document.getElementById('modal-room-title').innerText = 'Crear habitación';
+            document.getElementById('room-delete-btn').classList.add('hidden');
+            document.getElementById('room-name').value = '';
+            document.getElementById('room-location').value = '';
+            selectedRoomIcon = 'bathtub';
+            selectedRoomColor = roomColors[data.rooms.length % roomColors.length];
+            renderIconGrid('room-icon-grid', 'room', allIconsFlat);
+            renderColorPalette('room-color-palette', roomColors, selectedRoomColor, (c) => { selectedRoomColor = c; renderColorPalette('room-color-palette', roomColors, selectedRoomColor, arguments.callee); });
+            openModal('modal-room');
+        }
+        function openEditRoom(id) {
+            const r = data.rooms.find(x => x.id === id);
+            if (!r) return;
+            editingRoomId = id;
+            document.getElementById('modal-room-title').innerText = 'Editar habitación';
+            document.getElementById('room-delete-btn').classList.remove('hidden');
+            document.getElementById('room-name').value = r.name;
+            document.getElementById('room-location').value = r.location || '';
+            selectedRoomIcon = r.icon;
+            selectedRoomColor = r.color;
+            renderIconGrid('room-icon-grid', 'room', allIconsFlat);
+            renderColorPalette('room-color-palette', roomColors, selectedRoomColor, (c) => { selectedRoomColor = c; renderColorPalette('room-color-palette', roomColors, selectedRoomColor, arguments.callee); });
+            openModal('modal-room');
+        }
+        function saveRoom() {
+            const name = document.getElementById('room-name').value.trim();
+            const location = document.getElementById('room-location').value.trim();
+            if (!name) { alert('Ponle un nombre a la habitación.'); return; }
+            if (editingRoomId) {
+                const r = data.rooms.find(x => x.id === editingRoomId);
+                r.name = name;
+                r.icon = selectedRoomIcon;
+                r.color = selectedRoomColor;
+                r.location = location;
+                if (currentRoomDetailId === editingRoomId) document.getElementById('detail-room-title').innerText = name;
+            } else {
+                data.rooms.push({
+                    id: Date.now(),
+                    name: name,
+                    icon: selectedRoomIcon,
+                    color: selectedRoomColor,
+                    location: location
+                });
+            }
+            saveData();
+            closeModal('modal-room');
+            refreshAll();
+        }
+        function deleteRoom() {
+            if (!editingRoomId) return;
+            const count = data.tasks.filter(t => t.roomId == editingRoomId).length;
+            const msg = count > 0
+                ? `Esta habitación tiene ${count} tarea(s). Se eliminarán también. ¿Continuar?`
+                : '¿Eliminar esta habitación?';
+            if (!confirm(msg)) return;
+            data.tasks = data.tasks.filter(t => t.roomId != editingRoomId);
+            data.rooms = data.rooms.filter(r => r.id !== editingRoomId);
+            saveData();
+            closeModal('modal-room');
+            if (currentRoomDetailId === editingRoomId) {
+                currentRoomDetailId = null;
+                switchTab('hogar');
+            }
+            refreshAll();
+        }
+
+        /* --- CREAR / EDITAR / ELIMINAR TAREA --- */
+        function updateRepeatUI() {
+            const v = document.getElementById('task-repeat-type').value;
+            const repeats = v !== 'none';
+            document.getElementById('repeat-weekdays-row').classList.toggle('hidden', v !== 'customDays');
+            document.getElementById('repeat-custom-row').classList.toggle('hidden', v !== 'custom');
+            document.getElementById('repeat-mode-row').classList.toggle('hidden', !repeats);
+            document.getElementById('repeat-end-type-row').classList.toggle('hidden', !repeats);
+            if (v === 'customDays') renderRepeatWeekdayPicker();
+            const endType = document.getElementById('task-repeat-end-type').value;
+            document.getElementById('repeat-end-date-row').classList.toggle('hidden', !repeats || endType !== 'until');
+            document.getElementById('repeat-end-count-row').classList.toggle('hidden', !repeats || endType !== 'count');
+        }
+        function renderRepeatWeekdayPicker() {
+            const el = document.getElementById('repeat-weekday-picker');
+            el.innerHTML = '';
+            weekdayDefs.forEach(({ day, label }) => {
+                const chip = document.createElement('div');
+                chip.className = 'weekday-chip' + (editingRepeatWeekDays.includes(day) ? ' active' : '');
+                chip.innerText = label;
+                chip.onclick = () => toggleRepeatWeekday(day);
+                el.appendChild(chip);
+            });
+        }
+        function toggleRepeatWeekday(day) {
+            const idx = editingRepeatWeekDays.indexOf(day);
+            if (idx > -1) editingRepeatWeekDays.splice(idx, 1);
+            else editingRepeatWeekDays.push(day);
+            renderRepeatWeekdayPicker();
+        }
+        function setRepeatMode(mode) {
+            renderSegmented('repeat-mode-segmented', mode);
+        }
+        function getRepeatMode() {
+            const active = document.querySelector('#repeat-mode-segmented button.active');
+            return active ? active.getAttribute('data-v') : 'afterComplete';
+        }
+
+        function toggleFavoriteEditing() {
+            editingFavorite = !editingFavorite;
+            const btn = document.getElementById('task-fav-btn');
+            btn.innerHTML = `<span class="material-symbols-rounded" style="color:${editingFavorite ? 'var(--accent-orange)' : 'var(--accent-color)'}">${editingFavorite ? 'star' : 'star_border'}</span>`;
+        }
+
+        function renderSubtaskList() {
+            const el = document.getElementById('subtask-list');
+            el.innerHTML = '';
+            editingSubtasks.forEach((s) => {
+                const row = document.createElement('div');
+                row.className = 'subtask-row';
+                row.innerHTML = `
+                    <span class="material-symbols-rounded checkbox ${s.done ? 'checked' : ''}" style="font-size:22px; margin-left:0;" onclick="toggleSubtaskEditing('${s.id}')">${s.done ? 'check_circle' : 'radio_button_unchecked'}</span>
+                    <input type="text" value="${s.text.replace(/"/g, '&quot;')}" onchange="renameSubtaskEditing('${s.id}', this.value)">
+                    <span class="material-symbols-rounded" style="color:var(--danger-color); font-size:20px; cursor:pointer;" onclick="removeSubtaskEditing('${s.id}')">close</span>
+                `;
+                el.appendChild(row);
+            });
+        }
+        function addSubtaskFromInput() {
+            const input = document.getElementById('subtask-input');
+            const text = input.value.trim();
+            if (!text) return;
+            editingSubtasks.push({ id: String(Date.now() + Math.random()), text, done: false });
+            input.value = '';
+            renderSubtaskList();
+        }
+        function toggleSubtaskEditing(id) {
+            const s = editingSubtasks.find(x => x.id === id);
+            if (s) s.done = !s.done;
+            renderSubtaskList();
+        }
+        function renameSubtaskEditing(id, val) {
+            const s = editingSubtasks.find(x => x.id === id);
+            if (s) s.text = val;
+        }
+        function removeSubtaskEditing(id) {
+            editingSubtasks = editingSubtasks.filter(x => x.id !== id);
+            renderSubtaskList();
+        }
+
+        function openCreateTask(presetRoomId) {
+            if (data.rooms.length === 0) {
+                alert('Primero crea una habitación para poder añadir tareas.');
+                openCreateRoom();
+                return;
+            }
+            editingTaskId = null;
+            document.getElementById('modal-task-title').innerText = 'Crear nueva tarea';
+            document.getElementById('task-delete-btn').classList.add('hidden');
+            document.getElementById('task-duplicate-btn').classList.add('hidden');
+            document.getElementById('task-name').value = '';
+            document.getElementById('task-notes').value = '';
+            document.getElementById('task-tags').value = '';
+            document.getElementById('task-link').value = '';
+            document.getElementById('task-due-date').value = '';
+            document.getElementById('task-importance').value = 'Media';
+            document.getElementById('task-repeat-type').value = 'none';
+            document.getElementById('task-repeat-interval').value = '';
+            document.getElementById('task-repeat-unit').value = 'day';
+            document.getElementById('task-repeat-end-type').value = 'never';
+            document.getElementById('task-repeat-end-date').value = '';
+            document.getElementById('task-repeat-end-count').value = '';
+            document.getElementById('task-reminder-time').value = '';
+            document.getElementById('task-reminder-lead').value = String(data.defaultReminderLead || 0);
+            document.getElementById('task-duration').value = '';
+            editingRepeatWeekDays = [];
+            setRepeatMode('afterComplete');
+            updateRepeatUI();
+            selectedTaskIcon = 'mop';
+            selectedTaskIconColor = null;
+            selectedTaskCategory = 'Limpieza';
+            editingFavorite = false;
+            editingSubtasks = [];
+            document.getElementById('task-fav-btn').innerHTML = '<span class="material-symbols-rounded">star_border</span>';
+            renderTaskIconCats();
+            renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
+            renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, (c) => { selectedTaskIconColor = (selectedTaskIconColor === c) ? null : c; renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, arguments.callee); });
+            renderSubtaskList();
+            updateSelectRooms();
+            updateSelectMembers();
+            if (presetRoomId) document.getElementById('task-room-select').value = presetRoomId;
+            openModal('modal-task');
+        }
+
+        function openEditTask(id) {
+            const t = data.tasks.find(x => x.id === id);
+            if (!t) return;
+            editingTaskId = id;
+            document.getElementById('modal-task-title').innerText = 'Editar tarea';
+            document.getElementById('task-delete-btn').classList.remove('hidden');
+            document.getElementById('task-duplicate-btn').classList.remove('hidden');
+            document.getElementById('task-name').value = t.name;
+            document.getElementById('task-notes').value = t.notes || '';
+            document.getElementById('task-tags').value = (t.tags || []).join(', ');
+            document.getElementById('task-link').value = t.link || '';
+            document.getElementById('task-due-date').value = t.dueDate || '';
+            document.getElementById('task-importance').value = t.importance;
+            document.getElementById('task-reminder-time').value = t.reminderTime || '';
+            document.getElementById('task-reminder-lead').value = String(t.reminderLead || 0);
+            document.getElementById('task-duration').value = t.duration || '';
+            updateSelectRooms();
+            updateSelectMembers();
+            document.getElementById('task-room-select').value = t.roomId;
+            document.getElementById('task-member-select').value = t.memberId || '';
+            document.getElementById('task-repeat-type').value = t.repeatType || 'none';
+            document.getElementById('task-repeat-interval').value = t.repeatInterval || '';
+            document.getElementById('task-repeat-unit').value = t.repeatUnit || 'day';
+            document.getElementById('task-repeat-end-type').value = t.repeatEndType || 'never';
+            document.getElementById('task-repeat-end-date').value = t.repeatEndDate || '';
+            document.getElementById('task-repeat-end-count').value = t.repeatEndCount || '';
+            editingRepeatWeekDays = (t.repeatWeekDays || []).slice();
+            setRepeatMode(t.repeatMode || 'afterComplete');
+            updateRepeatUI();
+            selectedTaskIcon = t.icon;
+            selectedTaskIconColor = t.iconColor || null;
+            editingFavorite = !!t.favorite;
+            editingSubtasks = (t.subtasks || []).map(s => ({ ...s }));
+            document.getElementById('task-fav-btn').innerHTML = `<span class="material-symbols-rounded" style="color:${editingFavorite ? 'var(--accent-orange)' : 'var(--accent-color)'}">${editingFavorite ? 'star' : 'star_border'}</span>`;
+            let foundCat = Object.keys(iconCategories).find(cat => iconCategories[cat].includes(t.icon)) || 'Limpieza';
+            selectedTaskCategory = foundCat;
+            renderTaskIconCats();
+            renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
+            renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, (c) => { selectedTaskIconColor = (selectedTaskIconColor === c) ? null : c; renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, arguments.callee); });
+            renderSubtaskList();
+            openModal('modal-task');
+        }
+
+        function saveTask() {
+            const name = document.getElementById('task-name').value.trim();
+            if (!name) { alert('Ponle un nombre a la tarea.'); return; }
+            const roomId = document.getElementById('task-room-select').value;
+            const memberId = document.getElementById('task-member-select').value || null;
+            const imp = document.getElementById('task-importance').value;
+            const notes = document.getElementById('task-notes').value.trim();
+            const tags = document.getElementById('task-tags').value.split(',').map(s => s.trim()).filter(Boolean);
+            const link = document.getElementById('task-link').value.trim() || null;
+            const reminderTime = document.getElementById('task-reminder-time').value || null;
+            const reminderLead = parseInt(document.getElementById('task-reminder-lead').value, 10) || 0;
+            const duration = parseInt(document.getElementById('task-duration').value, 10) || null;
+            let dueDate = document.getElementById('task-due-date').value || null;
+
+            const repeatType = document.getElementById('task-repeat-type').value;
+            const repeatInterval = Math.max(1, parseInt(document.getElementById('task-repeat-interval').value, 10) || 1);
+            const repeatUnit = document.getElementById('task-repeat-unit').value;
+            const repeatWeekDays = editingRepeatWeekDays.slice();
+            const repeatMode = getRepeatMode();
+            const repeatEndType = repeatType === 'none' ? 'never' : document.getElementById('task-repeat-end-type').value;
+            const repeatEndDate = (repeatEndType === 'until') ? (document.getElementById('task-repeat-end-date').value || null) : null;
+            const repeatEndCountInput = parseInt(document.getElementById('task-repeat-end-count').value, 10);
+            const repeatEndCount = (repeatEndType === 'count') ? ((repeatEndCountInput > 0 ? repeatEndCountInput : 1) - 1) : null;
+
+            // Validaciones de coherencia: si hay repetición pero no hay fecha de vencimiento, se toma hoy como punto de partida
+            if (repeatType !== 'none' && !dueDate) dueDate = todayStr();
+            // Si el tipo es "días concretos" pero no se eligió ningún día, se usa el día de la semana de la fecha de vencimiento
+            if (repeatType === 'customDays' && repeatWeekDays.length === 0 && dueDate) {
+                repeatWeekDays.push(new Date(dueDate + 'T00:00:00').getDay());
+            }
+            // La fecha de fin de repetición no puede ser anterior al vencimiento
+            if (repeatEndType === 'until' && repeatEndDate && dueDate && repeatEndDate < dueDate) {
+                alert('La fecha en la que termina la repetición no puede ser anterior al vencimiento. Ajusta la fecha.');
+                return;
+            }
+
+            const payload = {
+                roomId, name, notes, importance: imp, icon: selectedTaskIcon, iconColor: selectedTaskIconColor,
+                dueDate, tags, memberId, favorite: editingFavorite, duration, reminderTime, reminderLead, link,
+                subtasks: editingSubtasks,
+                repeatType, repeatInterval, repeatUnit, repeatWeekDays, repeatMode,
+                repeatEndType, repeatEndDate, repeatEndCount,
+                // frequencyDays se mantiene en null: el sistema de repetición avanzado lo sustituye por completo
+                frequencyDays: null
+            };
+
+            if (editingTaskId) {
+                const t = data.tasks.find(x => x.id === editingTaskId);
+                Object.assign(t, payload);
+                t.lastNotifiedKey = null;
+            } else {
+                data.tasks.push({
+                    id: Date.now(),
+                    completed: false,
+                    lastCompletedAt: null,
+                    createdAt: new Date().toISOString(),
+                    lastNotifiedKey: null,
+                    ...payload
+                });
+            }
+            saveData();
+            closeModal('modal-task');
+            refreshAll();
+        }
+
+        function duplicateTask() {
+            if (!editingTaskId) return;
+            const original = data.tasks.find(t => t.id === editingTaskId);
+            if (!original) return;
+            const copy = {
+                ...original,
+                id: Date.now(),
+                name: original.name + ' (copia)',
+                completed: false,
+                lastCompletedAt: null,
+                createdAt: new Date().toISOString(),
+                lastNotifiedKey: null,
+                subtasks: (original.subtasks || []).map(s => ({ ...s, done: false })),
+                tags: (original.tags || []).slice(),
+                repeatWeekDays: (original.repeatWeekDays || []).slice()
+            };
+            data.tasks.push(copy);
+            saveData();
+            closeModal('modal-task');
+            refreshAll();
+        }
+
+        function deleteTask() {
+            if (!editingTaskId) return;
+            if (!confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.')) return;
+            data.tasks = data.tasks.filter(t => t.id !== editingTaskId);
+            saveData();
+            closeModal('modal-task');
+            refreshAll();
+        }
+
+        /* --- AJUSTES: nombre del hogar, copia de seguridad, reset --- */
+        function updateHomeName(v) {
+            data.homeName = v || 'Casa';
+            saveData();
+            document.getElementById('home-title-text').innerText = data.homeName;
+        }
+
+        function exportData() {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mi-hogar-backup.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (!parsed.rooms || !parsed.tasks) throw new Error('formato inválido');
+                    if (!confirm('Esto reemplazará todos tus datos actuales. ¿Continuar?')) return;
+                    data = Object.assign(defaultData(), parsed);
+                    data.tasks = data.tasks.map(t => ({
+                        notes: '', dueDate: null, frequencyDays: null, lastCompletedAt: null, createdAt: new Date().toISOString(),
+                        tags: [], subtasks: [], memberId: null, favorite: false, duration: null, reminderTime: null, iconColor: null,
+                        reminderLead: 0, link: null, lastNotifiedKey: null,
+                        repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
+                        repeatMode: 'afterComplete', repeatEndType: 'never', repeatEndDate: null, repeatEndCount: null,
+                        ...t
+                    }));
+                    data.tasks.forEach(t => {
+                        if ((!t.repeatType || t.repeatType === 'none') && t.frequencyDays) {
+                            if (t.frequencyDays === 1) t.repeatType = 'daily';
+                            else if (t.frequencyDays === 7) t.repeatType = 'weekly';
+                            else if (t.frequencyDays === 14) t.repeatType = 'biweekly';
+                            else if (t.frequencyDays === 30) t.repeatType = 'monthly';
+                            else { t.repeatType = 'custom'; t.repeatUnit = 'day'; t.repeatInterval = t.frequencyDays; }
+                        }
+                        if (!Array.isArray(t.repeatWeekDays)) t.repeatWeekDays = [];
+                    });
+                    data.rooms = data.rooms.map(r => ({ location: '', ...r }));
+                    data.members = data.members || [];
+                    data.dismissedBanners = data.dismissedBanners || [];
+                    data.notificationsEnabled = data.notificationsEnabled || false;
+                    data.defaultReminderLead = (data.defaultReminderLead === undefined || data.defaultReminderLead === null) ? 0 : data.defaultReminderLead;
+                    data.timeFormat = data.timeFormat || '24h';
+                    data.startView = data.startView || 'hogar';
+                    data.listDensity = data.listDensity || 'comfortable';
+                    saveData();
+                    changeAccent(data.accent, false);
+                    applyTheme(data.theme, false);
+                    applyFontSize(data.fontSize, false);
+                    document.getElementById('home-name-input').value = data.homeName;
+                    document.getElementById('home-title-text').innerText = data.homeName;
+                    renderSegmented('hemisphere-segmented', data.hemisphere);
+                    renderSegmented('weekstart-segmented', String(data.weekStart));
+                    updateToggle('seasonal-toggle', data.seasonalBannerEnabled);
+                    updateToggle('sound-toggle', data.soundEnabled);
+                    updateToggle('notifications-toggle', data.notificationsEnabled);
+                    renderSegmented('timeformat-segmented', data.timeFormat);
+                    renderSegmented('startview-segmented', data.startView);
+                    renderSegmented('density-segmented', data.listDensity);
+                    document.getElementById('default-reminder-lead-select').value = String(data.defaultReminderLead);
+                    document.body.classList.toggle('density-compact', data.listDensity === 'compact');
+                    renderCalendarStrip();
+                    renderSeasonBanner();
+                    refreshAll();
+                    alert('Datos importados correctamente.');
+                } catch (err) {
+                    alert('El archivo no es válido.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function resetData() {
+            if (!confirm('Esto eliminará todas tus habitaciones, tareas e historial. ¿Continuar?')) return;
+            if (notificationCheckInterval) clearInterval(notificationCheckInterval);
+            localStorage.removeItem('hogarMasterData');
+            location.reload();
+        }
+    </script>
 </body>
 </html>
