@@ -1441,16 +1441,18 @@
         const memberColors = ['#4ade80', '#32ade6', '#ff9f0a', '#ff453a', '#bf5af2', '#ffd60a', '#5ac8b8', '#ff6482'];
 
         const iconCategories = {
-            'Limpieza': ['mop', 'cleaning_services', 'vacuum', 'local_laundry_service', 'dry_cleaning', 'iron', 'water_drop', 'sanitizer', 'soap', 'delete', 'recycling'],
-            'Cocina': ['kitchen', 'countertops', 'microwave', 'blender', 'coffee_maker', 'dining', 'local_pizza', 'egg', 'set_meal', 'icecream'],
-            'Exterior': ['yard', 'grass', 'local_florist', 'pool', 'garage', 'solar_power', 'park', 'directions_car'],
-            'Mantenimiento': ['handyman', 'build', 'plumbing', 'electrical_services', 'construction', 'home_repair_service', 'hardware'],
-            'Mascotas': ['pets', 'cruelty_free'],
+            'Limpieza': ['mop', 'cleaning_services', 'vacuum', 'local_laundry_service', 'dry_cleaning', 'iron', 'water_drop', 'sanitizer', 'soap', 'delete', 'recycling', 'delete_sweep', 'auto_delete', 'countertops', 'dry', 'air'],
+            'Baño / WC': ['bathtub', 'shower', 'bathroom', 'wc', 'hot_tub', 'spa', 'soap', 'water_drop', 'sanitizer', 'dry_cleaning', 'plumbing'],
+            'Muebles': ['bed', 'chair', 'weekend', 'table_restaurant', 'table_bar', 'curtains', 'curtains_closed', 'window', 'door_front', 'door_sliding', 'checkroom', 'lightbulb', 'nightlight', 'tv', 'desk', 'countertops'],
+            'Cocina': ['kitchen', 'countertops', 'microwave', 'blender', 'coffee_maker', 'dining', 'local_pizza', 'egg', 'set_meal', 'icecream', 'local_cafe', 'restaurant_menu'],
+            'Exterior': ['yard', 'grass', 'local_florist', 'pool', 'garage', 'solar_power', 'park', 'directions_car', 'deck', 'nature'],
+            'Mantenimiento': ['handyman', 'build', 'plumbing', 'electrical_services', 'construction', 'home_repair_service', 'hardware', 'carpenter', 'engineering', 'settings_suggest'],
+            'Mascotas': ['pets', 'cruelty_free', 'pest_control', 'pest_control_rodent', 'egg', 'park', 'water_drop', 'medication', 'grass'],
             'General': ['home', 'bed', 'chair', 'weekend', 'desk', 'tv', 'bathtub', 'shower', 'checkroom', 'door_front', 'stairs', 'lightbulb', 'toys', 'crib', 'computer', 'shopping_cart', 'spa']
         };
         const allIconsFlat = [...new Set(Object.values(iconCategories).flat())];
 
-        const productIconOptions = ['cleaning_services', 'soap', 'sanitizer', 'water_drop', 'local_laundry_service', 'mop', 'dry_cleaning', 'delete', 'recycling', 'spa', 'bathtub', 'shower', 'shopping_cart', 'icecream', 'coffee_maker'];
+        const productIconOptions = ['cleaning_services', 'soap', 'sanitizer', 'water_drop', 'local_laundry_service', 'mop', 'dry_cleaning', 'delete', 'recycling', 'spa', 'bathtub', 'shower', 'shopping_cart', 'icecream', 'coffee_maker', 'delete_sweep', 'auto_delete', 'hot_tub', 'wc', 'pest_control', 'iron', 'vacuum'];
         const rewardIconOptions = ['restaurant', 'favorite', 'movie', 'self_improvement', 'redeem', 'celebration', 'local_cafe', 'flight', 'spa', 'shopping_bag', 'cake', 'nightlife'];
         const achievementPoints = { streak3: 30, streak7: 70, streak30: 300, total10: 50, total50: 200, total100: 500, total250: 1000, members1: 20 };
         const POINTS_PER_TASK = 5;
