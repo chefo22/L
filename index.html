@@ -610,9 +610,14 @@
 
         .section-title-sm { margin: 16px 0 8px 0; font-size: 15px; color: var(--text-secondary); font-weight:600; }
 
-        .subtask-row { display:flex; align-items:center; gap:10px; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+        .subtask-row { display:flex; flex-direction:column; gap:6px; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
         .subtask-row:last-child { border-bottom:none; }
+        .subtask-row-main { display:flex; align-items:center; gap:10px; }
         .subtask-row input[type="text"] { background:transparent; border:none; color:var(--text-primary); font-size:15px; flex-grow:1; outline:none; }
+        .subtask-row-meta { display:flex; align-items:center; gap:8px; padding-left: 32px; }
+        .subtask-row-meta select { flex-grow:1; background: var(--bg-input); border:none; color:var(--text-primary); font-size:13px; border-radius:8px; padding:6px 8px; outline:none; }
+        .subtask-row-meta .subtask-points-input { width:64px; flex:none; background: var(--bg-input); border:none; color:var(--text-primary); font-size:13px; border-radius:8px; padding:6px 8px; outline:none; text-align:center; }
+        .subtask-row-meta .subtask-points-label { font-size:11px; color:var(--text-secondary); white-space:nowrap; }
         .subtask-add-row { display:flex; align-items:center; gap:8px; padding-top: 10px; }
         .subtask-add-row input { flex-grow:1; background: transparent; border:none; color:var(--text-primary); font-size:15px; outline:none; border-bottom: 1px dashed var(--border-color); padding: 6px 0;}
 
@@ -1170,6 +1175,10 @@
                         <option value="Alta">Alta</option>
                     </select>
                 </div>
+                <div class="input-row" id="task-points-row">
+                    <div class="row-label">Puntos<small>al completar la tarea</small></div>
+                    <input type="number" id="task-points" min="0" placeholder="ej. 5">
+                </div>
             </div>
 
             <div class="input-group">
@@ -1252,12 +1261,13 @@
                 </div>
             </div>
 
-            <h3 class="section-title-sm">SUBTAREAS</h3>
+            <h3 class="section-title-sm">PASOS</h3>
             <div class="input-group" style="padding: 8px 16px;">
+                <div style="font-size:12px; color:var(--text-secondary); padding: 4px 0 10px;">Divide la tarea en varios pasos. Cada paso puede asignarse a una persona distinta y otorgar sus propios puntos (ej. "Poner lavavajillas" y "Quitar lavavajillas").</div>
                 <div id="subtask-list"></div>
                 <div class="subtask-add-row">
                     <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:20px;">add_circle</span>
-                    <input type="text" id="subtask-input" placeholder="Añadir subtarea..." onkeydown="if(event.key==='Enter'){event.preventDefault(); addSubtaskFromInput();}">
+                    <input type="text" id="subtask-input" placeholder="Añadir paso..." onkeydown="if(event.key==='Enter'){event.preventDefault(); addSubtaskFromInput();}">
                 </div>
             </div>
 
@@ -1381,6 +1391,9 @@
             ];
         }
 
+        // Puntos por defecto que otorga una tarea (o un paso) si no se especifica ninguno.
+        const POINTS_PER_TASK = 5;
+
         let data = JSON.parse(localStorage.getItem('hogarMasterData')) || defaultData();
         // Migración / valores por defecto para datos antiguos
         data.history = data.history || [];
@@ -1410,11 +1423,16 @@
         data.tasks = (data.tasks || []).map(t => ({
             notes: '', dueDate: null, frequencyDays: null, lastCompletedAt: null, createdAt: new Date().toISOString(),
             tags: [], subtasks: [], memberId: null, favorite: false, duration: null, reminderTime: null, iconColor: null,
-            reminderLead: 0, link: null, lastNotifiedKey: null,
+            reminderLead: 0, link: null, lastNotifiedKey: null, points: POINTS_PER_TASK,
             repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
             repeatMode: 'afterComplete', repeatEndType: 'never', repeatEndDate: null, repeatEndCount: null,
             ...t
         }));
+        // Migración de pasos/subtareas antiguos: cada paso puede tener su propia persona asignada y sus propios puntos
+        data.tasks.forEach(t => {
+            t.subtasks = (t.subtasks || []).map(s => ({ memberId: null, points: 0, ...s }));
+            if (t.points === undefined || t.points === null) t.points = POINTS_PER_TASK;
+        });
         // Migración de tareas antiguas (frequencyDays) al nuevo sistema de repetición avanzado
         data.tasks.forEach(t => {
             if ((!t.repeatType || t.repeatType === 'none') && t.frequencyDays) {
@@ -1486,7 +1504,6 @@
         const productIconOptions = ['cleaning_services', 'soap', 'sanitizer', 'water_drop', 'local_laundry_service', 'mop', 'dry_cleaning', 'delete', 'recycling', 'spa', 'bathtub', 'shower', 'shopping_cart', 'icecream', 'coffee_maker', 'delete_sweep', 'auto_delete', 'hot_tub', 'wc', 'pest_control', 'iron', 'vacuum'];
         const rewardIconOptions = ['restaurant', 'favorite', 'movie', 'self_improvement', 'redeem', 'celebration', 'local_cafe', 'flight', 'spa', 'shopping_bag', 'cake', 'nightlife'];
         const achievementPoints = { streak3: 30, streak7: 70, streak30: 300, total10: 50, total50: 200, total100: 500, total250: 1000, members1: 20 };
-        const POINTS_PER_TASK = 5;
 
         const sortLabels = { fecha: 'Fecha de Vencimiento', importancia: 'Importancia', nombre: 'Nombre (A-Z)' };
         const allTasksSortLabels = { nombre: 'Nombre (A-Z)', fecha: 'Fecha de Vencimiento', importancia: 'Importancia', duracion: 'Duración' };
@@ -2169,9 +2186,11 @@
                     <div class="item-title-row">
                         <div class="item-title">${task.name}</div>
                         ${task.favorite ? '<span class="material-symbols-rounded" style="font-size:15px; color:var(--accent-orange);">star</span>' : ''}
+                        <span style="font-size:11px; color:var(--accent-color); font-weight:700;">+${taskTotalPoints(task)}</span>
                         ${tagsHTML}
                     </div>
                     <div style="font-size:12px; color:${overdue ? 'var(--danger-color)' : 'var(--text-secondary)'}">${roomPrefix}${taskSubtitle(task)}</div>
+                    ${taskStepsHTML(task)}
                 </div>
                 ${memberHTML}
                 ${linkHTML}
@@ -2180,6 +2199,27 @@
                     ${task.completed ? 'check_circle' : 'radio_button_unchecked'}
                 </span>
             `;
+        }
+
+        // Lista desplegada de pasos de una tarea, cada uno con checkbox propio, persona asignada y puntos.
+        // Permite completar pasos por separado sin tener que abrir la tarea entera (para que cada persona
+        // marque solo el paso que le corresponde, ej. "poner la lavadora" vs "quitar la lavadora").
+        function taskStepsHTML(task) {
+            if (!task.subtasks || !task.subtasks.length) return '';
+            const rows = task.subtasks.map(s => {
+                const m = memberById(s.memberId);
+                const badge = m ? `<span class="member-avatar" title="${m.name}" style="width:20px; height:20px; font-size:10px; flex:none; background-color:${m.color}">${m.name.charAt(0).toUpperCase()}</span>` : '';
+                const pts = s.points ? `<span style="font-size:11px; color:var(--accent-color); font-weight:700; flex:none;">+${s.points}</span>` : '';
+                return `
+                    <div onclick="event.stopPropagation(); toggleTaskStep(${task.id}, '${s.id}')" style="display:flex; align-items:center; gap:8px; padding:5px 0 5px 2px; cursor:pointer;">
+                        <span class="material-symbols-rounded checkbox ${s.done ? 'checked' : ''}" style="font-size:18px;">${s.done ? 'check_circle' : 'radio_button_unchecked'}</span>
+                        <span style="flex-grow:1; font-size:13px; color:var(--text-secondary); text-decoration:${s.done ? 'line-through' : 'none'};">${s.text}</span>
+                        ${badge}
+                        ${pts}
+                    </div>
+                `;
+            }).join('');
+            return `<div style="margin-top:2px;">${rows}</div>`;
         }
         function openTaskLink(id) {
             const task = data.tasks.find(t => String(t.id) === String(id));
@@ -2857,9 +2897,17 @@
             alert(`¡Recompensa canjeada! 🎉 Disfruta: ${r.name}`);
         }
 
-        // Otorga puntos al completar tareas y bonus únicos al desbloquear logros de racha.
-        function awardPointsForCompletion() {
-            data.points += POINTS_PER_TASK;
+        // Puntos totales que otorga una tarea al completarse del todo.
+        // Si la tarea tiene pasos, son la suma de los puntos de cada paso; si no, los puntos propios de la tarea.
+        function taskTotalPoints(task) {
+            if (task.subtasks && task.subtasks.length) {
+                return task.subtasks.reduce((sum, s) => sum + (s.points || 0), 0);
+            }
+            return (task.points === undefined || task.points === null) ? POINTS_PER_TASK : task.points;
+        }
+
+        // Revisa y desbloquea logros de racha/total/miembros (no otorga los puntos de la tarea en sí).
+        function checkAchievements() {
             const s = computeStats();
             let bonusMsgs = [];
             achievementDefs.forEach(a => {
@@ -2874,7 +2922,6 @@
                     bonusMsgs.push(`${a.label} (+${bonus} pts)`);
                 }
             });
-            saveData();
             if (bonusMsgs.length) {
                 setTimeout(() => alert(`🏆 ¡Logro desbloqueado!\n${bonusMsgs.join('\n')}`), 50);
             }
@@ -3038,52 +3085,110 @@
             });
         }
 
-        /* --- COMPLETAR TAREA (con soporte de repetición) --- */
+        /* --- COMPLETAR TAREA (con soporte de repetición y pasos con puntos propios) --- */
         function toggleTask(id) {
             const task = data.tasks.find(t => t.id === id);
             if (!task) return;
 
             if (!task.completed) {
-                task.completed = true;
-                const now = new Date().toISOString();
-                const room = data.rooms.find(r => r.id == task.roomId);
-                const member = memberById(task.memberId);
-                const completedByUser = fbCurrentUserName();
-                data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount });
-                task.lastCompletedAt = now;
-                awardPointsForCompletion();
-                saveData();
-                refreshAll();
+                completeTaskFully(task);
+            } else {
+                uncompleteTaskFully(task);
+            }
+        }
 
-                if (task.repeatType && task.repeatType !== 'none') {
-                    let stop = false;
-                    if (task.repeatEndType === 'count') {
-                        if (task.repeatEndCount === null || task.repeatEndCount === undefined) task.repeatEndCount = 0;
-                        if (task.repeatEndCount <= 0) stop = true;
+        // Marca la tarea como completada del todo: si tiene pasos pendientes los completa y suma
+        // solo los puntos de los pasos que aún no se habían marcado (evita duplicar puntos ya ganados).
+        function completeTaskFully(task) {
+            task.completed = true;
+            const now = new Date().toISOString();
+            const room = data.rooms.find(r => r.id == task.roomId);
+            const member = memberById(task.memberId);
+            const completedByUser = fbCurrentUserName();
+
+            let pointsToAdd = 0;
+            if (task.subtasks && task.subtasks.length) {
+                task.subtasks.forEach(s => {
+                    if (!s.done) {
+                        s.done = true;
+                        pointsToAdd += (s.points || 0);
                     }
+                });
+            } else {
+                pointsToAdd = (task.points === undefined || task.points === null) ? POINTS_PER_TASK : task.points;
+            }
+            if (pointsToAdd > 0) data.points += pointsToAdd;
+
+            data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount });
+            task.lastCompletedAt = now;
+            checkAchievements();
+            saveData();
+            refreshAll();
+
+            if (task.repeatType && task.repeatType !== 'none') {
+                let stop = false;
+                if (task.repeatEndType === 'count') {
+                    if (task.repeatEndCount === null || task.repeatEndCount === undefined) task.repeatEndCount = 0;
+                    if (task.repeatEndCount <= 0) stop = true;
+                }
+                if (!stop) {
+                    const base = (task.repeatMode === 'fixed' && task.dueDate) ? task.dueDate : todayStr();
+                    const next = computeNextDueDate(task, base);
+                    if (!next) stop = true;
+                    if (!stop && task.repeatEndType === 'until' && task.repeatEndDate && next > task.repeatEndDate) stop = true;
                     if (!stop) {
-                        const base = (task.repeatMode === 'fixed' && task.dueDate) ? task.dueDate : todayStr();
-                        const next = computeNextDueDate(task, base);
-                        if (!next) stop = true;
-                        if (!stop && task.repeatEndType === 'until' && task.repeatEndDate && next > task.repeatEndDate) stop = true;
-                        if (!stop) {
-                            setTimeout(() => {
-                                task.completed = false;
-                                task.dueDate = next;
-                                task.lastNotifiedKey = null;
-                                if (task.repeatEndType === 'count') task.repeatEndCount = Math.max(0, (task.repeatEndCount || 0) - 1);
-                                if (task.subtasks) task.subtasks.forEach(s => s.done = false);
-                                saveData();
-                                refreshAll();
-                            }, 600);
-                        }
+                        setTimeout(() => {
+                            task.completed = false;
+                            task.dueDate = next;
+                            task.lastNotifiedKey = null;
+                            if (task.repeatEndType === 'count') task.repeatEndCount = Math.max(0, (task.repeatEndCount || 0) - 1);
+                            if (task.subtasks) task.subtasks.forEach(s => s.done = false);
+                            saveData();
+                            refreshAll();
+                        }, 600);
                     }
                 }
+            }
+        }
+
+        // Deshace la tarea completa: revierte todos los puntos que otorgó (los de sus pasos, o los suyos propios)
+        // y reinicia todos los pasos a pendientes.
+        function uncompleteTaskFully(task) {
+            task.completed = false;
+            const idx = data.history.findIndex(h => h.taskId === task.id);
+            if (idx > -1) data.history.splice(idx, 1);
+            data.points = Math.max(0, data.points - taskTotalPoints(task));
+            if (task.subtasks && task.subtasks.length) task.subtasks.forEach(s => s.done = false);
+            saveData();
+            refreshAll();
+        }
+
+        // Completa o deshace un paso concreto de una tarea, con sus propios puntos.
+        // Si al completar un paso quedan todos los pasos hechos, la tarea entera se marca como completada.
+        function toggleTaskStep(taskId, stepId) {
+            const task = data.tasks.find(t => String(t.id) === String(taskId));
+            if (!task) return;
+            const step = (task.subtasks || []).find(s => String(s.id) === String(stepId));
+            if (!step) return;
+
+            if (!step.done) {
+                step.done = true;
+                if (step.points) data.points += step.points;
+                const allDone = task.subtasks.every(s => s.done);
+                if (allDone && !task.completed) {
+                    completeTaskFully(task);
+                    return;
+                }
+                saveData();
+                refreshAll();
             } else {
-                task.completed = false;
-                const idx = data.history.findIndex(h => h.taskId === task.id);
-                if (idx > -1) data.history.splice(idx, 1);
-                data.points = Math.max(0, data.points - POINTS_PER_TASK);
+                step.done = false;
+                if (step.points) data.points = Math.max(0, data.points - step.points);
+                if (task.completed) {
+                    task.completed = false;
+                    const idx = data.history.findIndex(h => h.taskId === task.id);
+                    if (idx > -1) data.history.splice(idx, 1);
+                }
                 saveData();
                 refreshAll();
             }
@@ -3097,9 +3202,9 @@
             if (!confirm(`¿Deshacer "${h.taskName}" como completada?`)) return;
 
             data.history.splice(idx, 1);
-            data.points = Math.max(0, data.points - POINTS_PER_TASK);
 
             const task = data.tasks.find(t => t.id === h.taskId);
+            data.points = Math.max(0, data.points - (task ? taskTotalPoints(task) : POINTS_PER_TASK));
             if (task) {
                 task.completed = false;
                 if (h.dueDateAtCompletion !== undefined) task.dueDate = h.dueDateAtCompletion;
@@ -3299,13 +3404,24 @@
         function renderSubtaskList() {
             const el = document.getElementById('subtask-list');
             el.innerHTML = '';
+            // Mostramos el campo de puntos de la tarea solo si no hay pasos (si hay pasos, los puntos se reparten entre ellos)
+            const pointsRow = document.getElementById('task-points-row');
+            if (pointsRow) pointsRow.querySelector('.row-label small').innerText = editingSubtasks.length ? 'se reparten entre los pasos si no asignas puntos a cada uno' : 'al completar la tarea';
+            const memberOptions = (m) => `<option value="">Sin asignar</option>` + data.members.map(mem => `<option value="${mem.id}" ${String(mem.id) === String(m) ? 'selected' : ''}>${mem.name}</option>`).join('');
             editingSubtasks.forEach((s) => {
                 const row = document.createElement('div');
                 row.className = 'subtask-row';
                 row.innerHTML = `
-                    <span class="material-symbols-rounded checkbox ${s.done ? 'checked' : ''}" style="font-size:22px; margin-left:0;" onclick="toggleSubtaskEditing('${s.id}')">${s.done ? 'check_circle' : 'radio_button_unchecked'}</span>
-                    <input type="text" value="${s.text.replace(/"/g, '&quot;')}" onchange="renameSubtaskEditing('${s.id}', this.value)">
-                    <span class="material-symbols-rounded" style="color:var(--danger-color); font-size:20px; cursor:pointer;" onclick="removeSubtaskEditing('${s.id}')">close</span>
+                    <div class="subtask-row-main">
+                        <span class="material-symbols-rounded checkbox ${s.done ? 'checked' : ''}" style="font-size:22px; margin-left:0;" onclick="toggleSubtaskEditing('${s.id}')">${s.done ? 'check_circle' : 'radio_button_unchecked'}</span>
+                        <input type="text" value="${s.text.replace(/"/g, '&quot;')}" onchange="renameSubtaskEditing('${s.id}', this.value)">
+                        <span class="material-symbols-rounded" style="color:var(--danger-color); font-size:20px; cursor:pointer;" onclick="removeSubtaskEditing('${s.id}')">close</span>
+                    </div>
+                    <div class="subtask-row-meta">
+                        <select onchange="setSubtaskMemberEditing('${s.id}', this.value)">${memberOptions(s.memberId)}</select>
+                        <span class="subtask-points-label">Puntos</span>
+                        <input type="number" min="0" class="subtask-points-input" value="${s.points || 0}" onchange="setSubtaskPointsEditing('${s.id}', this.value)">
+                    </div>
                 `;
                 el.appendChild(row);
             });
@@ -3314,9 +3430,17 @@
             const input = document.getElementById('subtask-input');
             const text = input.value.trim();
             if (!text) return;
-            editingSubtasks.push({ id: String(Date.now() + Math.random()), text, done: false });
+            editingSubtasks.push({ id: String(Date.now() + Math.random()), text, done: false, memberId: null, points: 0 });
             input.value = '';
             renderSubtaskList();
+        }
+        function setSubtaskMemberEditing(id, val) {
+            const s = editingSubtasks.find(x => x.id === id);
+            if (s) s.memberId = val || null;
+        }
+        function setSubtaskPointsEditing(id, val) {
+            const s = editingSubtasks.find(x => x.id === id);
+            if (s) s.points = Math.max(0, parseInt(val, 10) || 0);
         }
         function toggleSubtaskEditing(id) {
             const s = editingSubtasks.find(x => x.id === id);
@@ -3357,6 +3481,7 @@
             document.getElementById('task-reminder-time').value = '';
             document.getElementById('task-reminder-lead').value = String(data.defaultReminderLead || 0);
             document.getElementById('task-duration').value = '';
+            document.getElementById('task-points').value = POINTS_PER_TASK;
             editingRepeatWeekDays = [];
             setRepeatMode('afterComplete');
             updateRepeatUI();
@@ -3392,6 +3517,7 @@
             document.getElementById('task-reminder-time').value = t.reminderTime || '';
             document.getElementById('task-reminder-lead').value = String(t.reminderLead || 0);
             document.getElementById('task-duration').value = t.duration || '';
+            document.getElementById('task-points').value = (t.points === undefined || t.points === null) ? POINTS_PER_TASK : t.points;
             updateSelectRooms();
             updateSelectMembers();
             document.getElementById('task-room-select').value = t.roomId;
@@ -3431,6 +3557,7 @@
             const reminderTime = document.getElementById('task-reminder-time').value || null;
             const reminderLead = parseInt(document.getElementById('task-reminder-lead').value, 10) || 0;
             const duration = parseInt(document.getElementById('task-duration').value, 10) || null;
+            const points = Math.max(0, parseInt(document.getElementById('task-points').value, 10) || 0) || POINTS_PER_TASK;
             let dueDate = document.getElementById('task-due-date').value || null;
 
             const repeatType = document.getElementById('task-repeat-type').value;
@@ -3457,7 +3584,7 @@
 
             const payload = {
                 roomId, name, notes, importance: imp, icon: selectedTaskIcon, iconColor: selectedTaskIconColor,
-                dueDate, tags, memberId, favorite: editingFavorite, duration, reminderTime, reminderLead, link,
+                dueDate, tags, memberId, favorite: editingFavorite, duration, reminderTime, reminderLead, link, points,
                 subtasks: editingSubtasks,
                 repeatType, repeatInterval, repeatUnit, repeatWeekDays, repeatMode,
                 repeatEndType, repeatEndDate, repeatEndCount,
