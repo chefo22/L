@@ -280,20 +280,29 @@
         /* --- PANTALLA PROGRAMA (CALENDARIO) --- */
         .calendar-strip {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             background-color: var(--bg-main);
-            padding: 10px 0 20px 0;
+            padding: 10px 16px 20px 16px;
             border-bottom: 1px solid var(--border-color);
             margin-bottom: 16px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
         }
+        .calendar-strip::-webkit-scrollbar { display: none; }
         .calendar-day {
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 13%;
+            width: 40px;
+            flex: 0 0 auto;
             gap: 6px;
             cursor: pointer;
+            margin-right: 12px;
         }
+        .calendar-day:last-child { margin-right: 0; }
         .day-name { font-size: 11px; color: var(--text-secondary); font-weight: 600; }
         .day-number {
             font-size: 16px;
@@ -860,8 +869,6 @@
 
             <div id="schedule-tasks-list"></div>
         </div>
-
-        <button class="fab" onclick="openCreateTask(null)"><span class="material-symbols-rounded">add</span></button>
     </div>
 
     <div id="view-all-tasks" class="view-screen hidden">
@@ -1011,6 +1018,7 @@
                 <div class="segmented" id="weekstart-segmented">
                     <button onclick="setWeekStart(1)" data-v="1">Lunes</button>
                     <button onclick="setWeekStart(0)" data-v="0">Domingo</button>
+                    <button onclick="setWeekStart('today')" data-v="today">Hoy</button>
                 </div>
             </div>
             <div class="card" onclick="toggleSound()">
@@ -1327,7 +1335,7 @@
                 <div style="font-size:12px; color:var(--text-secondary); padding: 4px 0 10px;">Divide la tarea en varios pasos. Cada paso puede asignarse a una persona distinta y otorgar sus propios puntos (ej. "Poner lavavajillas" y "Quitar lavavajillas").</div>
                 <div id="subtask-list"></div>
                 <div class="subtask-add-row">
-                    <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:20px;">add_circle</span>
+                    <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:20px; cursor:pointer;" onclick="addSubtaskFromInput()">add_circle</span>
                     <input type="text" id="subtask-input" placeholder="Añadir paso..." onkeydown="if(event.key==='Enter'){event.preventDefault(); addSubtaskFromInput();}">
                 </div>
             </div>
@@ -1519,7 +1527,7 @@
             d.rooms = (d.rooms || []).map(r => ({ location: '', ...r }));
             d.theme = d.theme || 'dark';
             d.fontSize = d.fontSize || 'medium';
-            d.weekStart = (d.weekStart === 0 || d.weekStart === 1) ? d.weekStart : 1;
+            d.weekStart = (d.weekStart === 0 || d.weekStart === 1 || d.weekStart === 'today') ? d.weekStart : 1;
             d.soundEnabled = (d.soundEnabled === undefined) ? true : d.soundEnabled;
             d.seasonalBannerEnabled = (d.seasonalBannerEnabled === undefined) ? true : d.seasonalBannerEnabled;
             d.dismissedBanners = d.dismissedBanners || [];
@@ -1671,6 +1679,7 @@
         };
 
         window.onload = function() {
+            rolloverOverdueTasks();
             changeAccent(data.accent || '#4ade80', false);
             applyTheme(data.theme, false);
             applyFontSize(data.fontSize, false);
@@ -1692,7 +1701,7 @@
             renderSegmented('density-segmented', data.listDensity);
             document.getElementById('default-reminder-lead-select').value = String(data.defaultReminderLead);
             document.body.classList.toggle('density-compact', data.listDensity === 'compact');
-            renderCalendarStrip();
+            renderCalendarStrip(true);
             updateProgramaLabel();
             renderSeasonBanner();
             refreshAll();
@@ -1845,6 +1854,7 @@
                             data = normalizeData(parsed);
                             applyLocalPrefs(data, localPrefs);
                             memberChanged = ensureMemberForUser(fbUser);
+                            rolloverOverdueTasks();
                             localStorage.setItem('hogarMasterData', JSON.stringify(data));
                             applyTheme(data.theme, false);
                             applyFontSize(data.fontSize, false);
@@ -2018,6 +2028,21 @@
             d.setDate(d.getDate() + n);
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
+
+        // Las tareas que quedaron sin completar en su día se mueven automáticamente
+        // al día de hoy, para que no se pierdan y sigan apareciendo como pendientes.
+        function rolloverOverdueTasks() {
+            const t = todayStr();
+            let changed = false;
+            data.tasks.forEach(task => {
+                if (task.dueDate && !task.completed && task.dueDate < t) {
+                    task.dueDate = t;
+                    changed = true;
+                }
+            });
+            if (changed) saveData();
+            return changed;
+        }
         function addMonths(dateStr, n) {
             const d = new Date(dateStr + 'T00:00:00');
             const originalDay = d.getDate();
@@ -2170,7 +2195,7 @@
             data.weekStart = v;
             renderSegmented('weekstart-segmented', String(v));
             saveData();
-            renderCalendarStrip();
+            renderCalendarStrip(true);
         }
 
         /* --- PREFERENCIAS AVANZADAS --- */
@@ -2328,7 +2353,7 @@
             } else if (tab === 'programa') {
                 document.getElementById('view-programa').classList.remove('hidden');
                 document.getElementById('nav-programa').classList.add('active');
-                renderCalendarStrip();
+                renderCalendarStrip(true);
                 updateProgramaLabel();
                 renderSchedule();
                 renderSeasonBanner();
@@ -2540,16 +2565,33 @@
         }
 
         /* --- PANTALLA PROGRAMA --- */
-        function renderCalendarStrip() {
+        const CALENDAR_STRIP_DAYS_BEFORE = 14;
+        const CALENDAR_STRIP_DAYS_AFTER = 60;
+        const CALENDAR_DAY_ITEM_WIDTH = 40 + 12; // width + margin-right, ver .calendar-day
+
+        // Calcula la fecha que debe quedar como primera visible al abrir/reiniciar la tira,
+        // según la preferencia "Primer día de la semana" de Ajustes.
+        function calendarStripAnchorDate() {
+            const t = todayStr();
+            if (data.weekStart === 'today') return t;
+            const d = new Date(t + 'T00:00:00');
+            const dow = d.getDay(); // 0=domingo
+            const diff = data.weekStart === 1 ? (dow + 6) % 7 : dow;
+            return addDays(t, -diff);
+        }
+
+        function renderCalendarStrip(scrollToAnchor) {
             const container = document.getElementById('calendar-strip');
             if (!container) return;
             container.innerHTML = '';
             const dayNamesMon = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
             const dayNamesSun = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
-            const dayNames = data.weekStart === 1 ? dayNamesMon : dayNamesSun;
             const t = todayStr();
-            for (let i = -2; i <= 4; i++) {
+            const anchor = calendarStripAnchorDate();
+            let anchorIndex = 0;
+            for (let i = -CALENDAR_STRIP_DAYS_BEFORE; i <= CALENDAR_STRIP_DAYS_AFTER; i++) {
                 const dateStr = addDays(t, i);
+                if (dateStr === anchor) anchorIndex = i + CALENDAR_STRIP_DAYS_BEFORE;
                 const d = new Date(dateStr + 'T00:00:00');
                 const hasTasks = data.tasks.some(x => x.dueDate === dateStr && !x.completed);
                 const div = document.createElement('div');
@@ -2561,9 +2603,12 @@
                     renderSchedule();
                 };
                 let dow = d.getDay(); // 0=domingo
-                const label = data.weekStart === 1 ? dayNamesMon[(dow + 6) % 7] : dayNamesSun[dow];
+                const label = data.weekStart === 0 ? dayNamesSun[dow] : dayNamesMon[(dow + 6) % 7];
                 div.innerHTML = `<span class="day-name">${label}</span><span class="day-number">${d.getDate()}</span><span class="day-dot"></span>`;
                 container.appendChild(div);
+            }
+            if (scrollToAnchor) {
+                container.scrollLeft = Math.max(0, anchorIndex * CALENDAR_DAY_ITEM_WIDTH - 8);
             }
         }
 
@@ -2574,7 +2619,7 @@
 
         function jumpToToday() {
             selectedScheduleDate = todayStr();
-            renderCalendarStrip();
+            renderCalendarStrip(true);
             updateProgramaLabel();
             renderSchedule();
         }
@@ -3927,6 +3972,7 @@
             editingSubtasks.push({ id: String(Date.now() + Math.random()), text, done: false, memberId: null, points: 0 });
             input.value = '';
             renderSubtaskList();
+            input.focus();
         }
         function setSubtaskMemberEditing(id, val) {
             const s = editingSubtasks.find(x => x.id === id);
@@ -4162,6 +4208,7 @@
                     if (!parsed.rooms || !parsed.tasks) throw new Error('formato inválido');
                     if (!confirm('Esto reemplazará todos tus datos actuales. ¿Continuar?')) return;
                     data = normalizeData(Object.assign(defaultData(), parsed));
+                    rolloverOverdueTasks();
                     saveData();
                     changeAccent(data.accent, false);
                     applyTheme(data.theme, false);
@@ -4178,7 +4225,7 @@
                     renderSegmented('density-segmented', data.listDensity);
                     document.getElementById('default-reminder-lead-select').value = String(data.defaultReminderLead);
                     document.body.classList.toggle('density-compact', data.listDensity === 'compact');
-                    renderCalendarStrip();
+                    renderCalendarStrip(true);
                     renderSeasonBanner();
                     refreshAll();
                     alert('Datos importados correctamente.');
