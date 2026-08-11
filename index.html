@@ -859,8 +859,8 @@
                 <div class="filter-pill" onclick="toggleFavFilter('schedule')" id="fav-filter-schedule" style="cursor:pointer;">
                     <span class="material-symbols-rounded">star</span> Favoritas
                 </div>
-                <div class="filter-pill" onclick="toggleScheduleGroupByRoom()" id="group-room-filter-schedule" style="cursor:pointer;">
-                    <span class="material-symbols-rounded">meeting_room</span> Habitaciones
+                <div class="filter-pill" onclick="cycleScheduleGroupByRoom()" id="group-room-filter-schedule" style="cursor:pointer;">
+                    <span class="material-symbols-rounded" id="group-room-pill-icon">meeting_room</span> <span id="group-room-pill-label">Habitaciones</span>
                 </div>
                 <div class="filter-pill active" onclick="toggleScheduleIndicators()" id="indicator-filter-schedule" style="cursor:pointer;">
                     <span class="material-symbols-rounded" id="indicator-filter-icon">visibility</span> Indicadores
@@ -1616,7 +1616,7 @@
         let allTasksTagFilter = 'all';
         let scheduleFavOnly = false;
         let allTasksFavOnly = false;
-        let scheduleGroupByRoom = false;
+        let scheduleGroupByRoom = 'off'; // 'off' | 'unido' | 'fragmentado'
         let scheduleShowRoomIndicators = true;
 
         // Días de la semana ordenados L-D con su índice real de JS Date.getDay() (0=domingo...6=sábado)
@@ -2678,11 +2678,41 @@
             return copy;
         }
 
-        function toggleScheduleGroupByRoom() {
-            scheduleGroupByRoom = !scheduleGroupByRoom;
-            const btn = document.getElementById('group-room-filter-schedule');
-            if (btn) btn.classList.toggle('active', scheduleGroupByRoom);
+        // Ciclo entre 3 modos de agrupación por habitación:
+        // 'off'         -> lista plana, ordenada solo por sortMode.
+        // 'unido'       -> todas las tareas de cada habitación juntas en un solo bloque;
+        //                  el orden de los bloques lo marca la tarea de mayor prioridad
+        //                  que contiene cada habitación (no es un orden fijo).
+        // 'fragmentado' -> se respeta estrictamente el orden de prioridad de las tareas;
+        //                  si dos tareas de la misma habitación quedan separadas por
+        //                  tareas de otra habitación, se generan varios bloques para
+        //                  esa habitación en vez de forzarlas a estar juntas.
+        function cycleScheduleGroupByRoom() {
+            const order = ['off', 'unido', 'fragmentado'];
+            scheduleGroupByRoom = order[(order.indexOf(scheduleGroupByRoom) + 1) % order.length];
+            updateGroupRoomPill();
             renderSchedule();
+        }
+
+        function updateGroupRoomPill() {
+            const btn = document.getElementById('group-room-filter-schedule');
+            const label = document.getElementById('group-room-pill-label');
+            const icon = document.getElementById('group-room-pill-icon');
+            if (!btn) return;
+            btn.classList.toggle('active', scheduleGroupByRoom !== 'off');
+            if (label) label.innerText = scheduleGroupByRoom === 'fragmentado' ? 'Fragmentadas' : (scheduleGroupByRoom === 'unido' ? 'Agrupadas' : 'Habitaciones');
+            if (icon) icon.innerText = scheduleGroupByRoom === 'fragmentado' ? 'call_split' : 'meeting_room';
+        }
+
+        function appendScheduleRoomHeader(container, room, count) {
+            const header = document.createElement('div');
+            header.className = 'schedule-room-header';
+            header.innerHTML = `
+                <span class="material-symbols-rounded" style="color:${room ? room.color : 'var(--text-secondary)'}; font-size:18px;">${room ? room.icon : 'home'}</span>
+                <span>${room ? room.name : 'Sin habitación'}</span>
+                <span class="room-count">· ${count}</span>
+            `;
+            container.appendChild(header);
         }
 
         function toggleScheduleIndicators() {
@@ -2729,28 +2759,40 @@
                 return;
             }
 
-            if (scheduleGroupByRoom) {
+            if (scheduleGroupByRoom === 'unido') {
+                // Todas las tareas de cada habitación juntas. El orden de los bloques
+                // sigue el orden de la lista ya ordenada por prioridad (sortMode): la
+                // habitación cuya tarea con más prioridad aparece antes, va primero.
                 const groups = new Map();
                 list.forEach(task => {
                     const key = (task.roomId !== null && task.roomId !== undefined) ? String(task.roomId) : 'none';
                     if (!groups.has(key)) groups.set(key, []);
                     groups.get(key).push(task);
                 });
-                const orderedKeys = data.rooms.map(r => String(r.id)).filter(k => groups.has(k));
-                if (groups.has('none')) orderedKeys.push('none');
-
-                orderedKeys.forEach(key => {
+                groups.forEach((tasksInGroup, key) => {
                     const room = key === 'none' ? null : data.rooms.find(r => String(r.id) === key);
-                    const tasksInGroup = groups.get(key);
-                    const header = document.createElement('div');
-                    header.className = 'schedule-room-header';
-                    header.innerHTML = `
-                        <span class="material-symbols-rounded" style="color:${room ? room.color : 'var(--text-secondary)'}; font-size:18px;">${room ? room.icon : 'home'}</span>
-                        <span>${room ? room.name : 'Sin habitación'}</span>
-                        <span class="room-count">· ${tasksInGroup.length}</span>
-                    `;
-                    container.appendChild(header);
+                    appendScheduleRoomHeader(container, room, tasksInGroup.length);
                     tasksInGroup.forEach(task => {
+                        container.appendChild(scheduleTaskItemEl(task, room, false));
+                    });
+                });
+            } else if (scheduleGroupByRoom === 'fragmentado') {
+                // Se respeta el orden de prioridad estricto: si una habitación se
+                // interrumpe con tareas de otra, se generan varios bloques para ella.
+                const blocks = [];
+                list.forEach(task => {
+                    const key = (task.roomId !== null && task.roomId !== undefined) ? String(task.roomId) : 'none';
+                    const last = blocks[blocks.length - 1];
+                    if (last && last.key === key) {
+                        last.tasks.push(task);
+                    } else {
+                        blocks.push({ key, tasks: [task] });
+                    }
+                });
+                blocks.forEach(block => {
+                    const room = block.key === 'none' ? null : data.rooms.find(r => String(r.id) === block.key);
+                    appendScheduleRoomHeader(container, room, block.tasks.length);
+                    block.tasks.forEach(task => {
                         container.appendChild(scheduleTaskItemEl(task, room, false));
                     });
                 });
