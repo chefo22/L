@@ -1462,6 +1462,35 @@
         // Puntos por defecto que otorga una tarea (o un paso) si no se especifica ninguno.
         const POINTS_PER_TASK = 5;
 
+        // Ajustes de interfaz/dispositivo: son preferencias personales de quien usa ESTE
+        // dispositivo/navegador (tema, tamaño de letra, color de acento, colores guardados,
+        // densidad de listas, vista inicial, formato de hora, sonido, notificaciones, aviso
+        // de recordatorio por defecto, día de inicio de semana y banners ya descartados).
+        // Nunca se suben ni se sobrescriben con la sincronización Firebase: cada persona y
+        // cada dispositivo conserva los suyos, aunque compartan el mismo hogar.
+        const LOCAL_ONLY_KEYS = [
+            'theme', 'fontSize', 'accent', 'customColors', 'listDensity', 'startView',
+            'timeFormat', 'soundEnabled', 'notificationsEnabled', 'defaultReminderLead',
+            'weekStart', 'dismissedBanners', 'seasonalBannerEnabled'
+        ];
+
+        // Extrae del objeto de datos actual solo los ajustes locales, para poder
+        // conservarlos aunque lleguen datos nuevos desde Firebase.
+        function getLocalPrefsSnapshot(source) {
+            const snap = {};
+            LOCAL_ONLY_KEYS.forEach(k => { snap[k] = source[k]; });
+            return snap;
+        }
+
+        // Reaplica los ajustes locales guardados sobre un objeto de datos (por ejemplo,
+        // justo después de reemplazar `data` con lo que ha llegado de Firebase).
+        function applyLocalPrefs(target, prefs) {
+            if (!prefs) return;
+            LOCAL_ONLY_KEYS.forEach(k => {
+                if (prefs[k] !== undefined) target[k] = prefs[k];
+            });
+        }
+
         let data = JSON.parse(localStorage.getItem('hogarMasterData')) || defaultData();
 
         // Migración / valores por defecto para datos antiguos o incompletos.
@@ -1795,10 +1824,15 @@
                         fbApplyingRemote = true;
                         let memberChanged = false;
                         try {
+                            const localPrefs = getLocalPrefsSnapshot(data);
                             const parsed = JSON.parse(remote.payload);
                             data = normalizeData(parsed);
+                            applyLocalPrefs(data, localPrefs);
                             memberChanged = ensureMemberForUser(fbUser);
                             localStorage.setItem('hogarMasterData', JSON.stringify(data));
+                            applyTheme(data.theme, false);
+                            applyFontSize(data.fontSize, false);
+                            document.documentElement.style.setProperty('--accent-color', data.accent);
                             refreshAll();
                             renderCalendarStrip();
                             renderSeasonBanner();
@@ -1833,8 +1867,10 @@
             if (!fbDB || !fbUser || fbApplyingRemote) return;
             if (fbPushTimer) clearTimeout(fbPushTimer);
             const doPush = function() {
+                const payload = Object.assign({}, data);
+                LOCAL_ONLY_KEYS.forEach(k => { delete payload[k]; });
                 fbDocRef().set({
-                    payload: JSON.stringify(data),
+                    payload: JSON.stringify(payload),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     updatedBy: fbUser.displayName || fbUser.email
                 }, { merge: true }).catch(function(err) { console.warn('Error guardando en Firebase:', err); });
