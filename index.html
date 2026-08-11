@@ -424,6 +424,31 @@
         }
         .color-dot-add .material-symbols-rounded { font-size: 18px; }
         .color-dot-add input[type="color"] { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+        .color-hex-wrap {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 20px;
+            background-color: var(--bg-input);
+            border: 2px dashed var(--text-secondary);
+        }
+        .color-hex-wrap.small { height: 30px; padding: 0 9px; }
+        .color-hex-prefix { color: var(--text-secondary); font-size: 14px; font-weight: 700; }
+        .color-hex-input {
+            background: none;
+            border: none;
+            outline: none;
+            width: 74px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .color-hex-input.invalid { color: var(--danger-color); }
+        .color-hex-input::placeholder { color: var(--text-secondary); text-transform: none; letter-spacing: 0; }
         .badge-person-chips { display:flex; gap:8px; overflow-x:auto; margin-top:10px; padding-bottom:2px; }
         .badge-person-chips::-webkit-scrollbar { display:none; }
         .badge-person-chip {
@@ -3578,6 +3603,45 @@
                     onPick(c);
                 });
                 el.appendChild(addDot);
+
+                // Campo para escribir el código hexadecimal directamente
+                const hexWrap = document.createElement('div');
+                hexWrap.className = 'color-hex-wrap' + sizeClass;
+                const hexPrefix = document.createElement('span');
+                hexPrefix.className = 'color-hex-prefix';
+                hexPrefix.textContent = '#';
+                const hexInput = document.createElement('input');
+                hexInput.type = 'text';
+                hexInput.className = 'color-hex-input';
+                hexInput.placeholder = 'RRGGBB';
+                hexInput.maxLength = 6;
+                hexInput.autocomplete = 'off';
+                hexInput.autocapitalize = 'off';
+                hexInput.spellcheck = false;
+                hexInput.inputMode = 'text';
+                const applyHex = () => {
+                    let v = hexInput.value.trim().replace(/[^0-9a-fA-F]/g, '');
+                    if (v.length === 3) v = v.split('').map(ch => ch + ch).join('');
+                    if (v.length !== 6) {
+                        if (v.length > 0) hexInput.classList.add('invalid');
+                        return;
+                    }
+                    hexInput.classList.remove('invalid');
+                    const c = '#' + v.toLowerCase();
+                    addCustomColor(c);
+                    onPick(c);
+                };
+                hexInput.addEventListener('input', () => {
+                    hexInput.value = hexInput.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+                    hexInput.classList.remove('invalid');
+                });
+                hexInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); hexInput.blur(); applyHex(); }
+                });
+                hexInput.addEventListener('blur', () => applyHex());
+                hexWrap.appendChild(hexPrefix);
+                hexWrap.appendChild(hexInput);
+                el.appendChild(hexWrap);
             }
         }
 
