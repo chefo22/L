@@ -1704,6 +1704,7 @@
             renderCalendarStrip(true);
             updateProgramaLabel();
             renderSeasonBanner();
+            loadSchedulePrefs();
             refreshAll();
             if (data.notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                 startNotificationChecker();
@@ -1715,6 +1716,42 @@
         function saveData() {
             localStorage.setItem('hogarMasterData', JSON.stringify(data));
             fbPushData();
+        }
+
+        /* ============ PREFERENCIAS DE FILTROS (solo este dispositivo) ============
+           Estos ajustes (orden, favoritas, agrupación, indicadores) son puramente
+           visuales de "Programa" y NO forman parte de "data", así que no se
+           sincronizan por Firebase ni se comparten con el resto de usuarios del
+           hogar: cada dispositivo guarda y recuerda los suyos por separado. */
+        function saveSchedulePrefs() {
+            try {
+                localStorage.setItem('hogarSchedulePrefs', JSON.stringify({
+                    sortMode,
+                    scheduleFavOnly,
+                    scheduleGroupByRoom,
+                    scheduleShowRoomIndicators
+                }));
+            } catch (e) {}
+        }
+
+        function loadSchedulePrefs() {
+            let prefs = null;
+            try { prefs = JSON.parse(localStorage.getItem('hogarSchedulePrefs')); } catch (e) {}
+            if (!prefs) return;
+            if (prefs.sortMode && sortLabels[prefs.sortMode]) sortMode = prefs.sortMode;
+            if (typeof prefs.scheduleFavOnly === 'boolean') scheduleFavOnly = prefs.scheduleFavOnly;
+            if (['off', 'unido', 'fragmentado'].includes(prefs.scheduleGroupByRoom)) scheduleGroupByRoom = prefs.scheduleGroupByRoom;
+            if (typeof prefs.scheduleShowRoomIndicators === 'boolean') scheduleShowRoomIndicators = prefs.scheduleShowRoomIndicators;
+
+            const sortLabel = document.getElementById('sort-pill-label');
+            if (sortLabel) sortLabel.innerText = sortLabels[sortMode];
+            const favBtn = document.getElementById('fav-filter-schedule');
+            if (favBtn) favBtn.classList.toggle('active', scheduleFavOnly);
+            const indBtn = document.getElementById('indicator-filter-schedule');
+            const indIcon = document.getElementById('indicator-filter-icon');
+            if (indBtn) indBtn.classList.toggle('active', scheduleShowRoomIndicators);
+            if (indIcon) indIcon.innerText = scheduleShowRoomIndicators ? 'visibility' : 'visibility_off';
+            updateGroupRoomPill();
         }
 
         /* ============ SINCRONIZACIÓN FIREBASE (multi-usuario) ============ */
@@ -2644,6 +2681,7 @@
             if (scope === 'schedule') {
                 scheduleFavOnly = !scheduleFavOnly;
                 document.getElementById('fav-filter-schedule').classList.toggle('active', scheduleFavOnly);
+                saveSchedulePrefs();
                 renderSchedule();
             } else {
                 allTasksFavOnly = !allTasksFavOnly;
@@ -2657,6 +2695,7 @@
             sortMode = order[(order.indexOf(sortMode) + 1) % order.length];
             const label = document.getElementById('sort-pill-label');
             if (label) label.innerText = sortLabels[sortMode];
+            saveSchedulePrefs();
             renderSchedule();
             renderRoomTasks();
         }
@@ -2691,6 +2730,7 @@
             const order = ['off', 'unido', 'fragmentado'];
             scheduleGroupByRoom = order[(order.indexOf(scheduleGroupByRoom) + 1) % order.length];
             updateGroupRoomPill();
+            saveSchedulePrefs();
             renderSchedule();
         }
 
@@ -2721,6 +2761,7 @@
             const icon = document.getElementById('indicator-filter-icon');
             if (btn) btn.classList.toggle('active', scheduleShowRoomIndicators);
             if (icon) icon.innerText = scheduleShowRoomIndicators ? 'visibility' : 'visibility_off';
+            saveSchedulePrefs();
             renderSchedule();
         }
 
