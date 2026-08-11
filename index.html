@@ -233,6 +233,15 @@
             cursor: pointer;
         }
 
+        .room-reorder-controls { display:flex; flex-direction:column; gap:2px; margin-right:10px; flex-shrink:0; }
+        .room-reorder-controls .material-symbols-rounded {
+            font-size: 20px; color: var(--text-secondary); cursor: pointer;
+            width: 26px; height: 22px; display:flex; align-items:center; justify-content:center;
+            border-radius: 6px; background-color: var(--bg-input);
+        }
+        .room-reorder-controls .material-symbols-rounded.disabled { opacity: 0.3; pointer-events: none; }
+        .room-item.reorder-mode { cursor: default; }
+
         .icon-container {
             width: 44px;
             height: 44px;
@@ -405,6 +414,30 @@
             border-color: var(--text-primary);
         }
         .color-dot.small { width: 30px; height: 30px; }
+        .color-dot-add {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-input);
+            border: 2px dashed var(--text-secondary);
+            color: var(--text-secondary);
+        }
+        .color-dot-add .material-symbols-rounded { font-size: 18px; }
+        .color-dot-add input[type="color"] { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+        .badge-person-chips { display:flex; gap:8px; overflow-x:auto; margin-top:10px; padding-bottom:2px; }
+        .badge-person-chips::-webkit-scrollbar { display:none; }
+        .badge-person-chip {
+            flex: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background-color: var(--bg-input);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .badge-person-chip.active { background-color: var(--accent-color); color: #000; }
 
         .segmented {
             display:flex;
@@ -688,32 +721,21 @@
                 <div class="card-text">Todas las tareas</div>
                 <div class="card-value" id="dash-all-count">0 <span class="material-symbols-rounded">chevron_right</span></div>
             </div>
-            <div class="card" onclick="showScreen('view-history'); renderHistoryView();">
-                <div class="card-text">Historial y estadísticas</div>
-                <div class="card-value" id="dash-history-count">0 <span class="material-symbols-rounded">chevron_right</span></div>
-            </div>
-            <div class="card summary-card" onclick="showScreen('view-history'); renderHistoryView();">
-                <div class="card-text" style="display: flex; justify-content: space-between; width: 100%;">
-                    Resumen <span class="material-symbols-rounded" style="color: var(--text-secondary)">chevron_right</span>
-                </div>
-                <div class="summary-subtitle">
-                    <span class="material-symbols-rounded">north_east</span> <span id="summary-subtitle-text">No se completaron tareas en 7 días</span>
-                </div>
-            </div>
             <div class="card" onclick="showScreen('view-products'); renderProductsView();">
                 <div class="card-text">Productos de limpieza</div>
                 <div class="card-value" id="dash-products-count">0 <span class="material-symbols-rounded">chevron_right</span></div>
             </div>
-            <div class="card" onclick="showScreen('view-rewards'); renderRewardsView();">
-                <div class="card-text">Puntos y recompensas</div>
-                <div class="card-value" id="dash-points-count"><span class="material-symbols-rounded" style="font-size:18px; color:var(--accent-color);">stars</span> 0 <span class="material-symbols-rounded">chevron_right</span></div>
-            </div>
 
             <div class="section-header">
                 <h2>Habitaciones</h2>
-                <button class="add-btn" onclick="openCreateRoom()">
-                    <span class="material-symbols-rounded">add</span> Agregar
-                </button>
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <button class="add-btn" id="room-reorder-btn" onclick="toggleRoomReorder()" style="color:var(--text-secondary);">
+                        <span class="material-symbols-rounded">swap_vert</span> Ordenar
+                    </button>
+                    <button class="add-btn" onclick="openCreateRoom()">
+                        <span class="material-symbols-rounded">add</span> Agregar
+                    </button>
+                </div>
             </div>
 
             <div id="rooms-list"></div>
@@ -853,6 +875,18 @@
             <div style="width:36px;"></div>
         </header>
         <div class="container" style="margin-top: 16px;">
+            <div class="card summary-card" style="cursor:default;">
+                <div class="card-text" style="display: flex; justify-content: space-between; width: 100%;">
+                    Resumen
+                </div>
+                <div class="summary-subtitle">
+                    <span class="material-symbols-rounded">north_east</span> <span id="summary-subtitle-text">No se completaron tareas en 7 días</span>
+                </div>
+            </div>
+            <div class="card" onclick="showScreen('view-rewards'); renderRewardsView();">
+                <div class="card-text">Puntos y recompensas</div>
+                <div class="card-value" id="dash-points-count"><span class="material-symbols-rounded" style="font-size:18px; color:var(--accent-color);">stars</span> 0 <span class="material-symbols-rounded">chevron_right</span></div>
+            </div>
             <div class="card" style="flex-direction: column; align-items: flex-start; gap: 10px; cursor: default;">
                 <div class="card-text">Resumen de actividad</div>
                 <div id="stats-grid" style="width:100%; display:flex; justify-content:space-between;"></div>
@@ -864,7 +898,8 @@
             </div>
 
             <div class="section-header"><h2>Logros</h2></div>
-            <div class="card" style="cursor:default;">
+            <div class="card" style="flex-direction:column; align-items:stretch; cursor:default;">
+                <div class="badge-person-chips" id="badge-person-chips"></div>
                 <div class="badge-grid" id="badge-grid"></div>
             </div>
 
@@ -1382,6 +1417,8 @@
                 pointsByUser: {},
                 userNames: {},
                 claimedAchievements: [],
+                claimedAchievementsByUser: {},
+                customColors: [],
                 rewards: defaultRewardsPreset(),
                 redemptions: []
             };
@@ -1436,6 +1473,13 @@
                 d.pointsByUser['local'] = d.points;
             }
             d.claimedAchievements = d.claimedAchievements || [];
+            d.claimedAchievementsByUser = d.claimedAchievementsByUser || {};
+            // Migración: los logros antiguos eran globales (compartidos). Se conservan como logros
+            // ya obtenidos por el usuario "local" para no hacer que reaparezcan como nuevos de golpe.
+            if (d.claimedAchievements.length && !d.claimedAchievementsByUser['local']) {
+                d.claimedAchievementsByUser['local'] = d.claimedAchievements.slice();
+            }
+            d.customColors = d.customColors || [];
             d.rewards = (d.rewards && d.rewards.length) ? d.rewards : defaultRewardsPreset();
             d.redemptions = d.redemptions || [];
             d.tasks = (d.tasks || []).map(t => ({
@@ -1507,36 +1551,45 @@
             weekly: 'cada semana', biweekly: 'cada 2 semanas', monthly: 'cada mes'
         };
 
-        const roomColors = ['#78c5d6', '#8fc351', '#f2bc43', '#5c8aea', '#85c441', '#a584d4', '#ff9f0a', '#ff6482', '#5ac8b8', '#c77dff'];
-        const memberColors = ['#4ade80', '#32ade6', '#ff9f0a', '#ff453a', '#bf5af2', '#ffd60a', '#5ac8b8', '#ff6482'];
+        const roomColors = ['#78c5d6', '#8fc351', '#f2bc43', '#5c8aea', '#85c441', '#a584d4', '#ff9f0a', '#ff6482', '#5ac8b8', '#c77dff', '#ff453a', '#4ade80', '#32ade6', '#ffd60a', '#e0724a', '#8a8fa3'];
+        const memberColors = ['#4ade80', '#32ade6', '#ff9f0a', '#ff453a', '#bf5af2', '#ffd60a', '#5ac8b8', '#ff6482', '#78c5d6', '#8fc351', '#a584d4', '#c77dff', '#e0724a', '#5c8aea'];
 
         const iconCategories = {
-            'Limpieza': ['mop', 'cleaning_services', 'vacuum', 'local_laundry_service', 'dry_cleaning', 'iron', 'water_drop', 'sanitizer', 'soap', 'delete', 'recycling', 'delete_sweep', 'auto_delete', 'countertops', 'dry', 'air'],
-            'Baño / WC': ['bathtub', 'shower', 'bathroom', 'wc', 'hot_tub', 'spa', 'soap', 'water_drop', 'sanitizer', 'dry_cleaning', 'plumbing'],
+            'Limpieza': ['mop', 'cleaning_services', 'vacuum', 'local_laundry_service', 'dry_cleaning', 'iron', 'water_drop', 'sanitizer', 'soap', 'delete', 'recycling', 'delete_sweep', 'auto_delete', 'countertops', 'dry', 'air', 'cleaning_bucket', 'bucket_check', 'clean_hands', 'compost'],
+            'Baño / WC': ['bathtub', 'shower', 'bathroom', 'wc', 'hot_tub', 'spa', 'soap', 'water_drop', 'sanitizer', 'dry_cleaning', 'plumbing', 'bath_soak'],
             'Muebles': ['bed', 'chair', 'weekend', 'table_restaurant', 'table_bar', 'curtains', 'curtains_closed', 'window', 'door_front', 'door_sliding', 'checkroom', 'lightbulb', 'nightlight', 'tv', 'desk', 'countertops'],
             'Cocina': ['kitchen', 'countertops', 'microwave', 'blender', 'coffee_maker', 'dining', 'local_pizza', 'egg', 'set_meal', 'icecream', 'local_cafe', 'restaurant_menu'],
             'Exterior': ['yard', 'grass', 'local_florist', 'pool', 'garage', 'solar_power', 'park', 'directions_car', 'deck', 'nature'],
             'Mantenimiento': ['handyman', 'build', 'plumbing', 'electrical_services', 'construction', 'home_repair_service', 'hardware', 'carpenter', 'engineering', 'settings_suggest'],
-            'Mascotas': ['pets', 'cruelty_free', 'pest_control', 'pest_control_rodent', 'egg', 'park', 'water_drop', 'medication', 'grass'],
-            'General': ['home', 'bed', 'chair', 'weekend', 'desk', 'tv', 'bathtub', 'shower', 'checkroom', 'door_front', 'stairs', 'lightbulb', 'toys', 'crib', 'computer', 'shopping_cart', 'spa']
+            'Mascotas': ['pets', 'cruelty_free', 'pest_control', 'pest_control_rodent', 'egg', 'park', 'water_drop', 'medication', 'grass', 'bath_soak', 'compost', 'grain'],
+            'Ropa': ['checkroom', 'apparel', 'dry_cleaning', 'local_laundry_service', 'iron', 'backpack'],
+            'General': ['home', 'bed', 'chair', 'weekend', 'desk', 'tv', 'bathtub', 'shower', 'checkroom', 'door_front', 'stairs', 'lightbulb', 'toys', 'crib', 'computer', 'shopping_cart', 'spa', 'box', 'inventory_2']
         };
         const allIconsFlat = [...new Set(Object.values(iconCategories).flat())];
 
-        const productIconOptions = ['cleaning_services', 'soap', 'sanitizer', 'water_drop', 'local_laundry_service', 'mop', 'dry_cleaning', 'delete', 'recycling', 'spa', 'bathtub', 'shower', 'shopping_cart', 'icecream', 'coffee_maker', 'delete_sweep', 'auto_delete', 'hot_tub', 'wc', 'pest_control', 'iron', 'vacuum'];
+        const productIconOptions = ['cleaning_services', 'soap', 'sanitizer', 'water_drop', 'local_laundry_service', 'mop', 'dry_cleaning', 'delete', 'recycling', 'spa', 'bathtub', 'shower', 'shopping_cart', 'icecream', 'coffee_maker', 'delete_sweep', 'auto_delete', 'hot_tub', 'wc', 'pest_control', 'iron', 'vacuum', 'box', 'inventory_2', 'shopping_bag', 'liquor', 'apparel', 'backpack', 'checkroom', 'cleaning_bucket', 'compost', 'grain', 'bath_soak'];
         const rewardIconOptions = ['restaurant', 'favorite', 'movie', 'self_improvement', 'redeem', 'celebration', 'local_cafe', 'flight', 'spa', 'shopping_bag', 'cake', 'nightlife'];
-        const achievementPoints = { streak3: 30, streak7: 70, streak30: 300, total10: 50, total50: 200, total100: 500, total250: 1000, members1: 20 };
+        const achievementPoints = { streak3: 30, streak7: 70, streak14: 140, streak30: 300, streak60: 600, streak100: 1000, total10: 50, total50: 200, total100: 500, total250: 1000, total500: 1500, total1000: 3000, members1: 20 };
 
         const sortLabels = { fecha: 'Fecha de Vencimiento', importancia: 'Importancia', nombre: 'Nombre (A-Z)' };
         const allTasksSortLabels = { nombre: 'Nombre (A-Z)', fecha: 'Fecha de Vencimiento', importancia: 'Importancia', duracion: 'Duración' };
 
+        // Cada logro se desbloquea de forma individual: la racha y el total de tareas se calculan
+        // solo con las tareas que completó esa persona (ver computeStatsForKey), y los puntos de
+        // recompensa se abonan únicamente a quien lo desbloqueó.
         const achievementDefs = [
             { id: 'streak3', type: 'streak', threshold: 3, label: '3 días seguidos', icon: 'local_fire_department' },
             { id: 'streak7', type: 'streak', threshold: 7, label: 'Semana completa', icon: 'local_fire_department' },
+            { id: 'streak14', type: 'streak', threshold: 14, label: '2 semanas seguidas', icon: 'local_fire_department' },
             { id: 'streak30', type: 'streak', threshold: 30, label: 'Racha de oro', icon: 'military_tech' },
+            { id: 'streak60', type: 'streak', threshold: 60, label: 'Racha de platino', icon: 'military_tech' },
+            { id: 'streak100', type: 'streak', threshold: 100, label: 'Racha legendaria', icon: 'local_fire_department' },
             { id: 'total10', type: 'total', threshold: 10, label: '10 tareas', icon: 'emoji_events' },
             { id: 'total50', type: 'total', threshold: 50, label: '50 tareas', icon: 'emoji_events' },
             { id: 'total100', type: 'total', threshold: 100, label: 'Maestro del hogar', icon: 'workspace_premium' },
             { id: 'total250', type: 'total', threshold: 250, label: 'Leyenda doméstica', icon: 'diamond' },
+            { id: 'total500', type: 'total', threshold: 500, label: 'Élite del hogar', icon: 'diamond' },
+            { id: 'total1000', type: 'total', threshold: 1000, label: 'Salón de la fama', icon: 'workspace_premium' },
             { id: 'members1', type: 'members', threshold: 1, label: 'Equipo en casa', icon: 'group' }
         ];
 
@@ -1984,17 +2037,9 @@
             renderAccentPalette();
             if (persist) saveData();
         }
+        const accentBaseColors = memberColors.concat(['#ff453a']).filter((v, i, a) => a.indexOf(v) === i);
         function renderAccentPalette() {
-            const el = document.getElementById('accent-palette');
-            if (!el) return;
-            el.innerHTML = '';
-            memberColors.concat(['#ff453a']).filter((v, i, a) => a.indexOf(v) === i).forEach(c => {
-                const dot = document.createElement('div');
-                dot.className = 'color-dot' + (data.accent === c ? ' selected' : '');
-                dot.style.backgroundColor = c;
-                dot.onclick = () => changeAccent(c);
-                el.appendChild(dot);
-            });
+            renderColorPalette('accent-palette', accentBaseColors, data.accent, (c) => changeAccent(c), true, true);
         }
 
         function applyTheme(mode, persist = true) {
@@ -2228,6 +2273,34 @@
         }
 
         /* --- HABITACIONES --- */
+        let roomReorderMode = false;
+        function toggleRoomReorder() {
+            roomReorderMode = !roomReorderMode;
+            const btn = document.getElementById('room-reorder-btn');
+            if (btn) {
+                btn.style.color = roomReorderMode ? 'var(--accent-color)' : 'var(--text-secondary)';
+                btn.innerHTML = roomReorderMode
+                    ? '<span class="material-symbols-rounded">check</span> Listo'
+                    : '<span class="material-symbols-rounded">swap_vert</span> Ordenar';
+            }
+            renderRooms();
+        }
+
+        // Cambia la posición de una habitación dentro de data.rooms. Ese orden es el que se usa
+        // en todas partes (lista de Mi Hogar, agrupación por habitación en Programa, filtros, etc.),
+        // así que no depende del orden en que se crearon.
+        function moveRoom(id, direction) {
+            const idx = data.rooms.findIndex(r => r.id === id);
+            if (idx === -1) return;
+            const newIdx = idx + direction;
+            if (newIdx < 0 || newIdx >= data.rooms.length) return;
+            const [room] = data.rooms.splice(idx, 1);
+            data.rooms.splice(newIdx, 0, room);
+            saveData();
+            renderRooms();
+            renderSchedule();
+        }
+
         function renderRooms() {
             const container = document.getElementById('rooms-list');
             container.innerHTML = '';
@@ -2235,14 +2308,20 @@
                 container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">meeting_room</span>Añade tu primera habitación para empezar.</div>`;
                 return;
             }
-            data.rooms.forEach(room => {
+            data.rooms.forEach((room, i) => {
                 const pending = data.tasks.filter(t => t.roomId == room.id && !t.completed).length;
                 const statusText = pending === 0 ? 'NO HAY TAREAS' : `${pending} PENDIENTES`;
 
                 const div = document.createElement('div');
-                div.className = 'room-item';
-                div.onclick = () => showRoomDetail(room.id, room.name);
-                div.innerHTML = `
+                div.className = 'room-item' + (roomReorderMode ? ' reorder-mode' : '');
+                const reorderHTML = roomReorderMode ? `
+                    <div class="room-reorder-controls">
+                        <span class="material-symbols-rounded ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveRoom(${room.id}, -1)">keyboard_arrow_up</span>
+                        <span class="material-symbols-rounded ${i === data.rooms.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveRoom(${room.id}, 1)">keyboard_arrow_down</span>
+                    </div>
+                ` : '';
+                div.onclick = roomReorderMode ? null : (() => showRoomDetail(room.id, room.name));
+                div.innerHTML = reorderHTML + `
                     <div class="icon-container" style="background-color: ${room.color || '#333'}">
                         <span class="material-symbols-rounded">${room.icon}</span>
                     </div>
@@ -2452,7 +2531,7 @@
         }
 
         function cycleSortMode() {
-            const order = ['fecha', 'importancia', 'nombre'];
+            const order = ['fecha', 'importancia'];
             sortMode = order[(order.indexOf(sortMode) + 1) % order.length];
             const label = document.getElementById('sort-pill-label');
             if (label) label.innerText = sortLabels[sortMode];
@@ -3048,25 +3127,30 @@
             return (task.points === undefined || task.points === null) ? POINTS_PER_TASK : task.points;
         }
 
-        // Revisa y desbloquea logros de racha/total/miembros (no otorga los puntos de la tarea en sí).
-        function checkAchievements() {
-            const s = computeStats();
-            const key = fbCurrentUserKey();
+        // Revisa y desbloquea los logros de la persona que acaba de completar una tarea
+        // (no otorga los puntos de la tarea en sí, solo el bonus del logro).
+        function checkAchievements(key) {
+            key = key || fbCurrentUserKey();
+            const s = computeStatsForKey(key);
+            if (!data.claimedAchievementsByUser) data.claimedAchievementsByUser = {};
+            if (!data.claimedAchievementsByUser[key]) data.claimedAchievementsByUser[key] = [];
+            const claimed = data.claimedAchievementsByUser[key];
             let bonusMsgs = [];
             achievementDefs.forEach(a => {
                 let unlocked = false;
                 if (a.type === 'streak') unlocked = s.streak >= a.threshold;
                 else if (a.type === 'total') unlocked = s.totalCompleted >= a.threshold;
                 else if (a.type === 'members') unlocked = data.members.length >= a.threshold;
-                if (unlocked && !data.claimedAchievements.includes(a.id)) {
-                    data.claimedAchievements.push(a.id);
+                if (unlocked && !claimed.includes(a.id)) {
+                    claimed.push(a.id);
                     const bonus = achievementPoints[a.id] || 0;
                     addUserPoints(key, bonus);
                     bonusMsgs.push(`${a.label} (+${bonus} pts)`);
                 }
             });
             if (bonusMsgs.length) {
-                setTimeout(() => alert(`🏆 ¡Logro desbloqueado!\n${bonusMsgs.join('\n')}`), 50);
+                const who = userDisplayName(key);
+                setTimeout(() => alert(`🏆 ¡Logro desbloqueado${who ? ' de ' + who : ''}!\n${bonusMsgs.join('\n')}`), 50);
             }
         }
 
@@ -3093,6 +3177,28 @@
             const completionRate = totalTasks ? Math.round((completedNow / totalTasks) * 100) : 0;
 
             return { completedToday, completedLast7, completedLast30, streak, totalCompleted, completionRate };
+        }
+
+        // Igual que computeStats(), pero solo con las tareas completadas por una persona concreta
+        // (identificada por su "key" de puntos). Se usa para que la racha y los logros sean por persona.
+        function computeStatsForKey(key) {
+            const ownHistory = data.history.filter(h => (h.completedByKey || 'local') === key);
+            const t = todayStr();
+            const in7 = addDays(t, -6);
+            const in30 = addDays(t, -29);
+            const completedLast7 = ownHistory.filter(h => h.completedAt.slice(0, 10) >= in7).length;
+            const completedLast30 = ownHistory.filter(h => h.completedAt.slice(0, 10) >= in30).length;
+            const completedToday = ownHistory.filter(h => h.completedAt.slice(0, 10) === t).length;
+            const totalCompleted = ownHistory.length;
+
+            const daysWithActivity = new Set(ownHistory.map(h => h.completedAt.slice(0, 10)));
+            let streak = 0;
+            let cursor = daysWithActivity.has(t) ? t : addDays(t, -1);
+            while (daysWithActivity.has(cursor)) {
+                streak++;
+                cursor = addDays(cursor, -1);
+            }
+            return { completedToday, completedLast7, completedLast30, streak, totalCompleted };
         }
 
         function renderWeekBarChart() {
@@ -3158,10 +3264,37 @@
             }
         }
 
+        // Reúne todas las "personas" que tienen datos propios (miembros del hogar + el
+        // usuario local) para poder elegir de quién ver los logros.
+        let selectedBadgeUserKey = null;
+        function badgeUserKeys() {
+            const keys = new Set(['local']);
+            (data.members || []).forEach(m => keys.add(String(m.id)));
+            Object.keys(data.pointsByUser || {}).forEach(k => keys.add(k));
+            Object.keys(data.claimedAchievementsByUser || {}).forEach(k => keys.add(k));
+            data.history.forEach(h => keys.add(h.completedByKey || 'local'));
+            return Array.from(keys);
+        }
+
+        function selectBadgeUser(key) {
+            selectedBadgeUserKey = key;
+            renderBadges();
+        }
+
+        // Los logros son individuales: cada persona tiene su propia racha, su propio total
+        // de tareas completadas y sus propios logros desbloqueados.
         function renderBadges() {
             const grid = document.getElementById('badge-grid');
+            const chipsEl = document.getElementById('badge-person-chips');
             if (!grid) return;
-            const s = computeStats();
+            const keys = badgeUserKeys();
+            if (!selectedBadgeUserKey || !keys.includes(selectedBadgeUserKey)) selectedBadgeUserKey = fbCurrentUserKey();
+            if (chipsEl) {
+                chipsEl.innerHTML = keys.map(k => `
+                    <div class="badge-person-chip ${k === selectedBadgeUserKey ? 'active' : ''}" onclick="selectBadgeUser('${k}')">${userDisplayName(k) || 'Tú'}</div>
+                `).join('');
+            }
+            const s = computeStatsForKey(selectedBadgeUserKey);
             grid.innerHTML = achievementDefs.map(a => {
                 let unlocked = false;
                 if (a.type === 'streak') unlocked = s.streak >= a.threshold;
@@ -3268,7 +3401,7 @@
 
             data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedByKey: completedByKey, pointsEarned: pointsToAdd, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount });
             task.lastCompletedAt = now;
-            checkAchievements();
+            checkAchievements(completedByKey);
             saveData();
             refreshAll();
 
@@ -3409,17 +3542,43 @@
             if (prevValue) select.value = prevValue;
         }
 
-        function renderColorPalette(containerId, colors, selected, onPick) {
+        // Guarda un color elegido a mano por la persona para que quede disponible en todas
+        // las paletas de color de la app (habitaciones, miembros, iconos, tema...).
+        function addCustomColor(color) {
+            if (!color) return;
+            const c = color.toLowerCase();
+            if (!data.customColors) data.customColors = [];
+            data.customColors = data.customColors.filter(x => x.toLowerCase() !== c);
+            data.customColors.unshift(c);
+            if (data.customColors.length > 12) data.customColors = data.customColors.slice(0, 12);
+            saveData();
+        }
+
+        function renderColorPalette(containerId, colors, selected, onPick, allowCustom = true, big = false) {
             const el = document.getElementById(containerId);
             if (!el) return;
             el.innerHTML = '';
-            colors.forEach(c => {
+            const sizeClass = big ? '' : ' small';
+            const custom = (data.customColors || []).filter(c => !colors.includes(c));
+            colors.concat(custom).forEach(c => {
                 const dot = document.createElement('div');
-                dot.className = 'color-dot small' + (selected === c ? ' selected' : '');
+                dot.className = 'color-dot' + sizeClass + (selected === c ? ' selected' : '');
                 dot.style.backgroundColor = c;
                 dot.onclick = () => onPick(c);
                 el.appendChild(dot);
             });
+            if (allowCustom) {
+                const addDot = document.createElement('label');
+                addDot.className = 'color-dot' + sizeClass + ' color-dot-add';
+                addDot.title = 'Elegir otro color';
+                addDot.innerHTML = '<span class="material-symbols-rounded">add</span><input type="color" value="' + (selected || '#ffffff') + '">';
+                addDot.querySelector('input').addEventListener('input', (e) => {
+                    const c = e.target.value;
+                    addCustomColor(c);
+                    onPick(c);
+                });
+                el.appendChild(addDot);
+            }
         }
 
         function renderIconGrid(id, type, iconArr) {
