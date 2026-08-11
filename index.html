@@ -1493,6 +1493,21 @@
 
         let data = JSON.parse(localStorage.getItem('hogarMasterData')) || defaultData();
 
+        // Borra los rastros (puntos, logros, nombre guardado) de cualquier "clave de persona"
+        // que ya no corresponda a un miembro activo del hogar (ni al usuario local "Tú").
+        // Así, cuando alguien se elimina como miembro, deja de aparecer en la pantalla de
+        // logros/rachas y no queda como usuario "fantasma".
+        function purgeInactiveUsers(d) {
+            const validKeys = new Set(['local']);
+            (d.members || []).forEach(m => validKeys.add(String(m.id)));
+            ['pointsByUser', 'claimedAchievementsByUser', 'userNames'].forEach(field => {
+                if (!d[field]) return;
+                Object.keys(d[field]).forEach(k => {
+                    if (!validKeys.has(k)) delete d[field][k];
+                });
+            });
+        }
+
         // Migración / valores por defecto para datos antiguos o incompletos.
         // Se aplica al cargar la página Y cada vez que llegan datos nuevos desde Firebase,
         // porque un documento remoto guardado con una versión anterior de la app puede no
@@ -1560,6 +1575,7 @@
                 }
                 if (!Array.isArray(t.repeatWeekDays)) t.repeatWeekDays = [];
             });
+            purgeInactiveUsers(d);
             return d;
         }
         data = normalizeData(data);
@@ -2897,6 +2913,8 @@
             if (!confirm(warning)) return;
             data.tasks.forEach(t => { if (t.memberId == editingMemberId) t.memberId = null; });
             data.members = data.members.filter(m => m.id !== editingMemberId);
+            purgeInactiveUsers(data);
+            if (selectedBadgeUserKey === String(editingMemberId)) selectedBadgeUserKey = null;
             saveData();
             closeModal('modal-member');
             refreshAll();
@@ -3215,6 +3233,33 @@
             }
         }
 
+        // Revoca los logros de una persona que ya NO cumple sus requisitos (p. ej. su racha
+        // o su total de tareas bajó al deshacer una tarea) y le retira los puntos bonus que
+        // había ganado por ellos. Se llama siempre después de deshacer una tarea/paso.
+        function revertAchievementsForKey(key) {
+            if (!key) return;
+            if (!data.claimedAchievementsByUser || !data.claimedAchievementsByUser[key]) return;
+            const s = computeStatsForKey(key);
+            const claimed = data.claimedAchievementsByUser[key];
+            const stillValid = [];
+            claimed.forEach(id => {
+                const a = achievementDefs.find(x => x.id === id);
+                let unlocked = true;
+                if (a) {
+                    if (a.type === 'streak') unlocked = s.streak >= a.threshold;
+                    else if (a.type === 'total') unlocked = s.totalCompleted >= a.threshold;
+                    else if (a.type === 'members') unlocked = data.members.length >= a.threshold;
+                }
+                if (unlocked) {
+                    stillValid.push(id);
+                } else {
+                    const bonus = achievementPoints[id] || 0;
+                    if (bonus) addUserPoints(key, -bonus);
+                }
+            });
+            data.claimedAchievementsByUser[key] = stillValid;
+        }
+
         /* --- HISTORIAL Y ESTADÍSTICAS --- */
         function computeStats() {
             const t = todayStr();
@@ -3325,15 +3370,13 @@
             }
         }
 
-        // Reúne todas las "personas" que tienen datos propios (miembros del hogar + el
-        // usuario local) para poder elegir de quién ver los logros.
+        // Reúne solo a las personas que son miembros ACTIVOS del hogar ahora mismo (más el
+        // usuario local "Tú"), para poder elegir de quién ver los logros. Los miembros que
+        // se hayan eliminado ya no aparecen aquí ni en la lista de logros.
         let selectedBadgeUserKey = null;
         function badgeUserKeys() {
             const keys = new Set(['local']);
             (data.members || []).forEach(m => keys.add(String(m.id)));
-            Object.keys(data.pointsByUser || {}).forEach(k => keys.add(k));
-            Object.keys(data.claimedAchievementsByUser || {}).forEach(k => keys.add(k));
-            data.history.forEach(h => keys.add(h.completedByKey || 'local'));
             return Array.from(keys);
         }
 
@@ -3492,16 +3535,21 @@
             }
         }
 
-        // Deshace la tarea completa: revierte todos los puntos que otorgó (los de sus pasos, o los suyos propios)
-        // y reinicia todos los pasos a pendientes.
+        // Deshace la tarea completa: revierte todos los puntos que otorgó (los de sus pasos, o los suyos propios),
+        // reinicia todos los pasos a pendientes, y revoca cualquier logro/racha que ya no se cumpla.
         function uncompleteTaskFully(task) {
             task.completed = false;
             const idx = data.history.findIndex(h => h.taskId === task.id);
             let entry = null;
             if (idx > -1) { entry = data.history[idx]; data.history.splice(idx, 1); }
+            const affectedKeys = new Set();
             if (task.subtasks && task.subtasks.length) {
                 task.subtasks.forEach(s => {
-                    if (s.done && s.points) addUserPoints(s.completedByKey || (entry && entry.completedByKey) || fbCurrentUserKey(), -s.points);
+                    if (s.done && s.points) {
+                        const k = s.completedByKey || (entry && entry.completedByKey) || fbCurrentUserKey();
+                        addUserPoints(k, -s.points);
+                        affectedKeys.add(k);
+                    }
                     s.done = false;
                     s.completedByKey = null;
                     s.completedByName = null;
@@ -3509,7 +3557,9 @@
             } else {
                 const refundKey = (entry && entry.completedByKey) || fbCurrentUserKey();
                 addUserPoints(refundKey, -taskTotalPoints(task));
+                affectedKeys.add(refundKey);
             }
+            affectedKeys.forEach(k => revertAchievementsForKey(k));
             saveData();
             refreshAll();
         }
@@ -3538,7 +3588,8 @@
                 saveData();
                 refreshAll();
             } else {
-                if (step.points) addUserPoints(step.completedByKey || fbCurrentUserKey(), -step.points);
+                const refundKey = step.completedByKey || fbCurrentUserKey();
+                if (step.points) addUserPoints(refundKey, -step.points);
                 step.done = false;
                 step.completedByKey = null;
                 step.completedByName = null;
@@ -3547,6 +3598,7 @@
                     const idx = data.history.findIndex(h => h.taskId === task.id);
                     if (idx > -1) data.history.splice(idx, 1);
                 }
+                revertAchievementsForKey(refundKey);
                 saveData();
                 refreshAll();
             }
@@ -3563,24 +3615,32 @@
 
             const task = data.tasks.find(t => t.id === h.taskId);
             const refundKey = h.completedByKey || fbCurrentUserKey();
+            const affectedKeys = new Set();
             if (task) {
                 if (task.subtasks && task.subtasks.length) {
                     task.subtasks.forEach(s => {
-                        if (s.done && s.points) addUserPoints(s.completedByKey || refundKey, -s.points);
+                        if (s.done && s.points) {
+                            const k = s.completedByKey || refundKey;
+                            addUserPoints(k, -s.points);
+                            affectedKeys.add(k);
+                        }
                         s.done = false;
                         s.completedByKey = null;
                         s.completedByName = null;
                     });
                 } else {
                     addUserPoints(refundKey, -taskTotalPoints(task));
+                    affectedKeys.add(refundKey);
                 }
                 task.completed = false;
                 if (h.dueDateAtCompletion !== undefined) task.dueDate = h.dueDateAtCompletion;
                 if (h.repeatEndCountAtCompletion !== undefined) task.repeatEndCount = h.repeatEndCountAtCompletion;
             } else {
                 addUserPoints(refundKey, -POINTS_PER_TASK);
+                affectedKeys.add(refundKey);
             }
 
+            affectedKeys.forEach(k => revertAchievementsForKey(k));
             saveData();
             refreshAll();
         }
