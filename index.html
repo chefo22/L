@@ -2569,14 +2569,22 @@
             return parts.join(' · ');
         }
 
-        function taskItemHTML(task, room, showRoomName) {
+        function taskItemHTML(task, room, showRoomName, interactive) {
+            if (interactive === undefined) interactive = true;
             const overdue = task.dueDate && task.dueDate < todayStr() && !task.completed;
             const member = memberById(task.memberId);
             const memberHTML = member ? `<div class="member-avatar" style="background-color:${member.color}">${member.name.charAt(0).toUpperCase()}</div>` : '';
             const tagsHTML = (task.tags && task.tags.length) ? task.tags.slice(0, 2).map(tg => `<span class="tag-mini">${tg}</span>`).join('') : '';
             const roomPrefix = showRoomName ? `${room ? room.name : 'Casa'} · ` : '';
-            const linkHTML = task.link ? `<span class="material-symbols-rounded" title="Abrir enlace" onclick="event.stopPropagation(); openTaskLink('${task.id}')" style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px; padding:6px; margin:-6px 0 -6px 2px;">link</span>` : '';
-            const snoozeHTML = (!task.completed && task.dueDate) ? `<span class="material-symbols-rounded" title="Posponer 1 día" onclick="event.stopPropagation(); snoozeTask(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">snooze</span>` : '';
+            const linkHTML = task.link ? `<span class="material-symbols-rounded" title="Abrir enlace" ${interactive ? `onclick="event.stopPropagation(); openTaskLink('${task.id}')"` : ''} style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px; padding:6px; margin:-6px 0 -6px 2px;">link</span>` : '';
+            const snoozeHTML = (interactive && !task.completed && task.dueDate) ? `<span class="material-symbols-rounded" title="Posponer 1 día" onclick="event.stopPropagation(); snoozeTask(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">snooze</span>` : '';
+            const checkboxHTML = interactive
+                ? `<span class="material-symbols-rounded checkbox ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleTask(${task.id})" style="margin-left:6px; padding:6px; margin-top:-6px; margin-bottom:-6px;">
+                    ${task.completed ? 'check_circle' : 'radio_button_unchecked'}
+                </span>`
+                : `<span class="material-symbols-rounded" style="margin-left:6px; color:${task.completed ? 'var(--accent-color)' : 'var(--text-secondary)'}; opacity:${task.completed ? '1' : '0.5'};">
+                    ${task.completed ? 'check_circle' : 'radio_button_unchecked'}
+                </span>`;
             return `
                 <div class="item-info" style="padding-left:${showRoomName ? '4px' : '0'};">
                     <div class="item-title-row">
@@ -2591,10 +2599,8 @@
                 ${memberHTML}
                 ${linkHTML}
                 ${snoozeHTML}
-                <span style="width:1px; align-self:stretch; background:var(--border-color); margin:2px 4px;"></span>
-                <span class="material-symbols-rounded checkbox ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleTask(${task.id})" style="margin-left:6px; padding:6px; margin-top:-6px; margin-bottom:-6px;">
-                    ${task.completed ? 'check_circle' : 'radio_button_unchecked'}
-                </span>
+                ${interactive ? `<span style="width:1px; align-self:stretch; background:var(--border-color); margin:2px 4px;"></span>` : ''}
+                ${checkboxHTML}
             `;
         }
 
@@ -2833,7 +2839,6 @@
         function scheduleTaskItemEl(task, room, showRoomName) {
             const div = document.createElement('div');
             div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
-            div.onclick = () => openEditTask(task.id);
             const indicatorHTML = scheduleShowRoomIndicators ? `
                 <div class="icon-container" style="background-color: ${task.iconColor || (room ? room.color : '#333')}">
                     <span class="material-symbols-rounded">${task.icon}</span>
@@ -3012,7 +3017,7 @@
                         <span class="material-symbols-rounded">${task.icon}</span>
                         ${task.favorite ? '<span class="material-symbols-rounded fav-star">star</span>' : ''}
                     </div>
-                    ${taskItemHTML(task, room, true)}
+                    ${taskItemHTML(task, room, true, false)}
                 `;
                 container.appendChild(div);
             });
@@ -3663,6 +3668,11 @@
         // miembro (vía Firebase), ese miembro ya aparece en la lista con su nombre y no hace
         // falta duplicarlo como "Tú". Los miembros que se hayan eliminado ya no aparecen aquí.
         let selectedBadgeUserKey = null;
+
+        // Cuántas entradas del historial se muestran de una vez en "Actividad reciente".
+        // Empieza corta para que la pantalla de Logros no se vuelva interminable; el
+        // botón "Ver más" la va ampliando de 20 en 20 hasta el límite de 150 cargadas.
+        let historyDisplayLimit = 20;
         function badgeUserKeys() {
             const keys = new Set([fbCurrentUserKey()]);
             (data.members || []).forEach(m => keys.add(String(m.id)));
@@ -3726,7 +3736,8 @@
                 listEl.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">history</span>Aún no has completado ninguna tarea.</div>`;
                 return;
             }
-            const sorted = [...data.history].sort((a, b) => b.completedAt.localeCompare(a.completedAt)).slice(0, 150);
+            const sortedFull = [...data.history].sort((a, b) => b.completedAt.localeCompare(a.completedAt)).slice(0, 150);
+            const sorted = sortedFull.slice(0, historyDisplayLimit);
             let lastDate = '';
             sorted.forEach(h => {
                 const dateKey = h.completedAt.slice(0, 10);
@@ -3756,6 +3767,16 @@
                 `;
                 listEl.appendChild(div);
             });
+
+            if (sortedFull.length > sorted.length) {
+                const remaining = sortedFull.length - sorted.length;
+                const moreBtn = document.createElement('div');
+                moreBtn.className = 'filter-pill';
+                moreBtn.style.cssText = 'display:flex; justify-content:center; cursor:pointer; margin:4px auto 16px auto; width:max-content;';
+                moreBtn.innerText = `Ver más (${Math.min(remaining, 20)} de ${remaining})`;
+                moreBtn.onclick = () => { historyDisplayLimit += 20; renderHistoryView(); };
+                listEl.appendChild(moreBtn);
+            }
         }
 
         /* --- COMPLETAR TAREA (con soporte de repetición y pasos con puntos propios) --- */
