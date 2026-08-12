@@ -282,7 +282,7 @@
             display: flex;
             justify-content: flex-start;
             background-color: var(--bg-main);
-            padding: 10px 16px 20px 16px;
+            padding: 10px 0 20px 0;
             border-bottom: 1px solid var(--border-color);
             margin-bottom: 16px;
             overflow-x: auto;
@@ -365,6 +365,22 @@
         .filter-row { display:flex; gap:8px; flex-wrap:wrap; }
         .filter-pill.active { background-color: var(--accent-color); color: #000; }
         .filter-pill.active span { color: #000; }
+
+        /* Fila de filtros compacta: solo icono, sin etiqueta de texto */
+        .icon-filter-row { display: flex; gap: 10px; margin-bottom: 16px; }
+        .icon-filter-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--bg-card);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .icon-filter-btn .material-symbols-rounded { font-size: 20px; }
+        .icon-filter-btn.active { background-color: var(--accent-color); color: #000; }
 
         /* --- AGRUPACIÓN POR HABITACIÓN (PROGRAMA) --- */
         .schedule-room-header {
@@ -734,9 +750,12 @@
 
     <div id="view-hogar" class="view-screen">
         <header class="top-bar">
-            <div class="title-group" onclick="switchTab('ajustes')" style="cursor:pointer;">
-                <span id="home-title-text">Casa</span> <span class="material-symbols-rounded" style="color: var(--text-secondary)">expand_more</span>
+            <div class="title-group">
+                <span id="home-title-text">Casa</span>
             </div>
+            <button class="btn-icon" onclick="switchTab('ajustes')" style="color: var(--text-secondary);" title="Ajustes">
+                <span class="material-symbols-rounded">settings</span>
+            </button>
         </header>
 
         <div class="container">
@@ -838,7 +857,7 @@
     <div id="view-programa" class="view-screen hidden">
         <header class="top-bar">
             <div class="title-group" style="cursor:pointer; font-size:22px;" onclick="jumpToToday()">
-                <span id="programa-date-label">Hoy</span> <span class="material-symbols-rounded" style="color: var(--text-secondary); font-size: 20px;">expand_more</span>
+                <span id="programa-date-label">Hoy</span>
             </div>
             <button class="btn-icon" style="color: var(--accent-color);" onclick="toggleScheduleSearch()"><span class="material-symbols-rounded">search</span></button>
         </header>
@@ -852,18 +871,18 @@
                 <div class="input-row"><input type="text" id="schedule-search-input" placeholder="Buscar tarea..." oninput="onScheduleSearchInput(this.value)"></div>
             </div>
 
-            <div class="filter-row">
-                <div class="filter-pill" onclick="cycleSortMode()" style="cursor:pointer;">
-                    <span class="material-symbols-rounded">swap_vert</span> <span id="sort-pill-label">Fecha de Vencimiento</span>
+            <div class="icon-filter-row">
+                <div class="icon-filter-btn" onclick="cycleSortMode()" title="Ordenar por fecha o importancia">
+                    <span class="material-symbols-rounded" id="sort-pill-icon">calendar_month</span>
                 </div>
-                <div class="filter-pill" onclick="toggleFavFilter('schedule')" id="fav-filter-schedule" style="cursor:pointer;">
-                    <span class="material-symbols-rounded">star</span> Favoritas
+                <div class="icon-filter-btn" onclick="toggleFavFilter('schedule')" id="fav-filter-schedule" title="Solo favoritas">
+                    <span class="material-symbols-rounded">star</span>
                 </div>
-                <div class="filter-pill" onclick="cycleScheduleGroupByRoom()" id="group-room-filter-schedule" style="cursor:pointer;">
-                    <span class="material-symbols-rounded" id="group-room-pill-icon">meeting_room</span> <span id="group-room-pill-label">Habitaciones</span>
+                <div class="icon-filter-btn" onclick="cycleScheduleGroupByRoom()" id="group-room-filter-schedule" title="Agrupar por habitación">
+                    <span class="material-symbols-rounded" id="group-room-pill-icon">meeting_room</span>
                 </div>
-                <div class="filter-pill active" onclick="toggleScheduleIndicators()" id="indicator-filter-schedule" style="cursor:pointer;">
-                    <span class="material-symbols-rounded" id="indicator-filter-icon">visibility</span> Indicadores
+                <div class="icon-filter-btn active" onclick="toggleScheduleIndicators()" id="indicator-filter-schedule" title="Mostrar indicadores">
+                    <span class="material-symbols-rounded" id="indicator-filter-icon">visibility</span>
                 </div>
             </div>
 
@@ -954,7 +973,11 @@
 
     <div id="view-ajustes" class="view-screen hidden">
         <header class="top-bar">
+            <button class="btn-icon" onclick="switchTab('hogar')" style="color: var(--text-primary);">
+                <span class="material-symbols-rounded">arrow_back</span>
+            </button>
             <div class="title-group">Ajustes</div>
+            <div style="width:40px;"></div>
         </header>
         <div class="container">
             <div class="section-header">
@@ -1175,9 +1198,6 @@
         <div class="nav-item" id="nav-history-nav" onclick="switchTab('historial')">
             <span class="material-symbols-rounded">bar_chart</span>Estadísticas
         </div>
-        <div class="nav-item" id="nav-ajustes" onclick="switchTab('ajustes')">
-            <span class="material-symbols-rounded">settings</span>Ajustes
-        </div>
     </nav>
 
     <div id="modal-room" class="modal">
@@ -1340,6 +1360,12 @@
                 </div>
             </div>
 
+            <h3 class="section-title-sm">PRODUCTOS QUE GASTA</h3>
+            <div class="input-group" style="padding: 8px 16px;">
+                <div style="font-size:12px; color:var(--text-secondary); padding: 4px 0 10px;">Marca los productos de limpieza que se gastan cada vez que se completa esta tarea. Iremos contando los usos y avisaremos con una tarea de compra antes de que se acaben.</div>
+                <div class="chip-row" id="task-product-picker" style="flex-wrap:wrap; overflow:visible;"></div>
+            </div>
+
             <h3 class="section-title-sm">ICONO DE TAREA</h3>
             <div class="icon-cat-row" id="task-icon-cats"></div>
             <div class="icon-grid" id="task-icon-grid"></div>
@@ -1386,15 +1412,18 @@
             </div>
             <h3 class="section-title-sm">ICONO</h3>
             <div class="icon-grid" id="product-icon-grid"></div>
-            <h3 class="section-title-sm">SE SUELE ACABAR CADA (DÍAS)</h3>
+            <div style="font-size:12px; color:var(--text-secondary); padding: 4px 16px 12px;" id="product-usage-info"></div>
+            <h3 class="section-title-sm">AGUANTA ESTOS USOS (OPCIONAL)</h3>
             <div class="input-group">
-                <div class="input-row"><input type="number" id="product-estimated-days" placeholder="Ej. 30 (opcional, se calcula solo con el tiempo)" min="1"></div>
+                <div class="input-row"><input type="number" id="product-estimated-uses" placeholder="Ej. 12 (si no lo pones, se aprende solo)" min="1"></div>
             </div>
-            <h3 class="section-title-sm">AVISAR CON CUÁNTOS DÍAS DE ANTELACIÓN</h3>
+            <h3 class="section-title-sm">AVISAR CON CUÁNTOS USOS DE ANTELACIÓN</h3>
             <div class="input-group">
-                <div class="input-row"><input type="number" id="product-lead-days" placeholder="3" min="0"></div>
+                <div class="input-row"><input type="number" id="product-lead-uses" placeholder="1" min="0"></div>
             </div>
-            <button class="btn-secondary-block hidden" id="product-buy-btn" onclick="logProductPurchase(editingProductId); closeModal('modal-product');">Marcar como comprado hoy</button>
+            <h3 class="section-title-sm">TAREAS VINCULADAS</h3>
+            <div style="font-size:12px; color:var(--text-secondary); padding: 0 16px 12px;" id="product-linked-tasks"></div>
+            <button class="btn-secondary-block hidden" id="product-buy-btn" onclick="restockProduct(editingProductId); closeModal('modal-product');">Marcar como repuesto hoy</button>
             <button class="btn-danger-block hidden" id="product-delete-btn" onclick="deleteProduct()">Eliminar producto</button>
         </div>
     </div>
@@ -1538,8 +1567,12 @@
             d.startView = d.startView || 'hogar';
             d.listDensity = d.listDensity || 'comfortable';
             d.products = (d.products || []).map(p => ({
-                purchaseHistory: [], estimatedDays: null, leadDays: 3, reminderEnabled: true,
-                lastNotifiedKey: null, category: 'General', icon: 'cleaning_services', ...p
+                // Sistema antiguo (por días), se conserva por compatibilidad pero ya no se usa:
+                purchaseHistory: [], estimatedDays: null, leadDays: 3,
+                // Sistema nuevo: por USOS. Un "uso" = una vez que se completa una tarea vinculada.
+                estimatedUses: null, usesSinceRestock: 0, useHistory: [], leadUses: 1,
+                lastRestockAt: null, pendingBuyTaskId: null,
+                reminderEnabled: true, lastNotifiedKey: null, category: 'General', icon: 'cleaning_services', ...p
             }));
             d.points = (d.points === undefined || d.points === null) ? 0 : d.points;
             d.pointsByUser = d.pointsByUser || {};
@@ -1565,6 +1598,10 @@
                 reminderLead: 0, link: null, lastNotifiedKey: null, points: POINTS_PER_TASK,
                 repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
                 repeatMode: 'afterComplete', repeatEndType: 'never', repeatEndDate: null, repeatEndCount: null,
+                // productIds: productos de limpieza que se gastan al completar esta tarea.
+                // autoBuyProductId: si no es null, esta tarea es la de "Comprar X" autogenerada
+                // para reponer ese producto antes de que vuelva a hacer falta.
+                productIds: [], autoBuyProductId: null,
                 ...t
             }));
             // Migración de pasos/subtareas antiguos: cada paso puede tener su propia persona asignada y sus propios puntos
@@ -1593,6 +1630,7 @@
         let editingTaskId = null;
         let editingMemberId = null;
         let editingProductId = null;
+        let editingTaskProductIds = [];
         let editingRewardId = null;
         let selectedProductIcon = 'cleaning_services';
         let selectedRewardIcon = 'redeem';
@@ -1745,6 +1783,8 @@
 
             const sortLabel = document.getElementById('sort-pill-label');
             if (sortLabel) sortLabel.innerText = sortLabels[sortMode];
+            const sortIcon = document.getElementById('sort-pill-icon');
+            if (sortIcon) sortIcon.innerText = sortMode === 'importancia' ? 'flag' : 'calendar_month';
             const favBtn = document.getElementById('fav-filter-schedule');
             if (favBtn) favBtn.classList.toggle('active', scheduleFavOnly);
             const indBtn = document.getElementById('indicator-filter-schedule');
@@ -2320,13 +2360,13 @@
             });
             data.products.forEach(product => {
                 if (product.reminderEnabled === false) return;
-                const status = computeProductStatus(product);
+                const status = computeProductUsageStatus(product);
                 if (status.state !== 'soon' && status.state !== 'empty') return;
-                const notifKey = status.nextDate; // se resetea cuando se registra una nueva compra
+                const notifKey = status.state + '_' + (product.usesSinceRestock || 0); // se resetea al reponer
                 if (product.lastNotifiedKey === notifKey) return;
                 try {
                     new Notification('Se te está acabando: ' + product.name, {
-                        body: status.state === 'empty' ? 'Según tu patrón de compra, ya deberías reponerlo.' : `Según tu patrón de compra, se acaba en ${status.daysLeft} día(s).`
+                        body: status.state === 'empty' ? 'Según tu patrón de uso, ya deberías reponerlo. Revisa la tarea de compra automática.' : `Según tu patrón de uso, quedan ~${status.usesLeft} uso(s).`
                     });
                 } catch (e) { /* silenciar entornos sin soporte total */ }
                 product.lastNotifiedKey = notifKey;
@@ -2400,7 +2440,6 @@
                 renderHistoryView();
             } else if (tab === 'ajustes') {
                 document.getElementById('view-ajustes').classList.remove('hidden');
-                document.getElementById('nav-ajustes').classList.add('active');
             }
             currentRoomDetailId = null;
         }
@@ -2695,6 +2734,8 @@
             sortMode = order[(order.indexOf(sortMode) + 1) % order.length];
             const label = document.getElementById('sort-pill-label');
             if (label) label.innerText = sortLabels[sortMode];
+            const icon = document.getElementById('sort-pill-icon');
+            if (icon) icon.innerText = sortMode === 'importancia' ? 'flag' : 'calendar_month';
             saveSchedulePrefs();
             renderSchedule();
             renderRoomTasks();
@@ -3048,43 +3089,52 @@
             refreshAll();
         }
 
-        /* --- PRODUCTOS DE LIMPIEZA (inventario y patrón de compra) --- */
+        /* --- PRODUCTOS DE LIMPIEZA (vinculados a tareas, patrón por USOS) ---
+           Un producto se vincula a una o varias tareas que lo gastan (task.productIds).
+           Cada vez que se completa una tarea vinculada, cuenta como "un uso" del producto.
+           Mientras no tengamos una estimación de cuántos usos aguanta, se pregunta al
+           completar la tarea si el producto se ha acabado. En cuanto sabemos (por historial
+           o porque se puso a mano) cuántos usos aguanta, dejamos de preguntar y generamos
+           automáticamente una tarea de "Comprar X" con antelación, antes de que vuelva a
+           hacer falta en la siguiente tarea que lo use. */
         function productById(id) {
             return data.products.find(p => p.id === id);
         }
 
-        // Analiza el historial de compras del producto y estima cada cuántos días se repone,
-        // promediando los intervalos entre las últimas compras (patrón de gasto).
-        function computeProductPattern(product) {
-            const history = (product.purchaseHistory || []).slice().sort();
-            if (history.length >= 2) {
-                const intervals = [];
-                for (let i = 1; i < history.length; i++) {
-                    const d1 = new Date(history[i - 1] + 'T00:00:00');
-                    const d2 = new Date(history[i] + 'T00:00:00');
-                    intervals.push(Math.round((d2 - d1) / 86400000));
-                }
-                const recent = intervals.slice(-6); // prioriza el patrón reciente
+        // Tareas reales (no la de compra autogenerada) que consumen este producto.
+        function tasksUsingProduct(productId) {
+            return data.tasks.filter(t => !t.autoBuyProductId && (t.productIds || []).includes(productId));
+        }
+
+        // Estimación de cuántos usos aguanta el producto: prioriza lo aprendido de ciclos ya
+        // completados (el usuario confirmó que se acabó tras X usos) y si no hay datos aún,
+        // recurre a la estimación manual que se haya indicado en la ficha del producto.
+        function computeProductUsagePattern(product) {
+            const hist = product.useHistory || [];
+            if (hist.length >= 1) {
+                const recent = hist.slice(-6); // prioriza los ciclos más recientes
                 const avg = Math.round(recent.reduce((a, b) => a + b, 0) / recent.length);
                 return avg > 0 ? avg : null;
             }
-            return product.estimatedDays || null;
+            return product.estimatedUses || null;
         }
 
-        function computeProductStatus(product) {
-            const history = (product.purchaseHistory || []).slice().sort();
-            const lastPurchase = history.length ? history[history.length - 1] : null;
-            const learnedDays = computeProductPattern(product);
-            if (!lastPurchase || !learnedDays) {
-                return { state: 'nodata', label: 'Sin datos suficientes', daysLeft: null, nextDate: null, learnedDays };
+        function computeProductUsageStatus(product) {
+            const estimated = computeProductUsagePattern(product);
+            const usesSince = product.usesSinceRestock || 0;
+            if (!estimated) {
+                return {
+                    state: 'nodata',
+                    label: usesSince > 0 ? `Aprendiendo · ${usesSince} uso(s) registrados` : 'Aprendiendo patrón de uso…',
+                    usesLeft: null, estimated: null
+                };
             }
-            const nextDate = addDays(lastPurchase, learnedDays);
-            const daysLeft = Math.round((new Date(nextDate + 'T00:00:00') - new Date(todayStr() + 'T00:00:00')) / 86400000);
-            const lead = (product.leadDays === undefined || product.leadDays === null) ? 3 : product.leadDays;
-            let state = 'ok', label = `Abastecido · repón en ${daysLeft}d`;
-            if (daysLeft <= 0) { state = 'empty'; label = 'Repón ya'; }
-            else if (daysLeft <= lead) { state = 'soon'; label = `Se acaba pronto · ${daysLeft}d`; }
-            return { state, label, daysLeft, nextDate, learnedDays };
+            const usesLeft = estimated - usesSince;
+            const lead = (product.leadUses === undefined || product.leadUses === null) ? 1 : product.leadUses;
+            let state = 'ok', label = `Quedan ~${Math.max(usesLeft, 0)} uso(s)`;
+            if (usesLeft <= 0) { state = 'empty'; label = 'Repón ya'; }
+            else if (usesLeft <= lead) { state = 'soon'; label = `Se acaba pronto · ~${usesLeft} uso(s)`; }
+            return { state, label, usesLeft, estimated };
         }
 
         function renderProductsView() {
@@ -3092,10 +3142,11 @@
             if (!container) return;
             container.innerHTML = '';
             if (data.products.length === 0) {
-                container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">cleaning_services</span>Agrega tus productos de limpieza (detergente, jabón, etc.) y avisaremos cuando se estén por acabar según tu patrón de compra.</div>`;
+                container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">cleaning_services</span>Agrega tus productos de limpieza (detergente, jabón, etc.), vincúlalos a las tareas que los gastan y aprenderemos cuántos usos aguantan.</div>`;
             } else {
                 data.products.forEach(p => {
-                    const status = computeProductStatus(p);
+                    const status = computeProductUsageStatus(p);
+                    const linkedCount = tasksUsingProduct(p.id).length;
                     const color = status.state === 'empty' ? 'var(--danger-color)' : (status.state === 'soon' ? 'var(--accent-orange)' : 'var(--text-secondary)');
                     const div = document.createElement('div');
                     div.className = 'card';
@@ -3107,8 +3158,9 @@
                         <div class="item-info" style="cursor:pointer;" onclick="openEditProduct('${p.id}')">
                             <div class="item-title">${p.name}</div>
                             <div style="font-size:12px; color:${color}; font-weight:600;">${status.label}</div>
+                            <div style="font-size:11px; color:var(--text-secondary);">${linkedCount ? `Vinculado a ${linkedCount} tarea${linkedCount === 1 ? '' : 's'}` : 'Sin tareas vinculadas'}</div>
                         </div>
-                        <button class="btn-icon" style="color:var(--accent-color);" onclick="logProductPurchase('${p.id}')" title="Marcar comprado hoy">
+                        <button class="btn-icon" style="color:var(--accent-color);" onclick="restockProduct('${p.id}')" title="Marcar como repuesto hoy">
                             <span class="material-symbols-rounded">add_shopping_cart</span>
                         </button>
                     `;
@@ -3117,7 +3169,7 @@
             }
             const badge = document.getElementById('dash-products-count');
             if (badge) {
-                const needing = data.products.filter(p => ['empty', 'soon'].includes(computeProductStatus(p).state)).length;
+                const needing = data.products.filter(p => ['empty', 'soon'].includes(computeProductUsageStatus(p).state)).length;
                 badge.innerHTML = needing > 0
                     ? `<span style="color:var(--accent-orange);">${needing} por reponer</span> <span class="material-symbols-rounded">chevron_right</span>`
                     : `${data.products.length} <span class="material-symbols-rounded">chevron_right</span>`;
@@ -3130,8 +3182,10 @@
             document.getElementById('product-delete-btn').classList.add('hidden');
             document.getElementById('product-buy-btn').classList.add('hidden');
             document.getElementById('product-name').value = '';
-            document.getElementById('product-estimated-days').value = '';
-            document.getElementById('product-lead-days').value = '3';
+            document.getElementById('product-estimated-uses').value = '';
+            document.getElementById('product-lead-uses').value = '1';
+            document.getElementById('product-usage-info').innerText = 'Aún no hay datos. La primera vez que se use en una tarea vinculada, te preguntaremos si se ha acabado, hasta que aprendamos el patrón.';
+            document.getElementById('product-linked-tasks').innerText = 'Vincúlalo desde la ficha de cada tarea, en la sección "Productos que gasta".';
             selectedProductIcon = 'cleaning_services';
             renderIconGrid('product-icon-grid', 'product', productIconOptions);
             openModal('modal-product');
@@ -3145,8 +3199,17 @@
             document.getElementById('product-delete-btn').classList.remove('hidden');
             document.getElementById('product-buy-btn').classList.remove('hidden');
             document.getElementById('product-name').value = p.name;
-            document.getElementById('product-estimated-days').value = p.estimatedDays || '';
-            document.getElementById('product-lead-days').value = (p.leadDays === undefined || p.leadDays === null) ? 3 : p.leadDays;
+            document.getElementById('product-estimated-uses').value = p.estimatedUses || '';
+            document.getElementById('product-lead-uses').value = (p.leadUses === undefined || p.leadUses === null) ? 1 : p.leadUses;
+            const status = computeProductUsageStatus(p);
+            const cycles = p.useHistory || [];
+            const learnedNote = cycles.length ? ` Aprendido de ${cycles.length} ciclo${cycles.length === 1 ? '' : 's'} anterior${cycles.length === 1 ? '' : 'es'} (${cycles.join(', ')} usos).` : '';
+            const sinceTxt = `${p.usesSinceRestock || 0} uso(s) desde la última reposición${p.lastRestockAt ? (' (' + formatDateLabel(p.lastRestockAt) + ')') : ''}.`;
+            document.getElementById('product-usage-info').innerText = sinceTxt + ' ' + (status.estimated ? `Estimación actual: ~${status.estimated} usos.${learnedNote}` : 'Todavía sin estimación: se preguntará si se ha acabado tras cada uso.');
+            const linked = tasksUsingProduct(p.id);
+            document.getElementById('product-linked-tasks').innerText = linked.length
+                ? ('Usado por: ' + linked.map(t => t.name).join(', '))
+                : 'Sin tareas vinculadas todavía. Vincúlalo desde la ficha de cada tarea.';
             selectedProductIcon = p.icon || 'cleaning_services';
             renderIconGrid('product-icon-grid', 'product', productIconOptions);
             openModal('modal-product');
@@ -3155,19 +3218,20 @@
         function saveProduct() {
             const name = document.getElementById('product-name').value.trim();
             if (!name) { alert('Ponle un nombre al producto.'); return; }
-            const estimatedDays = parseInt(document.getElementById('product-estimated-days').value) || null;
-            const leadDays = parseInt(document.getElementById('product-lead-days').value);
+            const estimatedUses = parseInt(document.getElementById('product-estimated-uses').value) || null;
+            const leadUsesInput = parseInt(document.getElementById('product-lead-uses').value);
+            const leadUses = isNaN(leadUsesInput) ? 1 : Math.max(0, leadUsesInput);
             if (editingProductId) {
                 const p = productById(editingProductId);
                 p.name = name;
                 p.icon = selectedProductIcon;
-                p.estimatedDays = estimatedDays;
-                p.leadDays = isNaN(leadDays) ? 3 : leadDays;
+                p.estimatedUses = estimatedUses;
+                p.leadUses = leadUses;
             } else {
                 data.products.push({
                     id: 'p' + Date.now(), name, icon: selectedProductIcon, category: 'General',
-                    estimatedDays, leadDays: isNaN(leadDays) ? 3 : leadDays,
-                    purchaseHistory: [], reminderEnabled: true, lastNotifiedKey: null
+                    estimatedUses, leadUses, useHistory: [], usesSinceRestock: 0,
+                    lastRestockAt: null, pendingBuyTaskId: null, reminderEnabled: true, lastNotifiedKey: null
                 });
             }
             saveData();
@@ -3177,23 +3241,94 @@
 
         function deleteProduct() {
             if (!editingProductId) return;
-            if (!confirm('¿Eliminar este producto?')) return;
+            if (!confirm('¿Eliminar este producto? Se desvinculará de las tareas que lo usan.')) return;
             data.products = data.products.filter(p => p.id !== editingProductId);
+            data.tasks.forEach(t => { if (t.productIds) t.productIds = t.productIds.filter(id => id !== editingProductId); });
             saveData();
             closeModal('modal-product');
             renderProductsView();
         }
 
-        // Registra una compra hoy y recalcula el patrón de gasto automáticamente.
-        function logProductPurchase(id) {
+        // Marca el producto como repuesto hoy: reinicia el contador de usos y cancela
+        // cualquier tarea automática de compra que estuviera pendiente para él.
+        function restockProduct(id) {
             const p = productById(id);
             if (!p) return;
-            const today = todayStr();
-            if (!p.purchaseHistory.includes(today)) p.purchaseHistory.push(today);
-            p.purchaseHistory.sort();
+            p.usesSinceRestock = 0;
+            p.lastRestockAt = todayStr();
             p.lastNotifiedKey = null;
+            if (p.pendingBuyTaskId) {
+                const pending = data.tasks.find(x => x.id === p.pendingBuyTaskId);
+                if (pending && !pending.completed) {
+                    data.tasks = data.tasks.filter(x => x.id !== p.pendingBuyTaskId);
+                }
+                p.pendingBuyTaskId = null;
+            }
             saveData();
             renderProductsView();
+            refreshAll();
+        }
+
+        // Crea (o reutiliza si ya hay una pendiente) la tarea automática "Comprar <producto>",
+        // para que se compre con antelación, antes de que vuelva a hacer falta.
+        function scheduleAutoBuyTask(product, urgent) {
+            if (product.pendingBuyTaskId) {
+                const existing = data.tasks.find(t => t.id === product.pendingBuyTaskId);
+                if (existing && !existing.completed) return; // ya hay una pendiente, no duplicar
+            }
+            const linkedTasks = tasksUsingProduct(product.id);
+            const roomId = linkedTasks.length ? linkedTasks[0].roomId : (data.rooms[0] ? data.rooms[0].id : null);
+            const newTask = {
+                id: Date.now() + Math.random(),
+                roomId,
+                name: `Comprar ${product.name}`,
+                notes: urgent ? 'Se ha acabado: repón antes de la próxima tarea que lo necesite.' : 'Se está por acabar: repón antes de que vuelva a hacer falta.',
+                importance: urgent ? 'Alta' : 'Media',
+                icon: 'shopping_cart', iconColor: null,
+                dueDate: todayStr(), frequencyDays: null,
+                tags: ['compra'], memberId: null, favorite: false, duration: null,
+                reminderTime: null, reminderLead: 0, link: null, lastNotifiedKey: null,
+                points: POINTS_PER_TASK, subtasks: [],
+                repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
+                repeatMode: 'afterComplete', repeatEndType: 'never', repeatEndDate: null, repeatEndCount: null,
+                completed: false, lastCompletedAt: null, createdAt: new Date().toISOString(),
+                productIds: [], autoBuyProductId: product.id
+            };
+            data.tasks.push(newTask);
+            product.pendingBuyTaskId = newTask.id;
+        }
+
+        // Se llama al completar cualquier tarea: si la tarea gasta productos vinculados,
+        // cuenta un uso en cada uno; si la tarea completada ES la de "Comprar X" autogenerada,
+        // repone ese producto y reinicia su contador de usos.
+        function processProductUsageForCompletedTask(task) {
+            if (task.autoBuyProductId) {
+                restockProduct(task.autoBuyProductId);
+                return;
+            }
+            const productIds = task.productIds || [];
+            if (!productIds.length) return;
+            productIds.forEach(pid => {
+                const p = productById(pid);
+                if (!p) return;
+                p.usesSinceRestock = (p.usesSinceRestock || 0) + 1;
+                const pattern = computeProductUsagePattern(p);
+                if (pattern === null) {
+                    // Todavía no hay estimación: preguntamos si este uso ha agotado el producto.
+                    const ranOut = confirm(`¿Se ha acabado "${p.name}" al usarlo en "${task.name}"?`);
+                    if (ranOut) {
+                        p.useHistory = p.useHistory || [];
+                        p.useHistory.push(p.usesSinceRestock);
+                        if (p.useHistory.length > 6) p.useHistory = p.useHistory.slice(-6);
+                        p.usesSinceRestock = 0;
+                        scheduleAutoBuyTask(p, true);
+                    }
+                } else {
+                    const usesLeft = pattern - p.usesSinceRestock;
+                    const lead = (p.leadUses === undefined || p.leadUses === null) ? 1 : p.leadUses;
+                    if (usesLeft <= lead) scheduleAutoBuyTask(p, usesLeft <= 0);
+                }
+            });
         }
 
         /* --- PUNTOS Y RECOMPENSAS --- */
@@ -3633,6 +3768,7 @@
 
             data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedByKey: completedByKey, pointsEarned: pointsToAdd, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount });
             task.lastCompletedAt = now;
+            processProductUsageForCompletedTask(task);
             checkAchievements(completedByKey);
             saveData();
             refreshAll();
@@ -3667,6 +3803,12 @@
         // reinicia todos los pasos a pendientes, y revoca cualquier logro/racha que ya no se cumpla.
         function uncompleteTaskFully(task) {
             task.completed = false;
+            // Revierte el conteo de usos de productos vinculados (mejor esfuerzo: no deshace
+            // una reposición automática ya generada, si la hubiera).
+            (task.productIds || []).forEach(pid => {
+                const p = productById(pid);
+                if (p) p.usesSinceRestock = Math.max(0, (p.usesSinceRestock || 0) - 1);
+            });
             const idx = data.history.findIndex(h => h.taskId === task.id);
             let entry = null;
             if (idx > -1) { entry = data.history[idx]; data.history.splice(idx, 1); }
@@ -4009,6 +4151,29 @@
             else editingRepeatWeekDays.push(day);
             renderRepeatWeekdayPicker();
         }
+        // Chips seleccionables con los productos de limpieza que gasta la tarea al completarse.
+        function renderTaskProductPicker() {
+            const el = document.getElementById('task-product-picker');
+            if (!el) return;
+            el.innerHTML = '';
+            if (data.products.length === 0) {
+                el.innerHTML = `<div style="font-size:12px; color:var(--text-secondary);">Todavía no tienes productos. Créalos desde la sección "Productos" y luego vincúlalos aquí.</div>`;
+                return;
+            }
+            data.products.forEach(p => {
+                const chip = document.createElement('div');
+                chip.className = 'chip' + (editingTaskProductIds.includes(p.id) ? ' active' : '');
+                chip.innerHTML = `<span class="material-symbols-rounded">${p.icon}</span>${p.name}`;
+                chip.onclick = () => toggleTaskProduct(p.id);
+                el.appendChild(chip);
+            });
+        }
+        function toggleTaskProduct(id) {
+            const idx = editingTaskProductIds.indexOf(id);
+            if (idx > -1) editingTaskProductIds.splice(idx, 1);
+            else editingTaskProductIds.push(id);
+            renderTaskProductPicker();
+        }
         function setRepeatMode(mode) {
             renderSegmented('repeat-mode-segmented', mode);
         }
@@ -4113,11 +4278,13 @@
             selectedTaskCategory = 'Limpieza';
             editingFavorite = false;
             editingSubtasks = [];
+            editingTaskProductIds = [];
             document.getElementById('task-fav-btn').innerHTML = '<span class="material-symbols-rounded">star_border</span>';
             renderTaskIconCats();
             renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
             renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, (c) => { selectedTaskIconColor = (selectedTaskIconColor === c) ? null : c; renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, arguments.callee); });
             renderSubtaskList();
+            renderTaskProductPicker();
             updateSelectRooms();
             updateSelectMembers();
             if (presetRoomId) document.getElementById('task-room-select').value = presetRoomId;
@@ -4158,6 +4325,7 @@
             selectedTaskIconColor = t.iconColor || null;
             editingFavorite = !!t.favorite;
             editingSubtasks = (t.subtasks || []).map(s => ({ ...s }));
+            editingTaskProductIds = (t.productIds || []).slice();
             document.getElementById('task-fav-btn').innerHTML = `<span class="material-symbols-rounded" style="color:${editingFavorite ? 'var(--accent-orange)' : 'var(--accent-color)'}">${editingFavorite ? 'star' : 'star_border'}</span>`;
             let foundCat = Object.keys(iconCategories).find(cat => iconCategories[cat].includes(t.icon)) || 'Limpieza';
             selectedTaskCategory = foundCat;
@@ -4165,6 +4333,7 @@
             renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
             renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, (c) => { selectedTaskIconColor = (selectedTaskIconColor === c) ? null : c; renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, arguments.callee); });
             renderSubtaskList();
+            renderTaskProductPicker();
             openModal('modal-task');
         }
 
@@ -4209,6 +4378,7 @@
                 roomId, name, notes, importance: imp, icon: selectedTaskIcon, iconColor: selectedTaskIconColor,
                 dueDate, tags, memberId, favorite: editingFavorite, duration, reminderTime, reminderLead, link, points,
                 subtasks: editingSubtasks,
+                productIds: editingTaskProductIds.slice(),
                 repeatType, repeatInterval, repeatUnit, repeatWeekDays, repeatMode,
                 repeatEndType, repeatEndDate, repeatEndCount,
                 // frequencyDays se mantiene en null: el sistema de repetición avanzado lo sustituye por completo
@@ -4248,7 +4418,9 @@
                 lastNotifiedKey: null,
                 subtasks: (original.subtasks || []).map(s => ({ ...s, done: false })),
                 tags: (original.tags || []).slice(),
-                repeatWeekDays: (original.repeatWeekDays || []).slice()
+                repeatWeekDays: (original.repeatWeekDays || []).slice(),
+                productIds: (original.productIds || []).slice(),
+                autoBuyProductId: null
             };
             data.tasks.push(copy);
             saveData();
@@ -4259,6 +4431,11 @@
         function deleteTask() {
             if (!editingTaskId) return;
             if (!confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.')) return;
+            const t = data.tasks.find(x => x.id === editingTaskId);
+            if (t && t.autoBuyProductId) {
+                const p = productById(t.autoBuyProductId);
+                if (p && p.pendingBuyTaskId === t.id) p.pendingBuyTaskId = null;
+            }
             data.tasks = data.tasks.filter(t => t.id !== editingTaskId);
             saveData();
             closeModal('modal-task');
