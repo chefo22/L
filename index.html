@@ -254,13 +254,6 @@
             position: relative;
         }
         .icon-container .material-symbols-rounded { color: white; font-size: 24px; }
-        .fav-star {
-            position: absolute;
-            top: -4px; right: -14px;
-            font-size: 15px !important;
-            color: var(--accent-orange) !important;
-        }
-
         .item-info { flex-grow: 1; min-width: 0; }
         .item-title-row { display:flex; align-items:center; gap:6px; }
         .item-title { font-size: 16px; font-weight: 500; }
@@ -897,10 +890,6 @@
                     <span class="material-symbols-rounded" id="sort-pill-icon">calendar_month</span>
                     <span id="sort-pill-label">Fecha</span>
                 </div>
-                <div class="icon-filter-btn" onclick="toggleFavFilter('schedule')" id="fav-filter-schedule" title="Solo favoritas">
-                    <span class="material-symbols-rounded">star</span>
-                    <span>Favoritas</span>
-                </div>
                 <div class="icon-filter-btn" onclick="cycleScheduleGroupByRoom()" id="group-room-filter-schedule" title="Agrupar por habitación">
                     <span class="material-symbols-rounded" id="group-room-pill-icon">meeting_room</span>
                     <span id="group-room-pill-label">Habitaciones</span>
@@ -931,9 +920,6 @@
             <div class="chip-row" id="all-tasks-member-chips"></div>
             <div class="chip-row" id="all-tasks-tag-chips"></div>
             <div class="filter-row" style="margin-bottom:12px;">
-                <div class="filter-pill" onclick="toggleFavFilter('all')" id="fav-filter-all" style="cursor:pointer;">
-                    <span class="material-symbols-rounded">star</span> Favoritas
-                </div>
                 <div class="filter-pill" onclick="cycleAllTasksSort()" style="cursor:pointer;">
                     <span class="material-symbols-rounded">swap_vert</span> <span id="all-sort-pill-label">Nombre (A-Z)</span>
                 </div>
@@ -1255,7 +1241,6 @@
             <button class="btn-icon" style="color:var(--text-secondary);" onclick="closeModal('modal-task')"><span class="material-symbols-rounded">close</span></button>
             <div class="modal-title" id="modal-task-title">Crear nueva tarea</div>
             <div style="display:flex; align-items:center; gap:10px;">
-                <button class="btn-icon" id="task-fav-btn" onclick="toggleFavoriteEditing()"><span class="material-symbols-rounded">star_border</span></button>
                 <button class="btn-text" onclick="saveTask()">Guardar</button>
             </div>
         </div>
@@ -1633,7 +1618,7 @@
             d.redemptions = d.redemptions || [];
             d.tasks = (d.tasks || []).map(t => ({
                 notes: '', dueDate: null, frequencyDays: null, lastCompletedAt: null, createdAt: new Date().toISOString(),
-                tags: [], subtasks: [], memberId: null, favorite: false, duration: null, reminderTime: null, iconColor: null,
+                tags: [], subtasks: [], memberId: null, duration: null, reminderTime: null, iconColor: null,
                 reminderLead: 0, link: null, lastNotifiedKey: null, points: POINTS_PER_TASK,
                 repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
                 repeatMode: 'afterComplete', repeatEndType: 'never', repeatEndDate: null, repeatEndCount: null,
@@ -1679,7 +1664,6 @@
         let selectedMemberColor = '#78c5d6';
         let selectedTaskIconColor = null;
         let selectedTaskCategory = 'Limpieza';
-        let editingFavorite = false;
         let editingSubtasks = [];
         let editingRepeatWeekDays = [];
         let notificationCheckInterval = null;
@@ -1691,8 +1675,6 @@
         let allTasksRoomFilter = 'all';
         let allTasksMemberFilter = 'all';
         let allTasksTagFilter = 'all';
-        let scheduleFavOnly = false;
-        let allTasksFavOnly = false;
         let scheduleGroupByRoom = 'off'; // 'off' | 'unido' | 'fragmentado'
         let scheduleShowRoomIndicators = true;
 
@@ -1804,7 +1786,6 @@
             try {
                 localStorage.setItem('hogarSchedulePrefs', JSON.stringify({
                     sortMode,
-                    scheduleFavOnly,
                     scheduleGroupByRoom,
                     scheduleShowRoomIndicators
                 }));
@@ -1816,7 +1797,6 @@
             try { prefs = JSON.parse(localStorage.getItem('hogarSchedulePrefs')); } catch (e) {}
             if (!prefs) return;
             if (prefs.sortMode && sortLabels[prefs.sortMode]) sortMode = prefs.sortMode;
-            if (typeof prefs.scheduleFavOnly === 'boolean') scheduleFavOnly = prefs.scheduleFavOnly;
             if (['off', 'unido', 'fragmentado'].includes(prefs.scheduleGroupByRoom)) scheduleGroupByRoom = prefs.scheduleGroupByRoom;
             if (typeof prefs.scheduleShowRoomIndicators === 'boolean') scheduleShowRoomIndicators = prefs.scheduleShowRoomIndicators;
 
@@ -1824,8 +1804,6 @@
             if (sortLabel) sortLabel.innerText = sortLabels[sortMode];
             const sortIcon = document.getElementById('sort-pill-icon');
             if (sortIcon) sortIcon.innerText = sortMode === 'importancia' ? 'flag' : 'calendar_month';
-            const favBtn = document.getElementById('fav-filter-schedule');
-            if (favBtn) favBtn.classList.toggle('active', scheduleFavOnly);
             const indBtn = document.getElementById('indicator-filter-schedule');
             const indIcon = document.getElementById('indicator-filter-icon');
             const indLabel = document.getElementById('indicator-filter-label');
@@ -2621,7 +2599,6 @@
                 <div class="item-info" style="padding-left:${showRoomName ? '4px' : '0'};">
                     <div class="item-title-row">
                         <div class="item-title">${task.name}</div>
-                        ${task.favorite ? '<span class="material-symbols-rounded" style="font-size:15px; color:var(--accent-orange);">star</span>' : ''}
                         <span style="font-size:11px; color:var(--accent-color); font-weight:700;">+${taskTotalPoints(task)}</span>
                         ${tagsHTML}
                     </div>
@@ -2725,7 +2702,6 @@
                 div.innerHTML = `
                     <div class="icon-container" style="background-color: ${task.iconColor || '#2c2c2e'};">
                         <span class="material-symbols-rounded" style="color:${task.iconColor ? 'white' : impColor}">${task.icon}</span>
-                        ${task.favorite ? '<span class="material-symbols-rounded fav-star">star</span>' : ''}
                     </div>
                     ${taskItemHTML(task, null, false)}
                 `;
@@ -2807,19 +2783,6 @@
         function onScheduleSearchInput(v) {
             scheduleSearchQuery = v.toLowerCase();
             renderSchedule();
-        }
-
-        function toggleFavFilter(scope) {
-            if (scope === 'schedule') {
-                scheduleFavOnly = !scheduleFavOnly;
-                document.getElementById('fav-filter-schedule').classList.toggle('active', scheduleFavOnly);
-                saveSchedulePrefs();
-                renderSchedule();
-            } else {
-                allTasksFavOnly = !allTasksFavOnly;
-                document.getElementById('fav-filter-all').classList.toggle('active', allTasksFavOnly);
-                renderAllTasksView();
-            }
         }
 
         function cycleSortMode() {
@@ -2907,7 +2870,6 @@
             const indicatorHTML = scheduleShowRoomIndicators ? `
                 <div class="icon-container" style="background-color: ${task.iconColor || (room ? room.color : '#333')}">
                     <span class="material-symbols-rounded">${task.icon}</span>
-                    ${task.favorite ? '<span class="material-symbols-rounded fav-star">star</span>' : ''}
                 </div>` : '';
             div.innerHTML = indicatorHTML + taskItemHTML(task, room, showRoomName);
             return div;
@@ -2927,7 +2889,6 @@
                 list = data.tasks.filter(x => x.dueDate === selectedScheduleDate);
             }
             if (scheduleSearchQuery) list = list.filter(x => x.name.toLowerCase().includes(scheduleSearchQuery));
-            if (scheduleFavOnly) list = list.filter(x => x.favorite);
             list = sortTasks(list, sortMode);
 
             if (list.length === 0) {
@@ -3063,7 +3024,6 @@
                 (allTasksRoomFilter === 'all' || String(t.roomId) === String(allTasksRoomFilter)) &&
                 (allTasksMemberFilter === 'all' || String(t.memberId) === String(allTasksMemberFilter)) &&
                 (allTasksTagFilter === 'all' || (t.tags || []).includes(allTasksTagFilter)) &&
-                (!allTasksFavOnly || t.favorite) &&
                 t.name.toLowerCase().includes(allTasksQuery)
             );
             list = sortTasks(list, allTasksSortMode);
@@ -3080,7 +3040,6 @@
                 div.innerHTML = `
                     <div class="icon-container" style="background-color: ${task.iconColor || (room ? room.color : '#333')}">
                         <span class="material-symbols-rounded">${task.icon}</span>
-                        ${task.favorite ? '<span class="material-symbols-rounded fav-star">star</span>' : ''}
                     </div>
                     ${taskItemHTML(task, room, true, false)}
                 `;
@@ -3380,7 +3339,7 @@
                 importance: urgent ? 'Alta' : 'Media',
                 icon: 'shopping_cart', iconColor: null,
                 dueDate: todayStr(), frequencyDays: null,
-                tags: ['compra'], memberId: null, favorite: false, duration: null,
+                tags: ['compra'], memberId: null, duration: null,
                 reminderTime: null, reminderLead: 0, link: null, lastNotifiedKey: null,
                 points: POINTS_PER_TASK, subtasks: [],
                 repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
@@ -4319,12 +4278,6 @@
             return active ? active.getAttribute('data-v') : 'afterComplete';
         }
 
-        function toggleFavoriteEditing() {
-            editingFavorite = !editingFavorite;
-            const btn = document.getElementById('task-fav-btn');
-            btn.innerHTML = `<span class="material-symbols-rounded" style="color:${editingFavorite ? 'var(--accent-orange)' : 'var(--accent-color)'}">${editingFavorite ? 'star' : 'star_border'}</span>`;
-        }
-
         function renderSubtaskList() {
             const el = document.getElementById('subtask-list');
             el.innerHTML = '';
@@ -4413,10 +4366,8 @@
             selectedTaskIcon = 'mop';
             selectedTaskIconColor = null;
             selectedTaskCategory = 'Limpieza';
-            editingFavorite = false;
             editingSubtasks = [];
             editingTaskProductIds = [];
-            document.getElementById('task-fav-btn').innerHTML = '<span class="material-symbols-rounded">star_border</span>';
             renderTaskIconCats();
             renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
             renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, (c) => { selectedTaskIconColor = (selectedTaskIconColor === c) ? null : c; renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, arguments.callee); });
@@ -4460,10 +4411,8 @@
             updateRepeatUI();
             selectedTaskIcon = t.icon;
             selectedTaskIconColor = t.iconColor || null;
-            editingFavorite = !!t.favorite;
             editingSubtasks = (t.subtasks || []).map(s => ({ ...s }));
             editingTaskProductIds = (t.productIds || []).slice();
-            document.getElementById('task-fav-btn').innerHTML = `<span class="material-symbols-rounded" style="color:${editingFavorite ? 'var(--accent-orange)' : 'var(--accent-color)'}">${editingFavorite ? 'star' : 'star_border'}</span>`;
             let foundCat = Object.keys(iconCategories).find(cat => iconCategories[cat].includes(t.icon)) || 'Limpieza';
             selectedTaskCategory = foundCat;
             renderTaskIconCats();
@@ -4513,7 +4462,7 @@
 
             const payload = {
                 roomId, name, notes, importance: imp, icon: selectedTaskIcon, iconColor: selectedTaskIconColor,
-                dueDate, tags, memberId, favorite: editingFavorite, duration, reminderTime, reminderLead, link, points,
+                dueDate, tags, memberId, duration, reminderTime, reminderLead, link, points,
                 subtasks: editingSubtasks,
                 productIds: editingTaskProductIds.slice(),
                 repeatType, repeatInterval, repeatUnit, repeatWeekDays, repeatMode,
