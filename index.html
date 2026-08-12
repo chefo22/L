@@ -366,20 +366,24 @@
         .filter-pill.active { background-color: var(--accent-color); color: #000; }
         .filter-pill.active span { color: #000; }
 
-        /* Fila de filtros compacta: solo icono, sin etiqueta de texto */
-        .icon-filter-row { display: flex; gap: 10px; margin-bottom: 16px; }
+        /* Fila de filtros compacta: icono + etiqueta de texto, para que se entienda qué hace cada botón */
+        .icon-filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
         .icon-filter-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+            height: 36px;
+            padding: 0 12px;
+            border-radius: 20px;
             background-color: var(--bg-card);
             color: var(--text-secondary);
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 6px;
             cursor: pointer;
+            font-size: 12.5px;
+            font-weight: 500;
+            white-space: nowrap;
         }
-        .icon-filter-btn .material-symbols-rounded { font-size: 20px; }
+        .icon-filter-btn .material-symbols-rounded { font-size: 18px; }
         .icon-filter-btn.active { background-color: var(--accent-color); color: #000; }
 
         /* --- AGRUPACIÓN POR HABITACIÓN (PROGRAMA) --- */
@@ -874,15 +878,19 @@
             <div class="icon-filter-row">
                 <div class="icon-filter-btn" onclick="cycleSortMode()" title="Ordenar por fecha o importancia">
                     <span class="material-symbols-rounded" id="sort-pill-icon">calendar_month</span>
+                    <span id="sort-pill-label">Fecha</span>
                 </div>
                 <div class="icon-filter-btn" onclick="toggleFavFilter('schedule')" id="fav-filter-schedule" title="Solo favoritas">
                     <span class="material-symbols-rounded">star</span>
+                    <span>Favoritas</span>
                 </div>
                 <div class="icon-filter-btn" onclick="cycleScheduleGroupByRoom()" id="group-room-filter-schedule" title="Agrupar por habitación">
                     <span class="material-symbols-rounded" id="group-room-pill-icon">meeting_room</span>
+                    <span id="group-room-pill-label">Habitaciones</span>
                 </div>
-                <div class="icon-filter-btn active" onclick="toggleScheduleIndicators()" id="indicator-filter-schedule" title="Mostrar indicadores">
+                <div class="icon-filter-btn active" onclick="toggleScheduleIndicators()" id="indicator-filter-schedule" title="Mostrar/ocultar indicadores de color">
                     <span class="material-symbols-rounded" id="indicator-filter-icon">visibility</span>
+                    <span id="indicator-filter-label">Indicadores</span>
                 </div>
             </div>
 
@@ -1687,7 +1695,7 @@
         const rewardIconOptions = ['restaurant', 'favorite', 'movie', 'self_improvement', 'redeem', 'celebration', 'local_cafe', 'flight', 'spa', 'shopping_bag', 'cake', 'nightlife'];
         const achievementPoints = { streak3: 30, streak7: 70, streak14: 140, streak30: 300, streak60: 600, streak100: 1000, total10: 50, total50: 200, total100: 500, total250: 1000, total500: 1500, total1000: 3000, members1: 20 };
 
-        const sortLabels = { fecha: 'Fecha de Vencimiento', importancia: 'Importancia', nombre: 'Nombre (A-Z)' };
+        const sortLabels = { fecha: 'Fecha', importancia: 'Importancia', nombre: 'Nombre (A-Z)' };
         const allTasksSortLabels = { nombre: 'Nombre (A-Z)', fecha: 'Fecha de Vencimiento', importancia: 'Importancia', duracion: 'Duración' };
 
         // Cada logro se desbloquea de forma individual: la racha y el total de tareas se calculan
@@ -1789,8 +1797,10 @@
             if (favBtn) favBtn.classList.toggle('active', scheduleFavOnly);
             const indBtn = document.getElementById('indicator-filter-schedule');
             const indIcon = document.getElementById('indicator-filter-icon');
+            const indLabel = document.getElementById('indicator-filter-label');
             if (indBtn) indBtn.classList.toggle('active', scheduleShowRoomIndicators);
             if (indIcon) indIcon.innerText = scheduleShowRoomIndicators ? 'visibility' : 'visibility_off';
+            if (indLabel) indLabel.innerText = scheduleShowRoomIndicators ? 'Indicadores' : 'Sin indicadores';
             updateGroupRoomPill();
         }
 
@@ -2555,8 +2565,8 @@
             const memberHTML = member ? `<div class="member-avatar" style="background-color:${member.color}">${member.name.charAt(0).toUpperCase()}</div>` : '';
             const tagsHTML = (task.tags && task.tags.length) ? task.tags.slice(0, 2).map(tg => `<span class="tag-mini">${tg}</span>`).join('') : '';
             const roomPrefix = showRoomName ? `${room ? room.name : 'Casa'} · ` : '';
-            const linkHTML = task.link ? `<span class="material-symbols-rounded" title="Abrir enlace" onclick="event.stopPropagation(); openTaskLink('${task.id}')" style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px;">link</span>` : '';
-            const snoozeHTML = (!task.completed && task.dueDate) ? `<span class="material-symbols-rounded" title="Posponer 1 día" onclick="event.stopPropagation(); snoozeTask(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px;">snooze</span>` : '';
+            const linkHTML = task.link ? `<span class="material-symbols-rounded" title="Abrir enlace" onclick="event.stopPropagation(); openTaskLink('${task.id}')" style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px; padding:6px; margin:-6px 0 -6px 2px;">link</span>` : '';
+            const snoozeHTML = (!task.completed && task.dueDate) ? `<span class="material-symbols-rounded" title="Posponer 1 día" onclick="event.stopPropagation(); snoozeTask(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">snooze</span>` : '';
             return `
                 <div class="item-info" style="padding-left:${showRoomName ? '4px' : '0'};">
                     <div class="item-title-row">
@@ -2571,7 +2581,8 @@
                 ${memberHTML}
                 ${linkHTML}
                 ${snoozeHTML}
-                <span class="material-symbols-rounded checkbox ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleTask(${task.id})" style="margin-left:10px;">
+                <span style="width:1px; align-self:stretch; background:var(--border-color); margin:2px 4px;"></span>
+                <span class="material-symbols-rounded checkbox ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleTask(${task.id})" style="margin-left:6px; padding:6px; margin-top:-6px; margin-bottom:-6px;">
                     ${task.completed ? 'check_circle' : 'radio_button_unchecked'}
                 </span>
             `;
@@ -2608,6 +2619,7 @@
         function snoozeTask(id) {
             const task = data.tasks.find(t => t.id === id);
             if (!task) return;
+            if (!confirm(`¿Posponer "${task.name}" 1 día?`)) return;
             const base = (task.dueDate && task.dueDate > todayStr()) ? task.dueDate : todayStr();
             task.dueDate = addDays(base, 1);
             saveData();
@@ -2800,8 +2812,10 @@
             scheduleShowRoomIndicators = !scheduleShowRoomIndicators;
             const btn = document.getElementById('indicator-filter-schedule');
             const icon = document.getElementById('indicator-filter-icon');
+            const label = document.getElementById('indicator-filter-label');
             if (btn) btn.classList.toggle('active', scheduleShowRoomIndicators);
             if (icon) icon.innerText = scheduleShowRoomIndicators ? 'visibility' : 'visibility_off';
+            if (label) label.innerText = scheduleShowRoomIndicators ? 'Indicadores' : 'Sin indicadores';
             saveSchedulePrefs();
             renderSchedule();
         }
@@ -3634,11 +3648,13 @@
         }
 
         // Reúne solo a las personas que son miembros ACTIVOS del hogar ahora mismo (más el
-        // usuario local "Tú"), para poder elegir de quién ver los logros. Los miembros que
-        // se hayan eliminado ya no aparecen aquí ni en la lista de logros.
+        // usuario local "Tú" SOLO si este dispositivo no está vinculado a ningún miembro),
+        // para poder elegir de quién ver los logros. Si el dispositivo ya está vinculado a un
+        // miembro (vía Firebase), ese miembro ya aparece en la lista con su nombre y no hace
+        // falta duplicarlo como "Tú". Los miembros que se hayan eliminado ya no aparecen aquí.
         let selectedBadgeUserKey = null;
         function badgeUserKeys() {
-            const keys = new Set(['local']);
+            const keys = new Set([fbCurrentUserKey()]);
             (data.members || []).forEach(m => keys.add(String(m.id)));
             return Array.from(keys);
         }
