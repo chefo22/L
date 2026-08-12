@@ -638,6 +638,23 @@
 
         .modal-body { padding: 20px; }
         .input-group { background-color: var(--bg-card); border-radius: 14px; padding: 0 16px; margin-bottom: 20px; }
+
+        /* --- Diálogo pequeño de cambio rápido de fecha (no es el editor completo) --- */
+        .quick-date-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+            padding: 24px;
+        }
+        .quick-date-card {
+            background-color: var(--bg-main);
+            border-radius: 18px;
+            padding: 20px;
+            width: 100%;
+            max-width: 340px;
+        }
+        .quick-date-title { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
         .input-row {
             display: flex;
             justify-content: space-between;
@@ -1453,6 +1470,20 @@
                 <div class="input-row"><input type="number" id="reward-cost" placeholder="Ej. 150" min="1"></div>
             </div>
             <button class="btn-danger-block hidden" id="reward-delete-btn" onclick="deleteReward()">Eliminar recompensa</button>
+        </div>
+    </div>
+
+    <!-- Diálogo pequeño para cambiar solo la fecha de vencimiento, sin abrir el editor completo -->
+    <div id="quick-date-overlay" class="quick-date-overlay hidden" onclick="if(event.target===this) closeQuickDateDialog()">
+        <div class="quick-date-card">
+            <div class="quick-date-title" id="quick-date-task-name">Cambiar fecha</div>
+            <div class="input-group" style="margin-bottom:16px;">
+                <div class="input-row"><input type="date" id="quick-date-input"></div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-text" style="flex:1; background-color:var(--bg-input); border-radius:12px; padding:10px 0; color:var(--text-secondary);" onclick="closeQuickDateDialog()">Cancelar</button>
+                <button class="btn-text" style="flex:1; background-color:var(--accent-color); border-radius:12px; padding:10px 0; color:#000;" onclick="saveQuickDateDialog()">Guardar</button>
+            </div>
         </div>
     </div>
 
@@ -2578,6 +2609,7 @@
             const roomPrefix = showRoomName ? `${room ? room.name : 'Casa'} · ` : '';
             const linkHTML = task.link ? `<span class="material-symbols-rounded" title="Abrir enlace" ${interactive ? `onclick="event.stopPropagation(); openTaskLink('${task.id}')"` : ''} style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px; padding:6px; margin:-6px 0 -6px 2px;">link</span>` : '';
             const snoozeHTML = (interactive && !task.completed && task.dueDate) ? `<span class="material-symbols-rounded" title="Posponer 1 día" onclick="event.stopPropagation(); snoozeTask(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">snooze</span>` : '';
+            const dateChangeHTML = (interactive && !task.completed) ? `<span class="material-symbols-rounded" title="Cambiar fecha de vencimiento" onclick="event.stopPropagation(); changeTaskDueDate(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">event</span>` : '';
             const checkboxHTML = interactive
                 ? `<span class="material-symbols-rounded checkbox ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleTask(${task.id})" style="margin-left:6px; padding:6px; margin-top:-6px; margin-bottom:-6px;">
                     ${task.completed ? 'check_circle' : 'radio_button_unchecked'}
@@ -2599,6 +2631,7 @@
                 ${memberHTML}
                 ${linkHTML}
                 ${snoozeHTML}
+                ${dateChangeHTML}
                 ${interactive ? `<span style="width:1px; align-self:stretch; background:var(--border-color); margin:2px 4px;"></span>` : ''}
                 ${checkboxHTML}
             `;
@@ -2640,6 +2673,38 @@
             task.dueDate = addDays(base, 1);
             saveData();
             refreshAll();
+        }
+
+        // Cambia la fecha de vencimiento de una tarea directamente desde la lista, sin tener
+        // que abrir el editor completo: muestra un pequeño diálogo con un selector de fecha.
+        let quickDateTaskId = null;
+        function changeTaskDueDate(id) {
+            const task = data.tasks.find(t => t.id === id);
+            if (!task) return;
+            quickDateTaskId = id;
+            const nameEl = document.getElementById('quick-date-task-name');
+            if (nameEl) nameEl.innerText = `Cambiar fecha de "${task.name}"`;
+            const input = document.getElementById('quick-date-input');
+            if (input) input.value = task.dueDate || todayStr();
+            const overlay = document.getElementById('quick-date-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+        }
+
+        function closeQuickDateDialog() {
+            const overlay = document.getElementById('quick-date-overlay');
+            if (overlay) overlay.classList.add('hidden');
+            quickDateTaskId = null;
+        }
+
+        function saveQuickDateDialog() {
+            const task = data.tasks.find(t => t.id === quickDateTaskId);
+            const input = document.getElementById('quick-date-input');
+            if (task && input && input.value) {
+                task.dueDate = input.value;
+                saveData();
+                refreshAll();
+            }
+            closeQuickDateDialog();
         }
 
         function renderRoomTasks() {
