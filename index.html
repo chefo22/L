@@ -1614,7 +1614,7 @@
             }));
             // Migración de pasos/subtareas antiguos: cada paso puede tener su propia persona asignada y sus propios puntos
             d.tasks.forEach(t => {
-                t.subtasks = (t.subtasks || []).map(s => ({ memberId: null, points: 0, completedByKey: null, completedByName: null, ...s }));
+                t.subtasks = (t.subtasks || []).map(s => ({ memberId: null, points: 0, completedByKey: null, completedByName: null, completedAt: null, ...s }));
                 if (t.points === undefined || t.points === null) t.points = POINTS_PER_TASK;
             });
             // Migración de tareas antiguas (frequencyDays) al nuevo sistema de repetición avanzado
@@ -2114,6 +2114,16 @@
             const d = new Date(dateStr + 'T00:00:00');
             d.setDate(d.getDate() + n);
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        // Ventana de tiempo durante la cual todavía se puede desmarcar/deshacer una tarea
+        // completada (por error). Pasadas 48h desde que se completó, se da por hecho que
+        // realmente se hizo y ya no se puede desmarcar, para evitar perder el registro/puntos
+        // de tareas hechas hace tiempo por un toque accidental.
+        const UNDO_WINDOW_MS = 48 * 60 * 60 * 1000;
+        function canUndoCompletion(completedAtISO) {
+            if (!completedAtISO) return true;
+            return (Date.now() - new Date(completedAtISO).getTime()) < UNDO_WINDOW_MS;
         }
 
         // Las tareas que quedaron sin completar en su día se mueven automáticamente
@@ -3728,6 +3738,7 @@
                     listEl.appendChild(label);
                 }
                 const time = new Date(h.completedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const undoAllowed = canUndoCompletion(h.completedAt);
                 const div = document.createElement('div');
                 div.className = 'task-item';
                 div.innerHTML = `
@@ -3738,7 +3749,10 @@
                         <div class="item-title">${h.taskName}</div>
                         <div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''}${h.completedBy ? ' · hecho por <strong>' + h.completedBy + '</strong>' : (h.completedByKey ? ' · hecho por <strong>' + userDisplayName(h.completedByKey) + '</strong>' : '')} · ${time}</div>
                     </div>
-                    <span class="material-symbols-rounded" title="Deshacer" onclick="event.stopPropagation(); undoHistoryEntry('${h.id}')" style="color:var(--text-secondary); font-size:22px; cursor:pointer; margin-left:8px;">undo</span>
+                    ${undoAllowed
+                        ? `<span class="material-symbols-rounded" title="Deshacer" onclick="event.stopPropagation(); undoHistoryEntry('${h.id}')" style="color:var(--text-secondary); font-size:22px; cursor:pointer; margin-left:8px;">undo</span>`
+                        : `<span class="material-symbols-rounded" title="Ya no se puede deshacer (más de 48h)" style="color:var(--text-secondary); opacity:0.3; font-size:22px; margin-left:8px;">undo</span>`
+                    }
                 `;
                 listEl.appendChild(div);
             });
@@ -3752,6 +3766,13 @@
             if (!task.completed) {
                 completeTaskFully(task);
             } else {
+                const entry = data.history.find(h => h.taskId === task.id);
+                const completedAt = entry ? entry.completedAt : task.lastCompletedAt;
+                if (!canUndoCompletion(completedAt)) {
+                    alert(`"${task.name}" se completó hace más de 48 horas, así que ya no se puede desmarcar.`);
+                    return;
+                }
+                if (!confirm(`¿Desmarcar "${task.name}" como completada?`)) return;
                 uncompleteTaskFully(task);
             }
         }
@@ -3772,6 +3793,7 @@
                 task.subtasks.forEach(s => {
                     if (!s.done) {
                         s.done = true;
+                        s.completedAt = now;
                         s.completedByKey = completedByKey;
                         s.completedByName = completedByUser;
                         pointsToAdd += (s.points || 0);
@@ -3839,6 +3861,7 @@
                     s.done = false;
                     s.completedByKey = null;
                     s.completedByName = null;
+                    s.completedAt = null;
                 });
             } else {
                 const refundKey = (entry && entry.completedByKey) || fbCurrentUserKey();
@@ -3860,6 +3883,7 @@
 
             if (!step.done) {
                 step.done = true;
+                step.completedAt = new Date().toISOString();
                 const key = fbCurrentUserKey();
                 const name = fbCurrentUserName();
                 step.completedByKey = key;
@@ -3874,11 +3898,17 @@
                 saveData();
                 refreshAll();
             } else {
+                if (!canUndoCompletion(step.completedAt)) {
+                    alert(`"${step.text}" se completó hace más de 48 horas, así que ya no se puede desmarcar.`);
+                    return;
+                }
+                if (!confirm(`¿Desmarcar "${step.text}" como completado?`)) return;
                 const refundKey = step.completedByKey || fbCurrentUserKey();
                 if (step.points) addUserPoints(refundKey, -step.points);
                 step.done = false;
                 step.completedByKey = null;
                 step.completedByName = null;
+                step.completedAt = null;
                 if (task.completed) {
                     task.completed = false;
                     const idx = data.history.findIndex(h => h.taskId === task.id);
@@ -3895,6 +3925,10 @@
             const idx = data.history.findIndex(h => String(h.id) === String(historyId));
             if (idx === -1) return;
             const h = data.history[idx];
+            if (!canUndoCompletion(h.completedAt)) {
+                alert(`"${h.taskName}" se completó hace más de 48 horas, así que ya no se puede deshacer.`);
+                return;
+            }
             if (!confirm(`¿Deshacer "${h.taskName}" como completada?`)) return;
 
             data.history.splice(idx, 1);
@@ -3913,6 +3947,7 @@
                         s.done = false;
                         s.completedByKey = null;
                         s.completedByName = null;
+                        s.completedAt = null;
                     });
                 } else {
                     addUserPoints(refundKey, -taskTotalPoints(task));
