@@ -1488,7 +1488,7 @@
                 homeName: 'Casa',
                 theme: 'dark',
                 fontSize: 'medium',
-                weekStart: 1,
+                weekStart: 'today',
                 soundEnabled: true,
                 seasonalBannerEnabled: true,
                 dismissedBanners: [],
@@ -3708,8 +3708,8 @@
 
         // Cuántas entradas del historial se muestran de una vez en "Actividad reciente".
         // Empieza corta para que la pantalla de Logros no se vuelva interminable; el
-        // botón "Ver más" la va ampliando de 20 en 20 hasta el límite de 150 cargadas.
-        let historyDisplayLimit = 20;
+        // botón "Ver más" la va ampliando de 5 en 5 hasta el límite de 150 cargadas.
+        let historyDisplayLimit = 5;
         function badgeUserKeys() {
             const keys = new Set([fbCurrentUserKey()]);
             (data.members || []).forEach(m => keys.add(String(m.id)));
@@ -3787,6 +3787,25 @@
                 }
                 const time = new Date(h.completedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
                 const undoAllowed = canUndoCompletion(h.completedAt);
+
+                // Si la tarea tenía pasos, mostramos quién hizo cada uno en vez de atribuir
+                // toda la tarea a la persona que tocó el último paso.
+                const stepNames = (h.stepsCompletedBy || [])
+                    .map(s => s.completedByName || (s.completedByKey ? userDisplayName(s.completedByKey) : null))
+                    .filter(Boolean);
+                const distinctStepNames = [...new Set(stepNames)];
+                let attributionHTML;
+                if (h.stepsCompletedBy && h.stepsCompletedBy.length > 1 && distinctStepNames.length > 1) {
+                    // Varias personas distintas hicieron pasos distintos: detallamos paso por paso.
+                    const stepsList = h.stepsCompletedBy
+                        .map(s => `${s.text}${s.completedByName ? ' (<strong>' + s.completedByName + '</strong>)' : (s.completedByKey ? ' (<strong>' + userDisplayName(s.completedByKey) + '</strong>)' : '')}`)
+                        .join(' · ');
+                    attributionHTML = `<div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''} · ${time}</div>
+                        <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${stepsList}</div>`;
+                } else {
+                    attributionHTML = `<div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''}${h.completedBy ? ' · hecho por <strong>' + h.completedBy + '</strong>' : (h.completedByKey ? ' · hecho por <strong>' + userDisplayName(h.completedByKey) + '</strong>' : '')} · ${time}</div>`;
+                }
+
                 const div = document.createElement('div');
                 div.className = 'task-item';
                 div.innerHTML = `
@@ -3795,7 +3814,7 @@
                     </div>
                     <div class="item-info">
                         <div class="item-title">${h.taskName}</div>
-                        <div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''}${h.completedBy ? ' · hecho por <strong>' + h.completedBy + '</strong>' : (h.completedByKey ? ' · hecho por <strong>' + userDisplayName(h.completedByKey) + '</strong>' : '')} · ${time}</div>
+                        ${attributionHTML}
                     </div>
                     ${undoAllowed
                         ? `<span class="material-symbols-rounded" title="Deshacer" onclick="event.stopPropagation(); undoHistoryEntry('${h.id}')" style="color:var(--text-secondary); font-size:22px; cursor:pointer; margin-left:8px;">undo</span>`
@@ -3810,8 +3829,8 @@
                 const moreBtn = document.createElement('div');
                 moreBtn.className = 'filter-pill';
                 moreBtn.style.cssText = 'display:flex; justify-content:center; cursor:pointer; margin:4px auto 16px auto; width:max-content;';
-                moreBtn.innerText = `Ver más (${Math.min(remaining, 20)} de ${remaining})`;
-                moreBtn.onclick = () => { historyDisplayLimit += 20; renderHistoryView(); };
+                moreBtn.innerText = `Ver más (${Math.min(remaining, 5)} de ${remaining})`;
+                moreBtn.onclick = () => { historyDisplayLimit += 5; renderHistoryView(); };
                 listEl.appendChild(moreBtn);
             }
         }
@@ -3862,7 +3881,14 @@
             }
             if (pointsToAdd > 0) addUserPoints(completedByKey, pointsToAdd);
 
-            data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedByKey: completedByKey, pointsEarned: pointsToAdd, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount });
+            // Guardamos en el historial quién completó cada paso (no solo quién marcó la tarea
+            // como terminada), para que quede constancia de que un paso lo hizo una persona y
+            // otro paso lo hizo otra, en vez de atribuir toda la tarea a quien tocó el último paso.
+            const stepsCompletedBy = (task.subtasks && task.subtasks.length)
+                ? task.subtasks.map(s => ({ text: s.text, completedByKey: s.completedByKey || null, completedByName: s.completedByName || null }))
+                : null;
+
+            data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedByKey: completedByKey, pointsEarned: pointsToAdd, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount, stepsCompletedBy: stepsCompletedBy });
             task.lastCompletedAt = now;
             processProductUsageForCompletedTask(task);
             checkAchievements(completedByKey);
