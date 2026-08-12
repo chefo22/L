@@ -3594,9 +3594,22 @@
                 cursor = addDays(cursor, -1);
             }
 
-            const totalTasks = data.tasks.length;
-            const completedNow = data.tasks.filter(x => x.completed).length;
-            const completionRate = totalTasks ? Math.round((completedNow / totalTasks) * 100) : 0;
+            // Tasa de cumplimiento de HOY: comparamos las tareas que vencían hoy
+            // (pendientes con dueDate === hoy) contra las que ya se completaron hoy
+            // (según el historial, usando dueDateAtCompletion). No usamos el flag
+            // instantáneo `task.completed`, porque en tareas repetitivas ese flag
+            // se resetea a los pocos segundos de completarse (para volver a
+            // programar la siguiente ocurrencia), lo que hacía que la tasa se
+            // quedara siempre en 0%.
+            const completedTodayHistory = data.history.filter(h => h.completedAt.slice(0, 10) === t);
+            const completedDueTodayIds = new Set(
+                completedTodayHistory
+                    .filter(h => h.dueDateAtCompletion === t)
+                    .map(h => h.taskId)
+            );
+            const pendingDueToday = data.tasks.filter(x => !x.completed && x.dueDate === t).length;
+            const totalDueToday = pendingDueToday + completedDueTodayIds.size;
+            const completionRate = totalDueToday ? Math.round((completedDueTodayIds.size / totalDueToday) * 100) : 0;
 
             return { completedToday, completedLast7, completedLast30, streak, totalCompleted, completionRate };
         }
