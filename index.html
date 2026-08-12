@@ -559,6 +559,54 @@
         .badge-item.unlocked .badge-icon-wrap { background-color: var(--accent-color); }
         .badge-item.unlocked .badge-icon-wrap span { color:#000; }
         .badge-label { font-size: 9.5px; text-align:center; color: var(--text-secondary); line-height:1.2; }
+        .badge-item { cursor: pointer; }
+
+        /* --- Ventana flotante de detalle de logro --- */
+        .achievement-popup-overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background-color: rgba(0,0,0,0.55);
+            z-index: 200;
+            display: none;
+            align-items: center; justify-content: center;
+            padding: 24px;
+        }
+        .achievement-popup-card {
+            background-color: var(--bg-card);
+            border-radius: 20px;
+            padding: 24px 20px 20px;
+            width: 100%; max-width: 320px;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            gap: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+        .achievement-popup-close {
+            align-self: flex-end;
+            background: none; border: none; color: var(--text-secondary);
+            font-size: 22px; cursor: pointer; display:flex; margin-top:-8px; margin-right:-6px;
+        }
+        .achievement-popup-icon-wrap {
+            width: 68px; height: 68px; border-radius: 50%;
+            background-color: var(--bg-input);
+            display:flex; align-items:center; justify-content:center;
+            margin-top: -6px;
+        }
+        .achievement-popup-icon-wrap.unlocked { background-color: var(--accent-color); }
+        .achievement-popup-icon-wrap.unlocked span { color:#000; }
+        .achievement-popup-icon-wrap span { font-size: 32px; color: var(--text-secondary); }
+        .achievement-popup-title { font-size: 17px; font-weight: 700; }
+        .achievement-popup-desc { font-size: 13.5px; color: var(--text-secondary); line-height:1.4; }
+        .achievement-popup-progress-track {
+            width: 100%; height: 8px; border-radius: 5px;
+            background-color: var(--bg-input);
+            overflow: hidden; margin-top: 6px;
+        }
+        .achievement-popup-progress-fill {
+            height: 100%; border-radius: 5px;
+            background-color: var(--accent-color);
+            transition: width 0.3s;
+        }
+        .achievement-popup-progress-text { font-size: 12.5px; color: var(--text-secondary); font-weight:600; margin-top: 2px; }
+        .achievement-popup-progress-text.unlocked { color: var(--accent-color); }
 
         /* --- BOTTOM NAV --- */
         .bottom-nav {
@@ -960,15 +1008,15 @@
                 <div class="bar-chart" id="week-bar-chart"></div>
             </div>
 
+            <div class="section-header"><h2>Ranking por habitación</h2></div>
+            <div class="card" style="flex-direction:column; align-items:stretch; cursor:default;" id="room-ranking-card">
+                <div id="room-ranking-list"></div>
+            </div>
+
             <div class="section-header"><h2>Logros</h2></div>
             <div class="card" style="flex-direction:column; align-items:stretch; cursor:default;">
                 <div class="badge-person-chips" id="badge-person-chips"></div>
                 <div class="badge-grid" id="badge-grid"></div>
-            </div>
-
-            <div class="section-header"><h2>Ranking por habitación</h2></div>
-            <div class="card" style="flex-direction:column; align-items:stretch; cursor:default;" id="room-ranking-card">
-                <div id="room-ranking-list"></div>
             </div>
 
             <div id="member-ranking-section">
@@ -1211,6 +1259,19 @@
             <span class="material-symbols-rounded">bar_chart</span>Estadísticas
         </div>
     </nav>
+
+    <div id="modal-achievement" class="achievement-popup-overlay" onclick="if(event.target===this) closeAchievementModal();">
+        <div class="achievement-popup-card">
+            <button class="achievement-popup-close" onclick="closeAchievementModal()"><span class="material-symbols-rounded">close</span></button>
+            <div class="achievement-popup-icon-wrap" id="achievement-modal-icon-wrap"><span class="material-symbols-rounded" id="achievement-modal-icon"></span></div>
+            <div class="achievement-popup-title" id="achievement-modal-title"></div>
+            <div class="achievement-popup-desc" id="achievement-modal-desc"></div>
+            <div class="achievement-popup-progress-track">
+                <div class="achievement-popup-progress-fill" id="achievement-modal-progress-fill" style="width:0%;"></div>
+            </div>
+            <div class="achievement-popup-progress-text" id="achievement-modal-progress-text"></div>
+        </div>
+    </div>
 
     <div id="modal-room" class="modal">
         <div class="modal-header">
@@ -1731,19 +1792,19 @@
         // solo con las tareas que completó esa persona (ver computeStatsForKey), y los puntos de
         // recompensa se abonan únicamente a quien lo desbloqueó.
         const achievementDefs = [
-            { id: 'streak3', type: 'streak', threshold: 3, label: '3 días seguidos', icon: 'local_fire_department' },
-            { id: 'streak7', type: 'streak', threshold: 7, label: 'Semana completa', icon: 'local_fire_department' },
-            { id: 'streak14', type: 'streak', threshold: 14, label: '2 semanas seguidas', icon: 'local_fire_department' },
-            { id: 'streak30', type: 'streak', threshold: 30, label: 'Racha de oro', icon: 'military_tech' },
-            { id: 'streak60', type: 'streak', threshold: 60, label: 'Racha de platino', icon: 'military_tech' },
-            { id: 'streak100', type: 'streak', threshold: 100, label: 'Racha legendaria', icon: 'local_fire_department' },
-            { id: 'total10', type: 'total', threshold: 10, label: '10 tareas', icon: 'emoji_events' },
-            { id: 'total50', type: 'total', threshold: 50, label: '50 tareas', icon: 'emoji_events' },
-            { id: 'total100', type: 'total', threshold: 100, label: 'Maestro del hogar', icon: 'workspace_premium' },
-            { id: 'total250', type: 'total', threshold: 250, label: 'Leyenda doméstica', icon: 'diamond' },
-            { id: 'total500', type: 'total', threshold: 500, label: 'Élite del hogar', icon: 'diamond' },
-            { id: 'total1000', type: 'total', threshold: 1000, label: 'Salón de la fama', icon: 'workspace_premium' },
-            { id: 'members1', type: 'members', threshold: 1, label: 'Equipo en casa', icon: 'group' }
+            { id: 'streak3', type: 'streak', threshold: 3, label: '3 días seguidos', icon: 'local_fire_department', desc: 'Completa al menos una tarea cada día durante 3 días seguidos.' },
+            { id: 'streak7', type: 'streak', threshold: 7, label: 'Semana completa', icon: 'local_fire_department', desc: 'Completa al menos una tarea cada día durante 7 días seguidos.' },
+            { id: 'streak14', type: 'streak', threshold: 14, label: '2 semanas seguidas', icon: 'local_fire_department', desc: 'Completa al menos una tarea cada día durante 14 días seguidos.' },
+            { id: 'streak30', type: 'streak', threshold: 30, label: 'Racha de oro', icon: 'military_tech', desc: 'Completa al menos una tarea cada día durante 30 días seguidos.' },
+            { id: 'streak60', type: 'streak', threshold: 60, label: 'Racha de platino', icon: 'military_tech', desc: 'Completa al menos una tarea cada día durante 60 días seguidos.' },
+            { id: 'streak100', type: 'streak', threshold: 100, label: 'Racha legendaria', icon: 'local_fire_department', desc: 'Completa al menos una tarea cada día durante 100 días seguidos.' },
+            { id: 'total10', type: 'total', threshold: 10, label: '10 tareas', icon: 'emoji_events', desc: 'Completa un total de 10 tareas.' },
+            { id: 'total50', type: 'total', threshold: 50, label: '50 tareas', icon: 'emoji_events', desc: 'Completa un total de 50 tareas.' },
+            { id: 'total100', type: 'total', threshold: 100, label: 'Maestro del hogar', icon: 'workspace_premium', desc: 'Completa un total de 100 tareas.' },
+            { id: 'total250', type: 'total', threshold: 250, label: 'Leyenda doméstica', icon: 'diamond', desc: 'Completa un total de 250 tareas.' },
+            { id: 'total500', type: 'total', threshold: 500, label: 'Élite del hogar', icon: 'diamond', desc: 'Completa un total de 500 tareas.' },
+            { id: 'total1000', type: 'total', threshold: 1000, label: 'Salón de la fama', icon: 'workspace_premium', desc: 'Completa un total de 1000 tareas.' },
+            { id: 'members1', type: 'members', threshold: 1, label: 'Equipo en casa', icon: 'group', desc: 'Añade al menos 1 miembro a tu hogar.' }
         ];
 
         const seasonContent = {
@@ -3758,12 +3819,50 @@
                 else if (a.type === 'total') unlocked = s.totalCompleted >= a.threshold;
                 else if (a.type === 'members') unlocked = data.members.length >= a.threshold;
                 return `
-                    <div class="badge-item ${unlocked ? 'unlocked' : ''}">
+                    <div class="badge-item ${unlocked ? 'unlocked' : ''}" onclick="showAchievementDetail('${a.id}')">
                         <div class="badge-icon-wrap"><span class="material-symbols-rounded">${a.icon}</span></div>
                         <div class="badge-label">${a.label}</div>
                     </div>
                 `;
             }).join('');
+        }
+
+        // Muestra una ventana flotante con la explicación de un logro (qué hay que hacer
+        // para completarlo) y una línea con el porcentaje de progreso hacia él, calculado
+        // con las estadísticas de la persona seleccionada en la pantalla de Logros.
+        function showAchievementDetail(id) {
+            const a = achievementDefs.find(x => x.id === id);
+            if (!a) return;
+            const key = selectedBadgeUserKey || fbCurrentUserKey();
+            const s = computeStatsForKey(key);
+            let current = 0;
+            if (a.type === 'streak') current = s.streak;
+            else if (a.type === 'total') current = s.totalCompleted;
+            else if (a.type === 'members') current = data.members.length;
+            const unlocked = current >= a.threshold;
+            const pct = Math.max(0, Math.min(100, Math.round((current / a.threshold) * 100)));
+            const bonus = achievementPoints[a.id] || 0;
+
+            const iconWrap = document.getElementById('achievement-modal-icon-wrap');
+            iconWrap.classList.toggle('unlocked', unlocked);
+            document.getElementById('achievement-modal-icon').textContent = a.icon;
+            document.getElementById('achievement-modal-title').textContent = a.label;
+            document.getElementById('achievement-modal-desc').textContent = a.desc || '';
+            document.getElementById('achievement-modal-progress-fill').style.width = pct + '%';
+            const progressText = document.getElementById('achievement-modal-progress-text');
+            progressText.classList.toggle('unlocked', unlocked);
+            progressText.textContent = unlocked
+                ? `✓ Logro completado (+${bonus} pts)`
+                : `${pct}% completado · ${current} / ${a.threshold}`;
+
+            openAchievementModal();
+        }
+
+        function openAchievementModal() {
+            document.getElementById('modal-achievement').style.display = 'flex';
+        }
+        function closeAchievementModal() {
+            document.getElementById('modal-achievement').style.display = 'none';
         }
 
         function renderHistoryView() {
