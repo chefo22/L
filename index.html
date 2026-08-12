@@ -1573,8 +1573,23 @@
         // Se aplica al cargar la página Y cada vez que llegan datos nuevos desde Firebase,
         // porque un documento remoto guardado con una versión anterior de la app puede no
         // tener todavía los campos nuevos (por ejemplo pointsByUser/userNames).
+        // Cuántos meses de historial se conservan. Las entradas más antiguas se
+        // eliminan automáticamente para no hacer crecer el documento sin límite
+        // (Firestore tiene un tope de 1MB por documento y cada guardado sube todo).
+        const HISTORY_RETENTION_MONTHS = 6;
+
+        function trimHistory(d) {
+            if (!d.history || !d.history.length) return d;
+            const cutoff = new Date();
+            cutoff.setMonth(cutoff.getMonth() - HISTORY_RETENTION_MONTHS);
+            const cutoffStr = cutoff.toISOString();
+            d.history = d.history.filter(h => h.completedAt && h.completedAt >= cutoffStr);
+            return d;
+        }
+
         function normalizeData(d) {
             d.history = d.history || [];
+            trimHistory(d);
             d.members = (d.members || []).map(m => ({ fbKey: null, ...m }));
             d.homeName = d.homeName || 'Casa';
             d.rooms = (d.rooms || []).map(r => ({ location: '', ...r }));
@@ -1773,6 +1788,7 @@
         };
 
         function saveData() {
+            trimHistory(data);
             localStorage.setItem('hogarMasterData', JSON.stringify(data));
             fbPushData();
         }
