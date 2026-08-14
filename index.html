@@ -254,13 +254,6 @@
             position: relative;
         }
         .icon-container .material-symbols-rounded { color: white; font-size: 24px; }
-        .fav-star {
-            position: absolute;
-            top: -4px; right: -14px;
-            font-size: 15px !important;
-            color: var(--accent-orange) !important;
-        }
-
         .item-info { flex-grow: 1; min-width: 0; }
         .item-title-row { display:flex; align-items:center; gap:6px; }
         .item-title { font-size: 16px; font-weight: 500; }
@@ -366,20 +359,24 @@
         .filter-pill.active { background-color: var(--accent-color); color: #000; }
         .filter-pill.active span { color: #000; }
 
-        /* Fila de filtros compacta: solo icono, sin etiqueta de texto */
-        .icon-filter-row { display: flex; gap: 10px; margin-bottom: 16px; }
+        /* Fila de filtros compacta: icono + etiqueta de texto, para que se entienda qué hace cada botón */
+        .icon-filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
         .icon-filter-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+            height: 36px;
+            padding: 0 12px;
+            border-radius: 20px;
             background-color: var(--bg-card);
             color: var(--text-secondary);
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 6px;
             cursor: pointer;
+            font-size: 12.5px;
+            font-weight: 500;
+            white-space: nowrap;
         }
-        .icon-filter-btn .material-symbols-rounded { font-size: 20px; }
+        .icon-filter-btn .material-symbols-rounded { font-size: 18px; }
         .icon-filter-btn.active { background-color: var(--accent-color); color: #000; }
 
         /* --- AGRUPACIÓN POR HABITACIÓN (PROGRAMA) --- */
@@ -545,11 +542,19 @@
         .bar-label { font-size: 10px; color: var(--text-secondary); font-weight:600; }
         .bar-count { font-size: 10px; color: var(--text-secondary); }
 
-        .ranking-row { display:flex; align-items:center; gap:10px; padding: 8px 0; border-bottom: 1px solid var(--border-color); }
+        .ranking-row { display:flex; align-items:center; gap:10px; padding: 8px 0; border-bottom: 1px solid var(--border-color); cursor:pointer; }
         .ranking-row:last-child { border-bottom:none; }
+        .ranking-group:last-child .ranking-row { border-bottom:none; }
         .ranking-rank { width:20px; font-size:13px; font-weight:700; color: var(--text-secondary); }
         .ranking-name { flex-grow:1; font-size:14px; font-weight:500; }
         .ranking-count { font-size:13px; color: var(--accent-color); font-weight:700; }
+        .ranking-caret { font-size:18px; color: var(--text-secondary); transition: transform 0.2s; }
+        .ranking-group.open .ranking-caret { transform: rotate(180deg); }
+        .ranking-members { display:none; padding: 2px 0 10px 30px; }
+        .ranking-group.open .ranking-members { display:block; }
+        .ranking-member-row { display:flex; align-items:center; gap:10px; padding: 5px 0; }
+        .ranking-member-name { flex-grow:1; font-size:13px; color: var(--text-secondary); }
+        .ranking-member-count { font-size:12px; color: var(--text-secondary); font-weight:600; }
 
         .badge-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
         .badge-item { display:flex; flex-direction:column; align-items:center; gap:4px; opacity: 0.3; }
@@ -562,6 +567,54 @@
         .badge-item.unlocked .badge-icon-wrap { background-color: var(--accent-color); }
         .badge-item.unlocked .badge-icon-wrap span { color:#000; }
         .badge-label { font-size: 9.5px; text-align:center; color: var(--text-secondary); line-height:1.2; }
+        .badge-item { cursor: pointer; }
+
+        /* --- Ventana flotante de detalle de logro --- */
+        .achievement-popup-overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background-color: rgba(0,0,0,0.55);
+            z-index: 200;
+            display: none;
+            align-items: center; justify-content: center;
+            padding: 24px;
+        }
+        .achievement-popup-card {
+            background-color: var(--bg-card);
+            border-radius: 20px;
+            padding: 24px 20px 20px;
+            width: 100%; max-width: 320px;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            gap: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+        .achievement-popup-close {
+            align-self: flex-end;
+            background: none; border: none; color: var(--text-secondary);
+            font-size: 22px; cursor: pointer; display:flex; margin-top:-8px; margin-right:-6px;
+        }
+        .achievement-popup-icon-wrap {
+            width: 68px; height: 68px; border-radius: 50%;
+            background-color: var(--bg-input);
+            display:flex; align-items:center; justify-content:center;
+            margin-top: -6px;
+        }
+        .achievement-popup-icon-wrap.unlocked { background-color: var(--accent-color); }
+        .achievement-popup-icon-wrap.unlocked span { color:#000; }
+        .achievement-popup-icon-wrap span { font-size: 32px; color: var(--text-secondary); }
+        .achievement-popup-title { font-size: 17px; font-weight: 700; }
+        .achievement-popup-desc { font-size: 13.5px; color: var(--text-secondary); line-height:1.4; }
+        .achievement-popup-progress-track {
+            width: 100%; height: 8px; border-radius: 5px;
+            background-color: var(--bg-input);
+            overflow: hidden; margin-top: 6px;
+        }
+        .achievement-popup-progress-fill {
+            height: 100%; border-radius: 5px;
+            background-color: var(--accent-color);
+            transition: width 0.3s;
+        }
+        .achievement-popup-progress-text { font-size: 12.5px; color: var(--text-secondary); font-weight:600; margin-top: 2px; }
+        .achievement-popup-progress-text.unlocked { color: var(--accent-color); }
 
         /* --- BOTTOM NAV --- */
         .bottom-nav {
@@ -634,6 +687,23 @@
 
         .modal-body { padding: 20px; }
         .input-group { background-color: var(--bg-card); border-radius: 14px; padding: 0 16px; margin-bottom: 20px; }
+
+        /* --- Diálogo pequeño de cambio rápido de fecha (no es el editor completo) --- */
+        .quick-date-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+            padding: 24px;
+        }
+        .quick-date-card {
+            background-color: var(--bg-main);
+            border-radius: 18px;
+            padding: 20px;
+            width: 100%;
+            max-width: 340px;
+        }
+        .quick-date-title { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
         .input-row {
             display: flex;
             justify-content: space-between;
@@ -874,15 +944,15 @@
             <div class="icon-filter-row">
                 <div class="icon-filter-btn" onclick="cycleSortMode()" title="Ordenar por fecha o importancia">
                     <span class="material-symbols-rounded" id="sort-pill-icon">calendar_month</span>
-                </div>
-                <div class="icon-filter-btn" onclick="toggleFavFilter('schedule')" id="fav-filter-schedule" title="Solo favoritas">
-                    <span class="material-symbols-rounded">star</span>
+                    <span id="sort-pill-label">Fecha</span>
                 </div>
                 <div class="icon-filter-btn" onclick="cycleScheduleGroupByRoom()" id="group-room-filter-schedule" title="Agrupar por habitación">
                     <span class="material-symbols-rounded" id="group-room-pill-icon">meeting_room</span>
+                    <span id="group-room-pill-label">Habitaciones</span>
                 </div>
-                <div class="icon-filter-btn active" onclick="toggleScheduleIndicators()" id="indicator-filter-schedule" title="Mostrar indicadores">
+                <div class="icon-filter-btn active" onclick="toggleScheduleIndicators()" id="indicator-filter-schedule" title="Mostrar/ocultar indicadores de color">
                     <span class="material-symbols-rounded" id="indicator-filter-icon">visibility</span>
+                    <span id="indicator-filter-label">Indicadores</span>
                 </div>
             </div>
 
@@ -906,9 +976,6 @@
             <div class="chip-row" id="all-tasks-member-chips"></div>
             <div class="chip-row" id="all-tasks-tag-chips"></div>
             <div class="filter-row" style="margin-bottom:12px;">
-                <div class="filter-pill" onclick="toggleFavFilter('all')" id="fav-filter-all" style="cursor:pointer;">
-                    <span class="material-symbols-rounded">star</span> Favoritas
-                </div>
                 <div class="filter-pill" onclick="cycleAllTasksSort()" style="cursor:pointer;">
                     <span class="material-symbols-rounded">swap_vert</span> <span id="all-sort-pill-label">Nombre (A-Z)</span>
                 </div>
@@ -926,6 +993,11 @@
             <div style="width:36px;"></div>
         </header>
         <div class="container" style="margin-top: 16px;">
+            <div class="card" style="flex-direction: column; align-items: flex-start; gap: 10px; cursor: default;">
+                <div class="card-text">Resumen de actividad</div>
+                <div id="stats-grid" style="width:100%; display:flex; justify-content:space-between;"></div>
+            </div>
+
             <div class="card summary-card" style="cursor:default;">
                 <div class="card-text" style="display: flex; justify-content: space-between; width: 100%;">
                     Resumen
@@ -938,20 +1010,10 @@
                 <div class="card-text">Puntos y recompensas</div>
                 <div class="card-value" id="dash-points-count"><span class="material-symbols-rounded" style="font-size:18px; color:var(--accent-color);">stars</span> 0 <span class="material-symbols-rounded">chevron_right</span></div>
             </div>
-            <div class="card" style="flex-direction: column; align-items: flex-start; gap: 10px; cursor: default;">
-                <div class="card-text">Resumen de actividad</div>
-                <div id="stats-grid" style="width:100%; display:flex; justify-content:space-between;"></div>
-            </div>
 
             <div class="chart-card">
                 <div class="chart-title">Últimos 7 días <span id="chart-total-7" style="color:var(--text-secondary); font-weight:400; font-size:12px;"></span></div>
                 <div class="bar-chart" id="week-bar-chart"></div>
-            </div>
-
-            <div class="section-header"><h2>Logros</h2></div>
-            <div class="card" style="flex-direction:column; align-items:stretch; cursor:default;">
-                <div class="badge-person-chips" id="badge-person-chips"></div>
-                <div class="badge-grid" id="badge-grid"></div>
             </div>
 
             <div class="section-header"><h2>Ranking por habitación</h2></div>
@@ -959,11 +1021,10 @@
                 <div id="room-ranking-list"></div>
             </div>
 
-            <div id="member-ranking-section">
-                <div class="section-header"><h2>Ranking por miembro</h2></div>
-                <div class="card" style="flex-direction:column; align-items:stretch; cursor:default;">
-                    <div id="member-ranking-list"></div>
-                </div>
+            <div class="section-header"><h2>Logros</h2></div>
+            <div class="card" style="flex-direction:column; align-items:stretch; cursor:default;">
+                <div class="badge-person-chips" id="badge-person-chips"></div>
+                <div class="badge-grid" id="badge-grid"></div>
             </div>
 
             <div class="section-header"><h2>Actividad reciente</h2></div>
@@ -1200,6 +1261,19 @@
         </div>
     </nav>
 
+    <div id="modal-achievement" class="achievement-popup-overlay" onclick="if(event.target===this) closeAchievementModal();">
+        <div class="achievement-popup-card">
+            <button class="achievement-popup-close" onclick="closeAchievementModal()"><span class="material-symbols-rounded">close</span></button>
+            <div class="achievement-popup-icon-wrap" id="achievement-modal-icon-wrap"><span class="material-symbols-rounded" id="achievement-modal-icon"></span></div>
+            <div class="achievement-popup-title" id="achievement-modal-title"></div>
+            <div class="achievement-popup-desc" id="achievement-modal-desc"></div>
+            <div class="achievement-popup-progress-track">
+                <div class="achievement-popup-progress-fill" id="achievement-modal-progress-fill" style="width:0%;"></div>
+            </div>
+            <div class="achievement-popup-progress-text" id="achievement-modal-progress-text"></div>
+        </div>
+    </div>
+
     <div id="modal-room" class="modal">
         <div class="modal-header">
             <button class="btn-icon" style="color:var(--text-secondary);" onclick="closeModal('modal-room')"><span class="material-symbols-rounded">close</span></button>
@@ -1230,7 +1304,6 @@
             <button class="btn-icon" style="color:var(--text-secondary);" onclick="closeModal('modal-task')"><span class="material-symbols-rounded">close</span></button>
             <div class="modal-title" id="modal-task-title">Crear nueva tarea</div>
             <div style="display:flex; align-items:center; gap:10px;">
-                <button class="btn-icon" id="task-fav-btn" onclick="toggleFavoriteEditing()"><span class="material-symbols-rounded">star_border</span></button>
                 <button class="btn-text" onclick="saveTask()">Guardar</button>
             </div>
         </div>
@@ -1421,6 +1494,11 @@
             <div class="input-group">
                 <div class="input-row"><input type="number" id="product-lead-uses" placeholder="1" min="0"></div>
             </div>
+            <h3 class="section-title-sm">CON CUÁNTOS DÍAS DE ANTELACIÓN AVISAR EN EL PROGRAMA</h3>
+            <div style="font-size:12px; color:var(--text-secondary); padding: 0 16px 8px;">Si hay una tarea programada que necesita este producto y no va a quedar, la tarea de "Comprar" aparecerá en el Programa con esta antelación.</div>
+            <div class="input-group">
+                <div class="input-row"><input type="number" id="product-lead-days" placeholder="3" min="0"></div>
+            </div>
             <h3 class="section-title-sm">TAREAS VINCULADAS</h3>
             <div style="font-size:12px; color:var(--text-secondary); padding: 0 16px 12px;" id="product-linked-tasks"></div>
             <button class="btn-secondary-block hidden" id="product-buy-btn" onclick="restockProduct(editingProductId); closeModal('modal-product');">Marcar como repuesto hoy</button>
@@ -1448,6 +1526,20 @@
         </div>
     </div>
 
+    <!-- Diálogo pequeño para cambiar solo la fecha de vencimiento, sin abrir el editor completo -->
+    <div id="quick-date-overlay" class="quick-date-overlay hidden" onclick="if(event.target===this) closeQuickDateDialog()">
+        <div class="quick-date-card">
+            <div class="quick-date-title" id="quick-date-task-name">Cambiar fecha</div>
+            <div class="input-group" style="margin-bottom:16px;">
+                <div class="input-row"><input type="date" id="quick-date-input"></div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-text" style="flex:1; background-color:var(--bg-input); border-radius:12px; padding:10px 0; color:var(--text-secondary);" onclick="closeQuickDateDialog()">Cancelar</button>
+                <button class="btn-text" style="flex:1; background-color:var(--accent-color); border-radius:12px; padding:10px 0; color:#000;" onclick="saveQuickDateDialog()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         /* ============ DATOS Y MIGRACIÓN ============ */
         function defaultData() {
@@ -1464,7 +1556,7 @@
                 homeName: 'Casa',
                 theme: 'dark',
                 fontSize: 'medium',
-                weekStart: 1,
+                weekStart: 'today',
                 soundEnabled: true,
                 seasonalBannerEnabled: true,
                 dismissedBanners: [],
@@ -1549,8 +1641,23 @@
         // Se aplica al cargar la página Y cada vez que llegan datos nuevos desde Firebase,
         // porque un documento remoto guardado con una versión anterior de la app puede no
         // tener todavía los campos nuevos (por ejemplo pointsByUser/userNames).
+        // Cuántos meses de historial se conservan. Las entradas más antiguas se
+        // eliminan automáticamente para no hacer crecer el documento sin límite
+        // (Firestore tiene un tope de 1MB por documento y cada guardado sube todo).
+        const HISTORY_RETENTION_MONTHS = 6;
+
+        function trimHistory(d) {
+            if (!d.history || !d.history.length) return d;
+            const cutoff = new Date();
+            cutoff.setMonth(cutoff.getMonth() - HISTORY_RETENTION_MONTHS);
+            const cutoffStr = cutoff.toISOString();
+            d.history = d.history.filter(h => h.completedAt && h.completedAt >= cutoffStr);
+            return d;
+        }
+
         function normalizeData(d) {
             d.history = d.history || [];
+            trimHistory(d);
             d.members = (d.members || []).map(m => ({ fbKey: null, ...m }));
             d.homeName = d.homeName || 'Casa';
             d.rooms = (d.rooms || []).map(r => ({ location: '', ...r }));
@@ -1567,7 +1674,10 @@
             d.startView = d.startView || 'hogar';
             d.listDensity = d.listDensity || 'comfortable';
             d.products = (d.products || []).map(p => ({
-                // Sistema antiguo (por días), se conserva por compatibilidad pero ya no se usa:
+                // purchaseHistory/estimatedDays: sistema antiguo, ya no se usa, se conserva por compatibilidad.
+                // leadDays: con cuántos días de antelación debe aparecer en el Programa la tarea
+                // "Comprar X" cuando ya hay una tarea programada que necesita el producto (ver
+                // checkUpcomingProductNeeds). Configurable por el usuario en la ficha del producto.
                 purchaseHistory: [], estimatedDays: null, leadDays: 3,
                 // Sistema nuevo: por USOS. Un "uso" = una vez que se completa una tarea vinculada.
                 estimatedUses: null, usesSinceRestock: 0, useHistory: [], leadUses: 1,
@@ -1594,7 +1704,7 @@
             d.redemptions = d.redemptions || [];
             d.tasks = (d.tasks || []).map(t => ({
                 notes: '', dueDate: null, frequencyDays: null, lastCompletedAt: null, createdAt: new Date().toISOString(),
-                tags: [], subtasks: [], memberId: null, favorite: false, duration: null, reminderTime: null, iconColor: null,
+                tags: [], subtasks: [], memberId: null, duration: null, reminderTime: null, iconColor: null,
                 reminderLead: 0, link: null, lastNotifiedKey: null, points: POINTS_PER_TASK,
                 repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
                 repeatMode: 'afterComplete', repeatEndType: 'never', repeatEndDate: null, repeatEndCount: null,
@@ -1606,7 +1716,7 @@
             }));
             // Migración de pasos/subtareas antiguos: cada paso puede tener su propia persona asignada y sus propios puntos
             d.tasks.forEach(t => {
-                t.subtasks = (t.subtasks || []).map(s => ({ memberId: null, points: 0, completedByKey: null, completedByName: null, ...s }));
+                t.subtasks = (t.subtasks || []).map(s => ({ memberId: null, points: 0, completedByKey: null, completedByName: null, completedAt: null, ...s }));
                 if (t.points === undefined || t.points === null) t.points = POINTS_PER_TASK;
             });
             // Migración de tareas antiguas (frequencyDays) al nuevo sistema de repetición avanzado
@@ -1640,7 +1750,6 @@
         let selectedMemberColor = '#78c5d6';
         let selectedTaskIconColor = null;
         let selectedTaskCategory = 'Limpieza';
-        let editingFavorite = false;
         let editingSubtasks = [];
         let editingRepeatWeekDays = [];
         let notificationCheckInterval = null;
@@ -1652,8 +1761,6 @@
         let allTasksRoomFilter = 'all';
         let allTasksMemberFilter = 'all';
         let allTasksTagFilter = 'all';
-        let scheduleFavOnly = false;
-        let allTasksFavOnly = false;
         let scheduleGroupByRoom = 'off'; // 'off' | 'unido' | 'fragmentado'
         let scheduleShowRoomIndicators = true;
 
@@ -1685,29 +1792,73 @@
 
         const productIconOptions = ['cleaning_services', 'soap', 'sanitizer', 'water_drop', 'local_laundry_service', 'mop', 'dry_cleaning', 'delete', 'recycling', 'spa', 'bathtub', 'shower', 'shopping_cart', 'icecream', 'coffee_maker', 'delete_sweep', 'auto_delete', 'hot_tub', 'wc', 'pest_control', 'iron', 'vacuum', 'box', 'inventory_2', 'shopping_bag', 'liquor', 'apparel', 'backpack', 'checkroom', 'cleaning_bucket', 'compost', 'grain', 'bath_soak'];
         const rewardIconOptions = ['restaurant', 'favorite', 'movie', 'self_improvement', 'redeem', 'celebration', 'local_cafe', 'flight', 'spa', 'shopping_bag', 'cake', 'nightlife'];
-        const achievementPoints = { streak3: 30, streak7: 70, streak14: 140, streak30: 300, streak60: 600, streak100: 1000, total10: 50, total50: 200, total100: 500, total250: 1000, total500: 1500, total1000: 3000, members1: 20 };
-
-        const sortLabels = { fecha: 'Fecha de Vencimiento', importancia: 'Importancia', nombre: 'Nombre (A-Z)' };
-        const allTasksSortLabels = { nombre: 'Nombre (A-Z)', fecha: 'Fecha de Vencimiento', importancia: 'Importancia', duracion: 'Duración' };
-
-        // Cada logro se desbloquea de forma individual: la racha y el total de tareas se calculan
-        // solo con las tareas que completó esa persona (ver computeStatsForKey), y los puntos de
-        // recompensa se abonan únicamente a quien lo desbloqueó.
-        const achievementDefs = [
-            { id: 'streak3', type: 'streak', threshold: 3, label: '3 días seguidos', icon: 'local_fire_department' },
-            { id: 'streak7', type: 'streak', threshold: 7, label: 'Semana completa', icon: 'local_fire_department' },
-            { id: 'streak14', type: 'streak', threshold: 14, label: '2 semanas seguidas', icon: 'local_fire_department' },
-            { id: 'streak30', type: 'streak', threshold: 30, label: 'Racha de oro', icon: 'military_tech' },
-            { id: 'streak60', type: 'streak', threshold: 60, label: 'Racha de platino', icon: 'military_tech' },
-            { id: 'streak100', type: 'streak', threshold: 100, label: 'Racha legendaria', icon: 'local_fire_department' },
-            { id: 'total10', type: 'total', threshold: 10, label: '10 tareas', icon: 'emoji_events' },
-            { id: 'total50', type: 'total', threshold: 50, label: '50 tareas', icon: 'emoji_events' },
-            { id: 'total100', type: 'total', threshold: 100, label: 'Maestro del hogar', icon: 'workspace_premium' },
-            { id: 'total250', type: 'total', threshold: 250, label: 'Leyenda doméstica', icon: 'diamond' },
-            { id: 'total500', type: 'total', threshold: 500, label: 'Élite del hogar', icon: 'diamond' },
-            { id: 'total1000', type: 'total', threshold: 1000, label: 'Salón de la fama', icon: 'workspace_premium' },
-            { id: 'members1', type: 'members', threshold: 1, label: 'Equipo en casa', icon: 'group' }
+        // Los logros de racha y de total de tareas son INFINITOS y EXPONENCIALES: no es una
+        // lista fija de niveles, sino una única "serie" por tipo. Cada serie empieza en un
+        // umbral base y, en cuanto se consigue un nivel, el siguiente nivel se genera solo
+        // duplicando el umbral (y los puntos de recompensa) del anterior. Así siempre hay un
+        // próximo reto y nunca se "acaban" los logros de racha ni de tareas totales.
+        // El logro de "añadir un miembro" es la excepción: solo tiene un nivel y no se repite.
+        const achievementSeries = [
+            { id: 'streak', type: 'streak', baseThreshold: 3, basePoints: 30, infinite: true },
+            { id: 'total', type: 'total', baseThreshold: 10, basePoints: 50, infinite: true },
+            { id: 'members', type: 'members', baseThreshold: 1, basePoints: 20, infinite: false,
+              label: 'Equipo en casa', desc: 'Añade al menos 1 miembro a tu hogar.', icon: 'group' }
         ];
+
+        // Nombres de "rango" que se van repitiendo cíclicamente en cada nivel, para que un
+        // logro de nivel 9 (por ejemplo) no se llame igual que uno de nivel 1, aunque el
+        // umbral se calcule siempre igual (duplicando el anterior).
+        const achievementTierNames = ['Bronce', 'Plata', 'Oro', 'Platino', 'Diamante', 'Maestro', 'Leyenda', 'Mítico'];
+        const achievementTierIcons = ['military_tech', 'military_tech', 'emoji_events', 'workspace_premium', 'diamond', 'workspace_premium', 'local_fire_department', 'diamond'];
+
+        // Construye el logro concreto de un nivel dado dentro de una serie: calcula el umbral
+        // y los puntos duplicando el nivel anterior (2^(nivel-1) veces el valor base), y arma
+        // el texto/ícono según el "rango" que le toque en el ciclo de nombres.
+        function getAchievementLevel(seriesId, level) {
+            const series = achievementSeries.find(s => s.id === seriesId);
+            if (!series || level < 1) return null;
+            if (!series.infinite) {
+                if (level > 1) return null;
+                return { id: `${seriesId}_L1`, seriesId, level: 1, type: series.type, threshold: series.baseThreshold, label: series.label, desc: series.desc, icon: series.icon, points: series.basePoints };
+            }
+            const threshold = series.baseThreshold * Math.pow(2, level - 1);
+            const points = series.basePoints * Math.pow(2, level - 1);
+            const tier = achievementTierNames[(level - 1) % achievementTierNames.length];
+            const icon = achievementTierIcons[(level - 1) % achievementTierIcons.length];
+            let label, desc;
+            if (series.type === 'streak') {
+                label = `Racha ${tier} · ${threshold} días`;
+                desc = `Completa al menos una tarea cada día durante ${threshold} días seguidos.`;
+            } else {
+                label = `${tier} · ${threshold} tareas`;
+                desc = `Completa un total de ${threshold} tareas.`;
+            }
+            return { id: `${seriesId}_L${level}`, seriesId, level, type: series.type, threshold, label, desc, icon, points };
+        }
+
+        // Nivel más alto que una persona ya tiene reclamado en una serie (0 si aún no
+        // ha conseguido ninguno).
+        function getClaimedLevel(key, seriesId) {
+            const claimed = (data.claimedAchievementsByUser && data.claimedAchievementsByUser[key]) || [];
+            let max = 0;
+            const prefix = seriesId + '_L';
+            claimed.forEach(id => {
+                if (typeof id === 'string' && id.indexOf(prefix) === 0) {
+                    const lvl = parseInt(id.slice(prefix.length), 10);
+                    if (!isNaN(lvl) && lvl > max) max = lvl;
+                }
+            });
+            return max;
+        }
+
+        function statValueForSeries(series, key) {
+            if (series.type === 'members') return data.members.length;
+            const s = computeStatsForKey(key);
+            return series.type === 'streak' ? s.streak : s.totalCompleted;
+        }
+
+        const sortLabels = { fecha: 'Fecha', importancia: 'Importancia', nombre: 'Nombre (A-Z)' };
+        const allTasksSortLabels = { nombre: 'Nombre (A-Z)', fecha: 'Fecha de Vencimiento', importancia: 'Importancia', duracion: 'Duración' };
 
         const seasonContent = {
             verano: { title: 'Limpieza de verano', desc: '¡Revitaliza tu hogar para la temporada de sol! Ventila armarios y limpia ventanas.', icon: 'wb_sunny', grad: 'linear-gradient(135deg,#ffcfe3 0%,#ffebb3 100%)' },
@@ -1752,6 +1903,7 @@
         };
 
         function saveData() {
+            trimHistory(data);
             localStorage.setItem('hogarMasterData', JSON.stringify(data));
             fbPushData();
         }
@@ -1765,7 +1917,6 @@
             try {
                 localStorage.setItem('hogarSchedulePrefs', JSON.stringify({
                     sortMode,
-                    scheduleFavOnly,
                     scheduleGroupByRoom,
                     scheduleShowRoomIndicators
                 }));
@@ -1777,7 +1928,6 @@
             try { prefs = JSON.parse(localStorage.getItem('hogarSchedulePrefs')); } catch (e) {}
             if (!prefs) return;
             if (prefs.sortMode && sortLabels[prefs.sortMode]) sortMode = prefs.sortMode;
-            if (typeof prefs.scheduleFavOnly === 'boolean') scheduleFavOnly = prefs.scheduleFavOnly;
             if (['off', 'unido', 'fragmentado'].includes(prefs.scheduleGroupByRoom)) scheduleGroupByRoom = prefs.scheduleGroupByRoom;
             if (typeof prefs.scheduleShowRoomIndicators === 'boolean') scheduleShowRoomIndicators = prefs.scheduleShowRoomIndicators;
 
@@ -1785,12 +1935,12 @@
             if (sortLabel) sortLabel.innerText = sortLabels[sortMode];
             const sortIcon = document.getElementById('sort-pill-icon');
             if (sortIcon) sortIcon.innerText = sortMode === 'importancia' ? 'flag' : 'calendar_month';
-            const favBtn = document.getElementById('fav-filter-schedule');
-            if (favBtn) favBtn.classList.toggle('active', scheduleFavOnly);
             const indBtn = document.getElementById('indicator-filter-schedule');
             const indIcon = document.getElementById('indicator-filter-icon');
+            const indLabel = document.getElementById('indicator-filter-label');
             if (indBtn) indBtn.classList.toggle('active', scheduleShowRoomIndicators);
             if (indIcon) indIcon.innerText = scheduleShowRoomIndicators ? 'visibility' : 'visibility_off';
+            if (indLabel) indLabel.innerText = scheduleShowRoomIndicators ? 'Indicadores' : 'Sin indicadores';
             updateGroupRoomPill();
         }
 
@@ -2068,6 +2218,7 @@
         }
 
         function refreshAll() {
+            checkUpcomingProductNeeds();
             renderRooms();
             renderSchedule();
             updateSelectRooms();
@@ -2104,6 +2255,16 @@
             const d = new Date(dateStr + 'T00:00:00');
             d.setDate(d.getDate() + n);
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        // Ventana de tiempo durante la cual todavía se puede desmarcar/deshacer una tarea
+        // completada (por error). Pasadas 48h desde que se completó, se da por hecho que
+        // realmente se hizo y ya no se puede desmarcar, para evitar perder el registro/puntos
+        // de tareas hechas hace tiempo por un toque accidental.
+        const UNDO_WINDOW_MS = 48 * 60 * 60 * 1000;
+        function canUndoCompletion(completedAtISO) {
+            if (!completedAtISO) return true;
+            return (Date.now() - new Date(completedAtISO).getTime()) < UNDO_WINDOW_MS;
         }
 
         // Las tareas que quedaron sin completar en su día se mueven automáticamente
@@ -2549,19 +2710,27 @@
             return parts.join(' · ');
         }
 
-        function taskItemHTML(task, room, showRoomName) {
+        function taskItemHTML(task, room, showRoomName, interactive) {
+            if (interactive === undefined) interactive = true;
             const overdue = task.dueDate && task.dueDate < todayStr() && !task.completed;
             const member = memberById(task.memberId);
             const memberHTML = member ? `<div class="member-avatar" style="background-color:${member.color}">${member.name.charAt(0).toUpperCase()}</div>` : '';
             const tagsHTML = (task.tags && task.tags.length) ? task.tags.slice(0, 2).map(tg => `<span class="tag-mini">${tg}</span>`).join('') : '';
             const roomPrefix = showRoomName ? `${room ? room.name : 'Casa'} · ` : '';
-            const linkHTML = task.link ? `<span class="material-symbols-rounded" title="Abrir enlace" onclick="event.stopPropagation(); openTaskLink('${task.id}')" style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px;">link</span>` : '';
-            const snoozeHTML = (!task.completed && task.dueDate) ? `<span class="material-symbols-rounded" title="Posponer 1 día" onclick="event.stopPropagation(); snoozeTask(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px;">snooze</span>` : '';
+            const linkHTML = task.link ? `<span class="material-symbols-rounded" title="Abrir enlace" ${interactive ? `onclick="event.stopPropagation(); openTaskLink('${task.id}')"` : ''} style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px; padding:6px; margin:-6px 0 -6px 2px;">link</span>` : '';
+            const snoozeHTML = (interactive && !task.completed && task.dueDate) ? `<span class="material-symbols-rounded" title="Posponer 1 día" onclick="event.stopPropagation(); snoozeTask(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">snooze</span>` : '';
+            const dateChangeHTML = (interactive && !task.completed) ? `<span class="material-symbols-rounded" title="Cambiar fecha de vencimiento" onclick="event.stopPropagation(); changeTaskDueDate(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">event</span>` : '';
+            const checkboxHTML = interactive
+                ? `<span class="material-symbols-rounded checkbox ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleTask(${task.id})" style="margin-left:6px; padding:6px; margin-top:-6px; margin-bottom:-6px;">
+                    ${task.completed ? 'check_circle' : 'radio_button_unchecked'}
+                </span>`
+                : `<span class="material-symbols-rounded" style="margin-left:6px; color:${task.completed ? 'var(--accent-color)' : 'var(--text-secondary)'}; opacity:${task.completed ? '1' : '0.5'};">
+                    ${task.completed ? 'check_circle' : 'radio_button_unchecked'}
+                </span>`;
             return `
                 <div class="item-info" style="padding-left:${showRoomName ? '4px' : '0'};">
                     <div class="item-title-row">
                         <div class="item-title">${task.name}</div>
-                        ${task.favorite ? '<span class="material-symbols-rounded" style="font-size:15px; color:var(--accent-orange);">star</span>' : ''}
                         <span style="font-size:11px; color:var(--accent-color); font-weight:700;">+${taskTotalPoints(task)}</span>
                         ${tagsHTML}
                     </div>
@@ -2571,9 +2740,9 @@
                 ${memberHTML}
                 ${linkHTML}
                 ${snoozeHTML}
-                <span class="material-symbols-rounded checkbox ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleTask(${task.id})" style="margin-left:10px;">
-                    ${task.completed ? 'check_circle' : 'radio_button_unchecked'}
-                </span>
+                ${dateChangeHTML}
+                ${interactive ? `<span style="width:1px; align-self:stretch; background:var(--border-color); margin:2px 4px;"></span>` : ''}
+                ${checkboxHTML}
             `;
         }
 
@@ -2608,16 +2777,55 @@
         function snoozeTask(id) {
             const task = data.tasks.find(t => t.id === id);
             if (!task) return;
+            if (!confirm(`¿Posponer "${task.name}" 1 día?`)) return;
             const base = (task.dueDate && task.dueDate > todayStr()) ? task.dueDate : todayStr();
             task.dueDate = addDays(base, 1);
             saveData();
             refreshAll();
         }
 
+        // Cambia la fecha de vencimiento de una tarea directamente desde la lista, sin tener
+        // que abrir el editor completo: muestra un pequeño diálogo con un selector de fecha.
+        let quickDateTaskId = null;
+        function changeTaskDueDate(id) {
+            const task = data.tasks.find(t => t.id === id);
+            if (!task) return;
+            quickDateTaskId = id;
+            const nameEl = document.getElementById('quick-date-task-name');
+            if (nameEl) nameEl.innerText = `Cambiar fecha de "${task.name}"`;
+            const input = document.getElementById('quick-date-input');
+            if (input) input.value = task.dueDate || todayStr();
+            const overlay = document.getElementById('quick-date-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+        }
+
+        function closeQuickDateDialog() {
+            const overlay = document.getElementById('quick-date-overlay');
+            if (overlay) overlay.classList.add('hidden');
+            quickDateTaskId = null;
+        }
+
+        function saveQuickDateDialog() {
+            const task = data.tasks.find(t => t.id === quickDateTaskId);
+            const input = document.getElementById('quick-date-input');
+            if (task && input && input.value) {
+                task.dueDate = input.value;
+                saveData();
+                refreshAll();
+            }
+            closeQuickDateDialog();
+        }
+
         function renderRoomTasks() {
             const container = document.getElementById('room-tasks-list');
             container.innerHTML = '';
-            const filtered = sortTasks(data.tasks.filter(t => t.roomId == currentRoomDetailId), sortMode);
+            // Las tareas de un solo uso ("No se repite") desaparecen del listado de la
+            // habitación en cuanto se completan: ya cumplieron su propósito y no tiene sentido
+            // que sigan ahí continuamente (p. ej. "Deshacer la maleta"). Quedan igualmente
+            // registradas en el Historial. Las tareas que sí se repiten se siguen mostrando
+            // aunque estén completadas hoy, porque volverán a tocar en su próxima fecha.
+            const isOneTimeDone = (t) => t.completed && (!t.repeatType || t.repeatType === 'none');
+            const filtered = sortTasks(data.tasks.filter(t => t.roomId == currentRoomDetailId && !isOneTimeDone(t)), sortMode);
 
             if (filtered.length === 0) {
                 container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">checklist</span>No hay tareas aquí. Toca "+" para añadir una.</div>`;
@@ -2632,7 +2840,6 @@
                 div.innerHTML = `
                     <div class="icon-container" style="background-color: ${task.iconColor || '#2c2c2e'};">
                         <span class="material-symbols-rounded" style="color:${task.iconColor ? 'white' : impColor}">${task.icon}</span>
-                        ${task.favorite ? '<span class="material-symbols-rounded fav-star">star</span>' : ''}
                     </div>
                     ${taskItemHTML(task, null, false)}
                 `;
@@ -2716,19 +2923,6 @@
             renderSchedule();
         }
 
-        function toggleFavFilter(scope) {
-            if (scope === 'schedule') {
-                scheduleFavOnly = !scheduleFavOnly;
-                document.getElementById('fav-filter-schedule').classList.toggle('active', scheduleFavOnly);
-                saveSchedulePrefs();
-                renderSchedule();
-            } else {
-                allTasksFavOnly = !allTasksFavOnly;
-                document.getElementById('fav-filter-all').classList.toggle('active', allTasksFavOnly);
-                renderAllTasksView();
-            }
-        }
-
         function cycleSortMode() {
             const order = ['fecha', 'importancia'];
             sortMode = order[(order.indexOf(sortMode) + 1) % order.length];
@@ -2800,8 +2994,10 @@
             scheduleShowRoomIndicators = !scheduleShowRoomIndicators;
             const btn = document.getElementById('indicator-filter-schedule');
             const icon = document.getElementById('indicator-filter-icon');
+            const label = document.getElementById('indicator-filter-label');
             if (btn) btn.classList.toggle('active', scheduleShowRoomIndicators);
             if (icon) icon.innerText = scheduleShowRoomIndicators ? 'visibility' : 'visibility_off';
+            if (label) label.innerText = scheduleShowRoomIndicators ? 'Indicadores' : 'Sin indicadores';
             saveSchedulePrefs();
             renderSchedule();
         }
@@ -2809,14 +3005,48 @@
         function scheduleTaskItemEl(task, room, showRoomName) {
             const div = document.createElement('div');
             div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
-            div.onclick = () => openEditTask(task.id);
             const indicatorHTML = scheduleShowRoomIndicators ? `
                 <div class="icon-container" style="background-color: ${task.iconColor || (room ? room.color : '#333')}">
                     <span class="material-symbols-rounded">${task.icon}</span>
-                    ${task.favorite ? '<span class="material-symbols-rounded fav-star">star</span>' : ''}
                 </div>` : '';
             div.innerHTML = indicatorHTML + taskItemHTML(task, room, showRoomName);
             return div;
+        }
+
+        // Igual que scheduleTaskItemEl, pero para tareas de compra automática (autoBuyProductId):
+        // nunca llevan habitación (no se realizan en ninguna habitación) y, en su lugar, muestran
+        // debajo el aviso concreto de por qué hace falta comprarlo (task.notes).
+        function scheduleShoppingItemEl(task) {
+            const div = document.createElement('div');
+            div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
+            const indicatorHTML = scheduleShowRoomIndicators ? `
+                <div class="icon-container" style="background-color: ${task.iconColor || 'var(--accent-color)'}">
+                    <span class="material-symbols-rounded">${task.icon}</span>
+                </div>` : '';
+            div.innerHTML = indicatorHTML + taskItemHTML(task, null, false);
+            if (task.notes) {
+                const info = div.querySelector('.item-info');
+                if (info) {
+                    const warn = document.createElement('div');
+                    warn.style.cssText = 'font-size:12px; color:var(--accent-color); font-weight:600; margin-top:2px;';
+                    warn.innerText = task.notes;
+                    info.appendChild(warn);
+                }
+            }
+            return div;
+        }
+
+        // Cabecera del apartado "Lista de la compra": es un bloque aparte, NO una habitación,
+        // así que no aparece en el selector/ranking de habitaciones ni se agrupa con ellas.
+        function appendScheduleShoppingHeader(container, count) {
+            const header = document.createElement('div');
+            header.className = 'schedule-room-header';
+            header.innerHTML = `
+                <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:18px;">shopping_cart</span>
+                <span>Lista de la compra</span>
+                <span class="room-count">· ${count}</span>
+            `;
+            container.appendChild(header);
         }
 
         function renderSchedule() {
@@ -2824,22 +3054,40 @@
             if (!container) return;
             container.innerHTML = '';
             const t = todayStr();
+            // Las tareas de un solo uso ("No se repite") no tienen una "próxima fecha" a la que
+            // saltar al completarse (a diferencia de las repetitivas, que cambian su dueDate y
+            // por eso dejan de verse solas). Sin este filtro se quedarían ancladas y tachadas
+            // para siempre en el día en que se completaron. Igual que en la habitación, en
+            // cuanto se completan desaparecen de Programa (quedan en el Historial).
+            const isOneTimeDone = (x) => x.completed && (!x.repeatType || x.repeatType === 'none');
             let list;
             if (selectedScheduleDate === t) {
                 const overdue = data.tasks.filter(x => x.dueDate && x.dueDate < t && !x.completed);
-                const dueToday = data.tasks.filter(x => x.dueDate === t);
+                const dueToday = data.tasks.filter(x => x.dueDate === t && !isOneTimeDone(x));
                 list = [...overdue, ...dueToday];
             } else {
-                list = data.tasks.filter(x => x.dueDate === selectedScheduleDate);
+                list = data.tasks.filter(x => x.dueDate === selectedScheduleDate && !isOneTimeDone(x));
             }
             if (scheduleSearchQuery) list = list.filter(x => x.name.toLowerCase().includes(scheduleSearchQuery));
-            if (scheduleFavOnly) list = list.filter(x => x.favorite);
             list = sortTasks(list, sortMode);
 
             if (list.length === 0) {
                 container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">event_available</span>No hay tareas programadas para este día.</div>`;
                 return;
             }
+
+            // Los productos de limpieza a comprar (tareas autogeneradas) van siempre en su
+            // propio apartado "Lista de la compra", primero de todo y fuera de cualquier
+            // agrupación/asociación por habitación: comprar el producto no es una tarea que
+            // se haga en la habitación donde se usa ese producto.
+            const shoppingItems = list.filter(x => x.autoBuyProductId);
+            const list_ = list.filter(x => !x.autoBuyProductId);
+            if (shoppingItems.length) {
+                appendScheduleShoppingHeader(container, shoppingItems.length);
+                shoppingItems.forEach(task => container.appendChild(scheduleShoppingItemEl(task)));
+            }
+            list = list_;
+            if (list.length === 0) return;
 
             if (scheduleGroupByRoom === 'unido') {
                 // Todas las tareas de cada habitación juntas. El orden de los bloques
@@ -2969,7 +3217,6 @@
                 (allTasksRoomFilter === 'all' || String(t.roomId) === String(allTasksRoomFilter)) &&
                 (allTasksMemberFilter === 'all' || String(t.memberId) === String(allTasksMemberFilter)) &&
                 (allTasksTagFilter === 'all' || (t.tags || []).includes(allTasksTagFilter)) &&
-                (!allTasksFavOnly || t.favorite) &&
                 t.name.toLowerCase().includes(allTasksQuery)
             );
             list = sortTasks(list, allTasksSortMode);
@@ -2986,9 +3233,8 @@
                 div.innerHTML = `
                     <div class="icon-container" style="background-color: ${task.iconColor || (room ? room.color : '#333')}">
                         <span class="material-symbols-rounded">${task.icon}</span>
-                        ${task.favorite ? '<span class="material-symbols-rounded fav-star">star</span>' : ''}
                     </div>
-                    ${taskItemHTML(task, room, true)}
+                    ${taskItemHTML(task, room, true, false)}
                 `;
                 container.appendChild(div);
             });
@@ -3009,8 +3255,6 @@
             const container = document.getElementById('members-list');
             if (!container) return;
             container.innerHTML = '';
-            const section = document.getElementById('member-ranking-section');
-            if (section) section.classList.toggle('hidden', data.members.length === 0);
             if (data.members.length === 0) {
                 container.innerHTML = `<div class="card" style="cursor:default;"><p style="font-size:13px; color:var(--text-secondary);">Añade a las personas de tu hogar para repartir tareas y ver estadísticas por persona.</p></div>`;
                 return;
@@ -3064,8 +3308,22 @@
             if (!name) { alert('Ponle un nombre al miembro.'); return; }
             if (editingMemberId) {
                 const m = memberById(editingMemberId);
+                const oldName = m.name;
                 m.name = name;
                 m.color = selectedMemberColor;
+                if (oldName !== name) {
+                    setUserName(String(m.id), name);
+                }
+                // Reconcilia entradas antiguas del historial que solo guardaban el nombre (sin
+                // memberId, de antes de que existiera esta vinculación estable) y coinciden con
+                // el nombre anterior O con el nombre que se acaba de poner: así, si un nombre
+                // antiguo se quedó "suelto" de una renombrada anterior, basta con volver a
+                // ponerlo aquí (aunque sea un momento, para luego cambiarlo de nuevo) para que
+                // ese historial huérfano quede enganchado a este miembro de forma permanente y
+                // deje de contar como si fuera una persona distinta en el ranking.
+                data.history.forEach(h => {
+                    if (h.memberId == null && (h.memberName === oldName || h.memberName === name)) h.memberId = m.id;
+                });
             } else {
                 data.members.push({ id: Date.now(), name, color: selectedMemberColor });
             }
@@ -3184,6 +3442,7 @@
             document.getElementById('product-name').value = '';
             document.getElementById('product-estimated-uses').value = '';
             document.getElementById('product-lead-uses').value = '1';
+            document.getElementById('product-lead-days').value = '3';
             document.getElementById('product-usage-info').innerText = 'Aún no hay datos. La primera vez que se use en una tarea vinculada, te preguntaremos si se ha acabado, hasta que aprendamos el patrón.';
             document.getElementById('product-linked-tasks').innerText = 'Vincúlalo desde la ficha de cada tarea, en la sección "Productos que gasta".';
             selectedProductIcon = 'cleaning_services';
@@ -3201,6 +3460,7 @@
             document.getElementById('product-name').value = p.name;
             document.getElementById('product-estimated-uses').value = p.estimatedUses || '';
             document.getElementById('product-lead-uses').value = (p.leadUses === undefined || p.leadUses === null) ? 1 : p.leadUses;
+            document.getElementById('product-lead-days').value = (p.leadDays === undefined || p.leadDays === null) ? 3 : p.leadDays;
             const status = computeProductUsageStatus(p);
             const cycles = p.useHistory || [];
             const learnedNote = cycles.length ? ` Aprendido de ${cycles.length} ciclo${cycles.length === 1 ? '' : 's'} anterior${cycles.length === 1 ? '' : 'es'} (${cycles.join(', ')} usos).` : '';
@@ -3221,16 +3481,19 @@
             const estimatedUses = parseInt(document.getElementById('product-estimated-uses').value) || null;
             const leadUsesInput = parseInt(document.getElementById('product-lead-uses').value);
             const leadUses = isNaN(leadUsesInput) ? 1 : Math.max(0, leadUsesInput);
+            const leadDaysInput = parseInt(document.getElementById('product-lead-days').value);
+            const leadDays = isNaN(leadDaysInput) ? 3 : Math.max(0, leadDaysInput);
             if (editingProductId) {
                 const p = productById(editingProductId);
                 p.name = name;
                 p.icon = selectedProductIcon;
                 p.estimatedUses = estimatedUses;
                 p.leadUses = leadUses;
+                p.leadDays = leadDays;
             } else {
                 data.products.push({
                     id: 'p' + Date.now(), name, icon: selectedProductIcon, category: 'General',
-                    estimatedUses, leadUses, useHistory: [], usesSinceRestock: 0,
+                    estimatedUses, leadUses, leadDays, useHistory: [], usesSinceRestock: 0,
                     lastRestockAt: null, pendingBuyTaskId: null, reminderEnabled: true, lastNotifiedKey: null
                 });
             }
@@ -3241,12 +3504,17 @@
 
         function deleteProduct() {
             if (!editingProductId) return;
-            if (!confirm('¿Eliminar este producto? Se desvinculará de las tareas que lo usan.')) return;
+            if (!confirm('¿Eliminar este producto? Se desvinculará de las tareas que lo usan y se quitará de la Lista de la compra.')) return;
             data.products = data.products.filter(p => p.id !== editingProductId);
             data.tasks.forEach(t => { if (t.productIds) t.productIds = t.productIds.filter(id => id !== editingProductId); });
+            // Elimina también la(s) tarea(s) automática(s) "Comprar X" ligadas a este producto
+            // (incluida cualquier duplicada que hubiera quedado suelta), para que no se quede
+            // huérfana en la Lista de la compra apuntando a un producto que ya no existe.
+            data.tasks = data.tasks.filter(t => t.autoBuyProductId !== editingProductId);
             saveData();
             closeModal('modal-product');
             renderProductsView();
+            renderSchedule();
         }
 
         // Marca el producto como repuesto hoy: reinicia el contador de usos y cancela
@@ -3257,13 +3525,10 @@
             p.usesSinceRestock = 0;
             p.lastRestockAt = todayStr();
             p.lastNotifiedKey = null;
-            if (p.pendingBuyTaskId) {
-                const pending = data.tasks.find(x => x.id === p.pendingBuyTaskId);
-                if (pending && !pending.completed) {
-                    data.tasks = data.tasks.filter(x => x.id !== p.pendingBuyTaskId);
-                }
-                p.pendingBuyTaskId = null;
-            }
+            // Elimina TODAS las tareas "Comprar X" sin completar de este producto (no solo la
+            // que apunta pendingBuyTaskId), por si hubiera quedado alguna duplicada suelta.
+            data.tasks = data.tasks.filter(x => !(x.autoBuyProductId === p.id && !x.completed));
+            p.pendingBuyTaskId = null;
             saveData();
             renderProductsView();
             refreshAll();
@@ -3271,22 +3536,45 @@
 
         // Crea (o reutiliza si ya hay una pendiente) la tarea automática "Comprar <producto>",
         // para que se compre con antelación, antes de que vuelva a hacer falta.
-        function scheduleAutoBuyTask(product, urgent) {
-            if (product.pendingBuyTaskId) {
-                const existing = data.tasks.find(t => t.id === product.pendingBuyTaskId);
-                if (existing && !existing.completed) return; // ya hay una pendiente, no duplicar
+        // IMPORTANTE: esta tarea NO se asocia a ninguna habitación (roomId: null), porque
+        // comprar el producto no es una tarea que se realice en la habitación donde se usa
+        // el producto; se muestra aparte, en su propio apartado "Lista de la compra" dentro
+        // del Programa (ver renderSchedule/appendScheduleShoppingSection).
+        // contextNote (opcional): mensaje específico a mostrar, p. ej. cuando el producto
+        // hace falta para una tarea programada para mañana.
+        function scheduleAutoBuyTask(product, urgent, contextNote) {
+            // No nos fiamos solo del puntero product.pendingBuyTaskId: si por lo que sea se
+            // desincroniza (deshacer una tarea, sincronización entre dispositivos, datos
+            // importados, etc.) seguiría sin encontrar la tarea pendiente y crearía una
+            // duplicada. Por eso buscamos directamente cualquier tarea "Comprar X" sin
+            // completar que ya exista para este producto, tomamos esa como la buena y, si
+            // hubiera más de una duplicada suelta, nos quedamos solo con la primera.
+            const pendingForProduct = data.tasks.filter(t => t.autoBuyProductId === product.id && !t.completed);
+            if (pendingForProduct.length) {
+                const existing = pendingForProduct[0];
+                if (pendingForProduct.length > 1) {
+                    const extraIds = new Set(pendingForProduct.slice(1).map(t => t.id));
+                    data.tasks = data.tasks.filter(t => !extraIds.has(t.id));
+                }
+                product.pendingBuyTaskId = existing.id;
+                // Ya hay una pendiente: si llega un aviso más urgente/específico (p. ej.
+                // "hace falta para la tarea de mañana"), actualizamos el aviso y la subimos
+                // a prioridad Alta, pero no duplicamos la tarea.
+                if (contextNote) {
+                    existing.notes = contextNote;
+                    existing.importance = 'Alta';
+                }
+                return;
             }
-            const linkedTasks = tasksUsingProduct(product.id);
-            const roomId = linkedTasks.length ? linkedTasks[0].roomId : (data.rooms[0] ? data.rooms[0].id : null);
             const newTask = {
                 id: Date.now() + Math.random(),
-                roomId,
+                roomId: null,
                 name: `Comprar ${product.name}`,
-                notes: urgent ? 'Se ha acabado: repón antes de la próxima tarea que lo necesite.' : 'Se está por acabar: repón antes de que vuelva a hacer falta.',
+                notes: contextNote || (urgent ? 'Se ha acabado: repón antes de la próxima tarea que lo necesite.' : 'Se está por acabar: repón antes de que vuelva a hacer falta.'),
                 importance: urgent ? 'Alta' : 'Media',
                 icon: 'shopping_cart', iconColor: null,
                 dueDate: todayStr(), frequencyDays: null,
-                tags: ['compra'], memberId: null, favorite: false, duration: null,
+                tags: ['compra'], memberId: null, duration: null,
                 reminderTime: null, reminderLead: 0, link: null, lastNotifiedKey: null,
                 points: POINTS_PER_TASK, subtasks: [],
                 repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
@@ -3296,6 +3584,42 @@
             };
             data.tasks.push(newTask);
             product.pendingBuyTaskId = newTask.id;
+        }
+
+        // Revisa las tareas programadas para MAÑANA: si alguna necesita un producto que ya
+        // no queda (usesLeft <= 0 según el patrón aprendido), genera hoy mismo (o actualiza)
+        // la tarea automática de compra con un aviso explícito de que hace falta comprarlo
+        // hoy para poder hacer mañana esa tarea. Se llama en cada refreshAll(), y guarda los
+        // cambios solo si realmente crea o actualiza alguna tarea de compra.
+        function checkUpcomingProductNeeds() {
+            const today = todayStr();
+            let changed = false;
+            data.products.forEach(p => {
+                // Antelación configurable por producto: con cuántos días de margen debe
+                // aparecer la tarea "Comprar X" en el Programa, antes de que haga falta
+                // para una tarea ya programada. 0 = desactivado (no se avisa por adelantado).
+                const leadDays = (p.leadDays === undefined || p.leadDays === null) ? 3 : Math.max(0, p.leadDays);
+                if (leadDays <= 0) return;
+                const horizon = addDays(today, leadDays);
+                const upcoming = data.tasks.filter(t => !t.completed && !t.autoBuyProductId
+                    && t.dueDate && t.dueDate > today && t.dueDate <= horizon
+                    && (t.productIds || []).includes(p.id));
+                if (!upcoming.length) return;
+                const status = computeProductUsageStatus(p);
+                if (status.state !== 'empty') return;
+                // La tarea programada más próxima que necesita este producto, para el aviso.
+                upcoming.sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1));
+                const nearest = upcoming[0];
+                const tomorrow = addDays(today, 1);
+                const whenLabel = nearest.dueDate === tomorrow ? 'mañana' : `el ${formatDateLabel(nearest.dueDate)}`;
+                const before = p.pendingBuyTaskId;
+                const beforeTask = before ? data.tasks.find(t => t.id === before) : null;
+                const beforeNote = beforeTask ? beforeTask.notes : null;
+                scheduleAutoBuyTask(p, true, `Necesario comprar: ${whenLabel} toca "${nearest.name}" y no queda producto.`);
+                const afterTask = data.tasks.find(t => t.id === p.pendingBuyTaskId);
+                if (!beforeTask || (afterTask && afterTask.notes !== beforeNote)) changed = true;
+            });
+            if (changed) saveData();
         }
 
         // Se llama al completar cualquier tarea: si la tarea gasta productos vinculados,
@@ -3471,23 +3795,29 @@
 
         // Revisa y desbloquea los logros de la persona que acaba de completar una tarea
         // (no otorga los puntos de la tarea en sí, solo el bonus del logro).
+        // Para las series infinitas (racha y total), va reclamando niveles en cadena mientras
+        // el estado actual siga superando el siguiente umbral (duplicado del anterior), así que
+        // si alguien sube varios niveles de golpe (p. ej. al importar un historial) los recibe
+        // todos de una vez, cada uno con su propio bonus (también duplicado).
         function checkAchievements(key) {
             key = key || fbCurrentUserKey();
-            const s = computeStatsForKey(key);
             if (!data.claimedAchievementsByUser) data.claimedAchievementsByUser = {};
             if (!data.claimedAchievementsByUser[key]) data.claimedAchievementsByUser[key] = [];
             const claimed = data.claimedAchievementsByUser[key];
             let bonusMsgs = [];
-            achievementDefs.forEach(a => {
-                let unlocked = false;
-                if (a.type === 'streak') unlocked = s.streak >= a.threshold;
-                else if (a.type === 'total') unlocked = s.totalCompleted >= a.threshold;
-                else if (a.type === 'members') unlocked = data.members.length >= a.threshold;
-                if (unlocked && !claimed.includes(a.id)) {
-                    claimed.push(a.id);
-                    const bonus = achievementPoints[a.id] || 0;
-                    addUserPoints(key, bonus);
-                    bonusMsgs.push(`${a.label} (+${bonus} pts)`);
+            achievementSeries.forEach(series => {
+                const statValue = statValueForSeries(series, key);
+                let level = getClaimedLevel(key, series.id);
+                while (true) {
+                    const nextLevel = level + 1;
+                    const ach = getAchievementLevel(series.id, nextLevel);
+                    if (!ach) break;
+                    if (statValue >= ach.threshold && !claimed.includes(ach.id)) {
+                        claimed.push(ach.id);
+                        addUserPoints(key, ach.points);
+                        bonusMsgs.push(`${ach.label} (+${ach.points} pts)`);
+                        level = nextLevel;
+                    } else break;
                 }
             });
             if (bonusMsgs.length) {
@@ -3498,25 +3828,26 @@
 
         // Revoca los logros de una persona que ya NO cumple sus requisitos (p. ej. su racha
         // o su total de tareas bajó al deshacer una tarea) y le retira los puntos bonus que
-        // había ganado por ellos. Se llama siempre después de deshacer una tarea/paso.
+        // había ganado por ellos. Como los niveles son acumulativos, si un nivel deja de ser
+        // válido también se revocan automáticamente todos los niveles superiores de esa serie.
+        // Se llama siempre después de deshacer una tarea/paso.
         function revertAchievementsForKey(key) {
             if (!key) return;
             if (!data.claimedAchievementsByUser || !data.claimedAchievementsByUser[key]) return;
-            const s = computeStatsForKey(key);
             const claimed = data.claimedAchievementsByUser[key];
             const stillValid = [];
             claimed.forEach(id => {
-                const a = achievementDefs.find(x => x.id === id);
+                const sepIdx = id.lastIndexOf('_L');
+                const seriesId = sepIdx > -1 ? id.slice(0, sepIdx) : id;
+                const level = sepIdx > -1 ? parseInt(id.slice(sepIdx + 2), 10) : NaN;
+                const series = achievementSeries.find(x => x.id === seriesId);
+                const ach = series && !isNaN(level) ? getAchievementLevel(seriesId, level) : null;
                 let unlocked = true;
-                if (a) {
-                    if (a.type === 'streak') unlocked = s.streak >= a.threshold;
-                    else if (a.type === 'total') unlocked = s.totalCompleted >= a.threshold;
-                    else if (a.type === 'members') unlocked = data.members.length >= a.threshold;
-                }
+                if (series && ach) unlocked = statValueForSeries(series, key) >= ach.threshold;
                 if (unlocked) {
                     stillValid.push(id);
                 } else {
-                    const bonus = achievementPoints[id] || 0;
+                    const bonus = (ach && ach.points) || 0;
                     if (bonus) addUserPoints(key, -bonus);
                 }
             });
@@ -3541,9 +3872,22 @@
                 cursor = addDays(cursor, -1);
             }
 
-            const totalTasks = data.tasks.length;
-            const completedNow = data.tasks.filter(x => x.completed).length;
-            const completionRate = totalTasks ? Math.round((completedNow / totalTasks) * 100) : 0;
+            // Tasa de cumplimiento de HOY: comparamos las tareas que vencían hoy
+            // (pendientes con dueDate === hoy) contra las que ya se completaron hoy
+            // (según el historial, usando dueDateAtCompletion). No usamos el flag
+            // instantáneo `task.completed`, porque en tareas repetitivas ese flag
+            // se resetea a los pocos segundos de completarse (para volver a
+            // programar la siguiente ocurrencia), lo que hacía que la tasa se
+            // quedara siempre en 0%.
+            const completedTodayHistory = data.history.filter(h => h.completedAt.slice(0, 10) === t);
+            const completedDueTodayIds = new Set(
+                completedTodayHistory
+                    .filter(h => h.dueDateAtCompletion === t)
+                    .map(h => h.taskId)
+            );
+            const pendingDueToday = data.tasks.filter(x => !x.completed && x.dueDate === t).length;
+            const totalDueToday = pendingDueToday + completedDueTodayIds.size;
+            const completionRate = totalDueToday ? Math.round((completedDueTodayIds.size / totalDueToday) * 100) : 0;
 
             return { completedToday, completedLast7, completedLast30, streak, totalCompleted, completionRate };
         }
@@ -3596,49 +3940,65 @@
             if (totalEl) totalEl.innerText = `${total} completadas`;
         }
 
+        function toggleRoomRanking(idx) {
+            const group = document.getElementById('ranking-group-' + idx);
+            if (group) group.classList.toggle('open');
+        }
+
         function renderRankings() {
             const roomEl = document.getElementById('room-ranking-list');
             if (roomEl) {
                 const counts = {};
-                data.history.forEach(h => { counts[h.roomName] = (counts[h.roomName] || 0) + 1; });
+                const memberCounts = {};
+                data.history.forEach(h => {
+                    counts[h.roomName] = (counts[h.roomName] || 0) + 1;
+                    const personKey = h.completedByKey || 'local';
+                    const personName = (h.completedByKey ? userDisplayName(h.completedByKey) : null) || h.completedBy || 'Tú';
+                    if (!memberCounts[h.roomName]) memberCounts[h.roomName] = {};
+                    if (!memberCounts[h.roomName][personKey]) memberCounts[h.roomName][personKey] = { name: personName, count: 0 };
+                    memberCounts[h.roomName][personKey].count++;
+                });
                 const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
                 if (sorted.length === 0) {
                     roomEl.innerHTML = `<p style="font-size:13px; color:var(--text-secondary); padding:6px 0;">Sin datos todavía.</p>`;
                 } else {
-                    roomEl.innerHTML = sorted.map(([name, count], i) => `
-                        <div class="ranking-row">
-                            <div class="ranking-rank">${i + 1}</div>
-                            <div class="ranking-name">${name}</div>
-                            <div class="ranking-count">${count}</div>
-                        </div>
-                    `).join('');
-                }
-            }
-            const memberEl = document.getElementById('member-ranking-list');
-            if (memberEl) {
-                const counts = {};
-                data.history.forEach(h => { if (h.memberName) counts[h.memberName] = (counts[h.memberName] || 0) + 1; });
-                const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
-                if (sorted.length === 0) {
-                    memberEl.innerHTML = `<p style="font-size:13px; color:var(--text-secondary); padding:6px 0;">Sin datos todavía.</p>`;
-                } else {
-                    memberEl.innerHTML = sorted.map(([name, count], i) => `
-                        <div class="ranking-row">
-                            <div class="ranking-rank">${i + 1}</div>
-                            <div class="ranking-name">${name}</div>
-                            <div class="ranking-count">${count}</div>
-                        </div>
-                    `).join('');
+                    roomEl.innerHTML = sorted.map(([name, count], i) => {
+                        const members = Object.values(memberCounts[name] || {}).sort((a, b) => b.count - a.count);
+                        const membersHTML = members.map(m => `
+                            <div class="ranking-member-row">
+                                <div class="ranking-member-name">${m.name}</div>
+                                <div class="ranking-member-count">${m.count}</div>
+                            </div>
+                        `).join('');
+                        return `
+                            <div class="ranking-group" id="ranking-group-${i}">
+                                <div class="ranking-row" onclick="toggleRoomRanking(${i})">
+                                    <div class="ranking-rank">${i + 1}</div>
+                                    <div class="ranking-name">${name}</div>
+                                    <div class="ranking-count">${count}</div>
+                                    <span class="material-symbols-rounded ranking-caret">expand_more</span>
+                                </div>
+                                <div class="ranking-members">${membersHTML}</div>
+                            </div>
+                        `;
+                    }).join('');
                 }
             }
         }
 
         // Reúne solo a las personas que son miembros ACTIVOS del hogar ahora mismo (más el
-        // usuario local "Tú"), para poder elegir de quién ver los logros. Los miembros que
-        // se hayan eliminado ya no aparecen aquí ni en la lista de logros.
+        // usuario local "Tú" SOLO si este dispositivo no está vinculado a ningún miembro),
+        // para poder elegir de quién ver los logros. Si el dispositivo ya está vinculado a un
+        // miembro (vía Firebase), ese miembro ya aparece en la lista con su nombre y no hace
+        // falta duplicarlo como "Tú". Los miembros que se hayan eliminado ya no aparecen aquí.
         let selectedBadgeUserKey = null;
+
+        // Cuántas entradas del historial se muestran de una vez en "Actividad reciente".
+        // Empieza corta para que la pantalla de Logros no se vuelva interminable; el
+        // botón "Ver más" la va ampliando de 5 en 5 hasta el límite de 150 cargadas.
+        let historyDisplayLimit = 5;
         function badgeUserKeys() {
-            const keys = new Set(['local']);
+            const keys = new Set([fbCurrentUserKey()]);
             (data.members || []).forEach(m => keys.add(String(m.id)));
             return Array.from(keys);
         }
@@ -3650,6 +4010,10 @@
 
         // Los logros son individuales: cada persona tiene su propia racha, su propio total
         // de tareas completadas y sus propios logros desbloqueados.
+        // Como las series de racha y de total son infinitas, aquí solo se muestra UNA tarjeta
+        // por serie: la del nivel más alto ya conseguido (si aún no se ha conseguido ninguno,
+        // se muestra el primer nivel como objetivo bloqueado). En cuanto se sube de nivel, esa
+        // misma tarjeta se actualiza sola mostrando el siguiente nivel exponenciado.
         function renderBadges() {
             const grid = document.getElementById('badge-grid');
             const chipsEl = document.getElementById('badge-person-chips');
@@ -3661,19 +4025,66 @@
                     <div class="badge-person-chip ${k === selectedBadgeUserKey ? 'active' : ''}" onclick="selectBadgeUser('${k}')">${userDisplayName(k) || 'Tú'}</div>
                 `).join('');
             }
-            const s = computeStatsForKey(selectedBadgeUserKey);
-            grid.innerHTML = achievementDefs.map(a => {
-                let unlocked = false;
-                if (a.type === 'streak') unlocked = s.streak >= a.threshold;
-                else if (a.type === 'total') unlocked = s.totalCompleted >= a.threshold;
-                else if (a.type === 'members') unlocked = data.members.length >= a.threshold;
+            grid.innerHTML = achievementSeries.map(series => {
+                const claimedLevel = getClaimedLevel(selectedBadgeUserKey, series.id);
+                const unlocked = claimedLevel > 0;
+                const ach = getAchievementLevel(series.id, unlocked ? claimedLevel : 1);
                 return `
-                    <div class="badge-item ${unlocked ? 'unlocked' : ''}">
-                        <div class="badge-icon-wrap"><span class="material-symbols-rounded">${a.icon}</span></div>
-                        <div class="badge-label">${a.label}</div>
+                    <div class="badge-item ${unlocked ? 'unlocked' : ''}" onclick="showAchievementDetail('${series.id}')">
+                        <div class="badge-icon-wrap"><span class="material-symbols-rounded">${ach.icon}</span></div>
+                        <div class="badge-label">${ach.label}</div>
                     </div>
                 `;
             }).join('');
+        }
+
+        // Muestra una ventana flotante con la explicación de un logro. Para las series
+        // infinitas, si ya se consiguió al menos un nivel, muestra ese nivel como conseguido
+        // y además la barra de progreso hacia el SIGUIENTE nivel (el exponenciado); si aún no
+        // se ha conseguido ninguno, la barra de progreso apunta al primer nivel.
+        function showAchievementDetail(seriesId) {
+            const series = achievementSeries.find(s => s.id === seriesId);
+            if (!series) return;
+            const key = selectedBadgeUserKey || fbCurrentUserKey();
+            const claimedLevel = getClaimedLevel(key, seriesId);
+            const unlocked = claimedLevel > 0;
+            const statValue = statValueForSeries(series, key);
+            const nextLevel = unlocked ? claimedLevel + 1 : 1;
+            const nextAch = getAchievementLevel(seriesId, nextLevel);
+            const achievedAch = unlocked ? getAchievementLevel(seriesId, claimedLevel) : null;
+            const displayAch = achievedAch || nextAch;
+            const showsNextGoal = !!(nextAch && series.infinite);
+
+            const iconWrap = document.getElementById('achievement-modal-icon-wrap');
+            iconWrap.classList.toggle('unlocked', unlocked);
+            document.getElementById('achievement-modal-icon').textContent = displayAch.icon;
+            document.getElementById('achievement-modal-title').textContent = displayAch.label;
+
+            let descText = displayAch.desc || '';
+            if (achievedAch && showsNextGoal) descText += ` Siguiente nivel: ${nextAch.threshold}${series.type === 'streak' ? ' días seguidos' : ' tareas'}.`;
+            document.getElementById('achievement-modal-desc').textContent = descText;
+
+            const progressText = document.getElementById('achievement-modal-progress-text');
+            if (achievedAch && !showsNextGoal) {
+                document.getElementById('achievement-modal-progress-fill').style.width = '100%';
+                progressText.classList.add('unlocked');
+                progressText.textContent = `✓ Logro completado (+${achievedAch.points} pts)`;
+            } else {
+                const targetAch = showsNextGoal ? nextAch : (nextAch || achievedAch);
+                const pct = Math.max(0, Math.min(100, Math.round((statValue / targetAch.threshold) * 100)));
+                document.getElementById('achievement-modal-progress-fill').style.width = pct + '%';
+                progressText.classList.remove('unlocked');
+                progressText.textContent = `${pct}% ${achievedAch ? 'hacia el siguiente nivel' : 'completado'} · ${statValue} / ${targetAch.threshold}`;
+            }
+
+            openAchievementModal();
+        }
+
+        function openAchievementModal() {
+            document.getElementById('modal-achievement').style.display = 'flex';
+        }
+        function closeAchievementModal() {
+            document.getElementById('modal-achievement').style.display = 'none';
         }
 
         function renderHistoryView() {
@@ -3685,7 +4096,7 @@
                 <div class="stat-item"><div class="stat-value">${s.completedToday}</div><div class="stat-label">HOY</div></div>
                 <div class="stat-item"><div class="stat-value">${s.completedLast7}</div><div class="stat-label">7 DÍAS</div></div>
                 <div class="stat-item"><div class="stat-value">${s.completedLast30}</div><div class="stat-label">30 DÍAS</div></div>
-                <div class="stat-item"><div class="stat-value">${s.streak}🔥</div><div class="stat-label">RACHA</div></div>
+                <div class="stat-item"><div class="stat-value">${s.streak}<span class="material-symbols-rounded" style="font-size:18px; vertical-align:-3px; color:var(--accent-color);">local_fire_department</span></div><div class="stat-label">RACHA</div></div>
                 <div class="stat-item"><div class="stat-value">${s.completionRate}%</div><div class="stat-label">TASA</div></div>
             `;
             const sub = document.getElementById('summary-subtitle-text');
@@ -3700,7 +4111,8 @@
                 listEl.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">history</span>Aún no has completado ninguna tarea.</div>`;
                 return;
             }
-            const sorted = [...data.history].sort((a, b) => b.completedAt.localeCompare(a.completedAt)).slice(0, 150);
+            const sortedFull = [...data.history].sort((a, b) => b.completedAt.localeCompare(a.completedAt)).slice(0, 150);
+            const sorted = sortedFull.slice(0, historyDisplayLimit);
             let lastDate = '';
             sorted.forEach(h => {
                 const dateKey = h.completedAt.slice(0, 10);
@@ -3712,6 +4124,35 @@
                     listEl.appendChild(label);
                 }
                 const time = new Date(h.completedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const undoAllowed = canUndoCompletion(h.completedAt);
+
+                // Si la tarea tenía pasos, mostramos quién hizo cada uno en vez de atribuir
+                // toda la tarea a la persona que tocó el último paso. Priorizamos resolver el
+                // nombre ACTUAL a partir de la key (memberById/userDisplayName) sobre el nombre
+                // que quedó congelado en el momento de completar: así, si alguien se cambia el
+                // nombre, todo su historial pasado se actualiza también, en vez de quedarse
+                // mostrando el nombre viejo para siempre.
+                const stepNames = (h.stepsCompletedBy || [])
+                    .map(s => (s.completedByKey ? userDisplayName(s.completedByKey) : null) || s.completedByName)
+                    .filter(Boolean);
+                const distinctStepNames = [...new Set(stepNames)];
+                const memberLabel = h.memberId != null ? (memberById(h.memberId) ? memberById(h.memberId).name : h.memberName) : h.memberName;
+                const completedByLabel = h.completedByKey ? userDisplayName(h.completedByKey) : h.completedBy;
+                let attributionHTML;
+                if (h.stepsCompletedBy && h.stepsCompletedBy.length > 1 && distinctStepNames.length > 1) {
+                    // Varias personas distintas hicieron pasos distintos: detallamos paso por paso.
+                    const stepsList = h.stepsCompletedBy
+                        .map(s => {
+                            const label = (s.completedByKey ? userDisplayName(s.completedByKey) : null) || s.completedByName;
+                            return `${s.text}${label ? ' (<strong>' + label + '</strong>)' : ''}`;
+                        })
+                        .join(' · ');
+                    attributionHTML = `<div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${memberLabel ? ' · ' + memberLabel : ''} · ${time}</div>
+                        <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${stepsList}</div>`;
+                } else {
+                    attributionHTML = `<div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${memberLabel ? ' · ' + memberLabel : ''}${completedByLabel ? ' · hecho por <strong>' + completedByLabel + '</strong>' : ''} · ${time}</div>`;
+                }
+
                 const div = document.createElement('div');
                 div.className = 'task-item';
                 div.innerHTML = `
@@ -3720,12 +4161,25 @@
                     </div>
                     <div class="item-info">
                         <div class="item-title">${h.taskName}</div>
-                        <div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''}${h.completedBy ? ' · hecho por <strong>' + h.completedBy + '</strong>' : (h.completedByKey ? ' · hecho por <strong>' + userDisplayName(h.completedByKey) + '</strong>' : '')} · ${time}</div>
+                        ${attributionHTML}
                     </div>
-                    <span class="material-symbols-rounded" title="Deshacer" onclick="event.stopPropagation(); undoHistoryEntry('${h.id}')" style="color:var(--text-secondary); font-size:22px; cursor:pointer; margin-left:8px;">undo</span>
+                    ${undoAllowed
+                        ? `<span class="material-symbols-rounded" title="Deshacer" onclick="event.stopPropagation(); undoHistoryEntry('${h.id}')" style="color:var(--text-secondary); font-size:22px; cursor:pointer; margin-left:8px;">undo</span>`
+                        : `<span class="material-symbols-rounded" title="Ya no se puede deshacer (más de 48h)" style="color:var(--text-secondary); opacity:0.3; font-size:22px; margin-left:8px;">undo</span>`
+                    }
                 `;
                 listEl.appendChild(div);
             });
+
+            if (sortedFull.length > sorted.length) {
+                const remaining = sortedFull.length - sorted.length;
+                const moreBtn = document.createElement('div');
+                moreBtn.className = 'filter-pill';
+                moreBtn.style.cssText = 'display:flex; justify-content:center; cursor:pointer; margin:4px auto 16px auto; width:max-content;';
+                moreBtn.innerText = `Ver más (${Math.min(remaining, 5)} de ${remaining})`;
+                moreBtn.onclick = () => { historyDisplayLimit += 5; renderHistoryView(); };
+                listEl.appendChild(moreBtn);
+            }
         }
 
         /* --- COMPLETAR TAREA (con soporte de repetición y pasos con puntos propios) --- */
@@ -3736,6 +4190,13 @@
             if (!task.completed) {
                 completeTaskFully(task);
             } else {
+                const entry = data.history.find(h => h.taskId === task.id);
+                const completedAt = entry ? entry.completedAt : task.lastCompletedAt;
+                if (!canUndoCompletion(completedAt)) {
+                    alert(`"${task.name}" se completó hace más de 48 horas, así que ya no se puede desmarcar.`);
+                    return;
+                }
+                if (!confirm(`¿Desmarcar "${task.name}" como completada?`)) return;
                 uncompleteTaskFully(task);
             }
         }
@@ -3756,6 +4217,7 @@
                 task.subtasks.forEach(s => {
                     if (!s.done) {
                         s.done = true;
+                        s.completedAt = now;
                         s.completedByKey = completedByKey;
                         s.completedByName = completedByUser;
                         pointsToAdd += (s.points || 0);
@@ -3766,7 +4228,14 @@
             }
             if (pointsToAdd > 0) addUserPoints(completedByKey, pointsToAdd);
 
-            data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedByKey: completedByKey, pointsEarned: pointsToAdd, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount });
+            // Guardamos en el historial quién completó cada paso (no solo quién marcó la tarea
+            // como terminada), para que quede constancia de que un paso lo hizo una persona y
+            // otro paso lo hizo otra, en vez de atribuir toda la tarea a quien tocó el último paso.
+            const stepsCompletedBy = (task.subtasks && task.subtasks.length)
+                ? task.subtasks.map(s => ({ text: s.text, completedByKey: s.completedByKey || null, completedByName: s.completedByName || null }))
+                : null;
+
+            data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberId: task.memberId || null, memberName: member ? member.name : null, completedBy: completedByUser, completedByKey: completedByKey, pointsEarned: pointsToAdd, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount, stepsCompletedBy: stepsCompletedBy });
             task.lastCompletedAt = now;
             processProductUsageForCompletedTask(task);
             checkAchievements(completedByKey);
@@ -3823,6 +4292,7 @@
                     s.done = false;
                     s.completedByKey = null;
                     s.completedByName = null;
+                    s.completedAt = null;
                 });
             } else {
                 const refundKey = (entry && entry.completedByKey) || fbCurrentUserKey();
@@ -3844,6 +4314,7 @@
 
             if (!step.done) {
                 step.done = true;
+                step.completedAt = new Date().toISOString();
                 const key = fbCurrentUserKey();
                 const name = fbCurrentUserName();
                 step.completedByKey = key;
@@ -3858,11 +4329,17 @@
                 saveData();
                 refreshAll();
             } else {
+                if (!canUndoCompletion(step.completedAt)) {
+                    alert(`"${step.text}" se completó hace más de 48 horas, así que ya no se puede desmarcar.`);
+                    return;
+                }
+                if (!confirm(`¿Desmarcar "${step.text}" como completado?`)) return;
                 const refundKey = step.completedByKey || fbCurrentUserKey();
                 if (step.points) addUserPoints(refundKey, -step.points);
                 step.done = false;
                 step.completedByKey = null;
                 step.completedByName = null;
+                step.completedAt = null;
                 if (task.completed) {
                     task.completed = false;
                     const idx = data.history.findIndex(h => h.taskId === task.id);
@@ -3879,6 +4356,10 @@
             const idx = data.history.findIndex(h => String(h.id) === String(historyId));
             if (idx === -1) return;
             const h = data.history[idx];
+            if (!canUndoCompletion(h.completedAt)) {
+                alert(`"${h.taskName}" se completó hace más de 48 horas, así que ya no se puede deshacer.`);
+                return;
+            }
             if (!confirm(`¿Deshacer "${h.taskName}" como completada?`)) return;
 
             data.history.splice(idx, 1);
@@ -3897,6 +4378,7 @@
                         s.done = false;
                         s.completedByKey = null;
                         s.completedByName = null;
+                        s.completedAt = null;
                     });
                 } else {
                     addUserPoints(refundKey, -taskTotalPoints(task));
@@ -4182,12 +4664,6 @@
             return active ? active.getAttribute('data-v') : 'afterComplete';
         }
 
-        function toggleFavoriteEditing() {
-            editingFavorite = !editingFavorite;
-            const btn = document.getElementById('task-fav-btn');
-            btn.innerHTML = `<span class="material-symbols-rounded" style="color:${editingFavorite ? 'var(--accent-orange)' : 'var(--accent-color)'}">${editingFavorite ? 'star' : 'star_border'}</span>`;
-        }
-
         function renderSubtaskList() {
             const el = document.getElementById('subtask-list');
             el.innerHTML = '';
@@ -4276,10 +4752,8 @@
             selectedTaskIcon = 'mop';
             selectedTaskIconColor = null;
             selectedTaskCategory = 'Limpieza';
-            editingFavorite = false;
             editingSubtasks = [];
             editingTaskProductIds = [];
-            document.getElementById('task-fav-btn').innerHTML = '<span class="material-symbols-rounded">star_border</span>';
             renderTaskIconCats();
             renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
             renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, (c) => { selectedTaskIconColor = (selectedTaskIconColor === c) ? null : c; renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, arguments.callee); });
@@ -4323,10 +4797,8 @@
             updateRepeatUI();
             selectedTaskIcon = t.icon;
             selectedTaskIconColor = t.iconColor || null;
-            editingFavorite = !!t.favorite;
             editingSubtasks = (t.subtasks || []).map(s => ({ ...s }));
             editingTaskProductIds = (t.productIds || []).slice();
-            document.getElementById('task-fav-btn').innerHTML = `<span class="material-symbols-rounded" style="color:${editingFavorite ? 'var(--accent-orange)' : 'var(--accent-color)'}">${editingFavorite ? 'star' : 'star_border'}</span>`;
             let foundCat = Object.keys(iconCategories).find(cat => iconCategories[cat].includes(t.icon)) || 'Limpieza';
             selectedTaskCategory = foundCat;
             renderTaskIconCats();
@@ -4362,8 +4834,13 @@
             const repeatEndCountInput = parseInt(document.getElementById('task-repeat-end-count').value, 10);
             const repeatEndCount = (repeatEndType === 'count') ? ((repeatEndCountInput > 0 ? repeatEndCountInput : 1) - 1) : null;
 
-            // Validaciones de coherencia: si hay repetición pero no hay fecha de vencimiento, se toma hoy como punto de partida
-            if (repeatType !== 'none' && !dueDate) dueDate = todayStr();
+            // Validación de coherencia: si no se puso fecha de vencimiento, se toma hoy como
+            // punto de partida. Esto aplica también a tareas de un solo uso ("No se repite"):
+            // sin fecha nunca aparecerían en "Programa" (que solo lista tareas con dueDate),
+            // aunque sí siguieran visibles en la habitación. Con fecha de hoy, aparecen en
+            // Programa desde ya, y si no se completan se van arrastrando día a día (como
+            // cualquier tarea pendiente) hasta que se hacen, momento en que desaparecen.
+            if (!dueDate) dueDate = todayStr();
             // Si el tipo es "días concretos" pero no se eligió ningún día, se usa el día de la semana de la fecha de vencimiento
             if (repeatType === 'customDays' && repeatWeekDays.length === 0 && dueDate) {
                 repeatWeekDays.push(new Date(dueDate + 'T00:00:00').getDay());
@@ -4376,7 +4853,7 @@
 
             const payload = {
                 roomId, name, notes, importance: imp, icon: selectedTaskIcon, iconColor: selectedTaskIconColor,
-                dueDate, tags, memberId, favorite: editingFavorite, duration, reminderTime, reminderLead, link, points,
+                dueDate, tags, memberId, duration, reminderTime, reminderLead, link, points,
                 subtasks: editingSubtasks,
                 productIds: editingTaskProductIds.slice(),
                 repeatType, repeatInterval, repeatUnit, repeatWeekDays, repeatMode,
