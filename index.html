@@ -1019,13 +1019,6 @@
                 <div class="badge-grid" id="badge-grid"></div>
             </div>
 
-            <div id="member-ranking-section">
-                <div class="section-header"><h2>Ranking por miembro</h2></div>
-                <div class="card" style="flex-direction:column; align-items:stretch; cursor:default;">
-                    <div id="member-ranking-list"></div>
-                </div>
-            </div>
-
             <div class="section-header"><h2>Actividad reciente</h2></div>
             <div id="history-list"></div>
         </div>
@@ -1791,7 +1784,10 @@
 
         const productIconOptions = ['cleaning_services', 'soap', 'sanitizer', 'water_drop', 'local_laundry_service', 'mop', 'dry_cleaning', 'delete', 'recycling', 'spa', 'bathtub', 'shower', 'shopping_cart', 'icecream', 'coffee_maker', 'delete_sweep', 'auto_delete', 'hot_tub', 'wc', 'pest_control', 'iron', 'vacuum', 'box', 'inventory_2', 'shopping_bag', 'liquor', 'apparel', 'backpack', 'checkroom', 'cleaning_bucket', 'compost', 'grain', 'bath_soak'];
         const rewardIconOptions = ['restaurant', 'favorite', 'movie', 'self_improvement', 'redeem', 'celebration', 'local_cafe', 'flight', 'spa', 'shopping_bag', 'cake', 'nightlife'];
-        const achievementPoints = { streak3: 30, streak7: 70, streak14: 140, streak30: 300, streak60: 600, streak100: 1000, total10: 50, total50: 200, total100: 500, total250: 1000, total500: 1500, total1000: 3000, members1: 20 };
+        // Los puntos de recompensa de cada logro también siguen la misma progresión exponencial
+        // (se duplican en cada nivel), para que desbloquear un logro más difícil se note el doble
+        // de recompensante, no solo un poco más.
+        const achievementPoints = { streak3: 30, streak7: 60, streak14: 120, streak30: 240, streak60: 480, streak100: 960, total10: 50, total50: 100, total100: 200, total250: 400, total500: 800, total1000: 1600, members1: 20 };
 
         const sortLabels = { fecha: 'Fecha', importancia: 'Importancia', nombre: 'Nombre (A-Z)' };
         const allTasksSortLabels = { nombre: 'Nombre (A-Z)', fecha: 'Fecha de Vencimiento', importancia: 'Importancia', duracion: 'Duración' };
@@ -1799,19 +1795,24 @@
         // Cada logro se desbloquea de forma individual: la racha y el total de tareas se calculan
         // solo con las tareas que completó esa persona (ver computeStatsForKey), y los puntos de
         // recompensa se abonan únicamente a quien lo desbloqueó.
+        // Los umbrales de cada nivel se duplican respecto al anterior (progresión exponencial:
+        // 3, 6, 12, 24, 48, 96... en vez de saltos irregulares), así que los primeros niveles se
+        // consiguen rápido y cada nivel siguiente es un reto notablemente mayor que el anterior.
+        // (Los "id" internos se mantienen tal cual estaban para no perder los logros que la gente
+        // ya tuviera desbloqueados; solo cambian el umbral, el texto y los puntos que otorgan.)
         const achievementDefs = [
             { id: 'streak3', type: 'streak', threshold: 3, label: '3 días seguidos', icon: 'local_fire_department', desc: 'Completa al menos una tarea cada día durante 3 días seguidos.' },
-            { id: 'streak7', type: 'streak', threshold: 7, label: 'Semana completa', icon: 'local_fire_department', desc: 'Completa al menos una tarea cada día durante 7 días seguidos.' },
-            { id: 'streak14', type: 'streak', threshold: 14, label: '2 semanas seguidas', icon: 'local_fire_department', desc: 'Completa al menos una tarea cada día durante 14 días seguidos.' },
-            { id: 'streak30', type: 'streak', threshold: 30, label: 'Racha de oro', icon: 'military_tech', desc: 'Completa al menos una tarea cada día durante 30 días seguidos.' },
-            { id: 'streak60', type: 'streak', threshold: 60, label: 'Racha de platino', icon: 'military_tech', desc: 'Completa al menos una tarea cada día durante 60 días seguidos.' },
-            { id: 'streak100', type: 'streak', threshold: 100, label: 'Racha legendaria', icon: 'local_fire_department', desc: 'Completa al menos una tarea cada día durante 100 días seguidos.' },
+            { id: 'streak7', type: 'streak', threshold: 6, label: '6 días seguidos', icon: 'local_fire_department', desc: 'Completa al menos una tarea cada día durante 6 días seguidos.' },
+            { id: 'streak14', type: 'streak', threshold: 12, label: '12 días seguidos', icon: 'local_fire_department', desc: 'Completa al menos una tarea cada día durante 12 días seguidos.' },
+            { id: 'streak30', type: 'streak', threshold: 24, label: 'Racha de oro', icon: 'military_tech', desc: 'Completa al menos una tarea cada día durante 24 días seguidos.' },
+            { id: 'streak60', type: 'streak', threshold: 48, label: 'Racha de platino', icon: 'military_tech', desc: 'Completa al menos una tarea cada día durante 48 días seguidos.' },
+            { id: 'streak100', type: 'streak', threshold: 96, label: 'Racha legendaria', icon: 'local_fire_department', desc: 'Completa al menos una tarea cada día durante 96 días seguidos.' },
             { id: 'total10', type: 'total', threshold: 10, label: '10 tareas', icon: 'emoji_events', desc: 'Completa un total de 10 tareas.' },
-            { id: 'total50', type: 'total', threshold: 50, label: '50 tareas', icon: 'emoji_events', desc: 'Completa un total de 50 tareas.' },
-            { id: 'total100', type: 'total', threshold: 100, label: 'Maestro del hogar', icon: 'workspace_premium', desc: 'Completa un total de 100 tareas.' },
-            { id: 'total250', type: 'total', threshold: 250, label: 'Leyenda doméstica', icon: 'diamond', desc: 'Completa un total de 250 tareas.' },
-            { id: 'total500', type: 'total', threshold: 500, label: 'Élite del hogar', icon: 'diamond', desc: 'Completa un total de 500 tareas.' },
-            { id: 'total1000', type: 'total', threshold: 1000, label: 'Salón de la fama', icon: 'workspace_premium', desc: 'Completa un total de 1000 tareas.' },
+            { id: 'total50', type: 'total', threshold: 20, label: '20 tareas', icon: 'emoji_events', desc: 'Completa un total de 20 tareas.' },
+            { id: 'total100', type: 'total', threshold: 40, label: 'Maestro del hogar', icon: 'workspace_premium', desc: 'Completa un total de 40 tareas.' },
+            { id: 'total250', type: 'total', threshold: 80, label: 'Leyenda doméstica', icon: 'diamond', desc: 'Completa un total de 80 tareas.' },
+            { id: 'total500', type: 'total', threshold: 160, label: 'Élite del hogar', icon: 'diamond', desc: 'Completa un total de 160 tareas.' },
+            { id: 'total1000', type: 'total', threshold: 320, label: 'Salón de la fama', icon: 'workspace_premium', desc: 'Completa un total de 320 tareas.' },
             { id: 'members1', type: 'members', threshold: 1, label: 'Equipo en casa', icon: 'group', desc: 'Añade al menos 1 miembro a tu hogar.' }
         ];
 
@@ -3210,8 +3211,6 @@
             const container = document.getElementById('members-list');
             if (!container) return;
             container.innerHTML = '';
-            const section = document.getElementById('member-ranking-section');
-            if (section) section.classList.toggle('hidden', data.members.length === 0);
             if (data.members.length === 0) {
                 container.innerHTML = `<div class="card" style="cursor:default;"><p style="font-size:13px; color:var(--text-secondary);">Añade a las personas de tu hogar para repartir tareas y ver estadísticas por persona.</p></div>`;
                 return;
@@ -3903,46 +3902,6 @@
                         <div class="ranking-row">
                             <div class="ranking-rank">${i + 1}</div>
                             <div class="ranking-name">${name}</div>
-                            <div class="ranking-count">${count}</div>
-                        </div>
-                    `).join('');
-                }
-            }
-            const memberEl = document.getElementById('member-ranking-list');
-            if (memberEl) {
-                // Agrupamos por memberId (identificador estable), no por el nombre que tenía
-                // el miembro en el momento de completar cada tarea: así, si alguien se cambia
-                // el nombre, sus tareas antiguas y nuevas siguen contando como la misma persona
-                // en vez de aparecer como dos filas distintas en el ranking. Para historial
-                // antiguo que no guardó memberId, se recurre al nombre como respaldo.
-                const counts = {}; // key -> count
-                const labels = {}; // key -> nombre a mostrar
-                data.history.forEach(h => {
-                    if (!h.memberName && h.memberId == null) return;
-                    const key = (h.memberId != null) ? ('id:' + h.memberId) : ('name:' + h.memberName);
-                    counts[key] = (counts[key] || 0) + 1;
-                    if (!labels[key]) {
-                        const currentMember = (h.memberId != null) ? memberById(h.memberId) : null;
-                        labels[key] = currentMember ? currentMember.name : h.memberName;
-                    }
-                });
-                // Red de seguridad: si a pesar de todo dos claves distintas acaban mostrando
-                // exactamente el mismo nombre (p. ej. historial huérfano que aún no se ha
-                // reconciliado), las fusionamos en una sola fila sumando su recuento, en vez de
-                // mostrar la misma persona duplicada dos veces.
-                const mergedCounts = {}; // nombre -> count
-                Object.entries(counts).forEach(([key, count]) => {
-                    const label = labels[key];
-                    mergedCounts[label] = (mergedCounts[label] || 0) + count;
-                });
-                const sorted = Object.entries(mergedCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
-                if (sorted.length === 0) {
-                    memberEl.innerHTML = `<p style="font-size:13px; color:var(--text-secondary); padding:6px 0;">Sin datos todavía.</p>`;
-                } else {
-                    memberEl.innerHTML = sorted.map(([label, count], i) => `
-                        <div class="ranking-row">
-                            <div class="ranking-rank">${i + 1}</div>
-                            <div class="ranking-name">${label}</div>
                             <div class="ranking-count">${count}</div>
                         </div>
                     `).join('');
