@@ -3269,17 +3269,18 @@
                 m.name = name;
                 m.color = selectedMemberColor;
                 if (oldName !== name) {
-                    const idStr = String(m.id);
-                    setUserName(idStr, name);
-                    // Reconcilia entradas antiguas del historial que solo guardaban el nombre
-                    // (sin memberId, de antes de que existiera esta vinculación estable) y
-                    // coinciden con el nombre anterior: las ligamos ahora a este miembro para
-                    // que cuenten como la misma persona en el ranking, en vez de quedarse
-                    // ancladas para siempre con el nombre viejo como si fuera alguien distinto.
-                    data.history.forEach(h => {
-                        if (h.memberId == null && h.memberName === oldName) h.memberId = m.id;
-                    });
+                    setUserName(String(m.id), name);
                 }
+                // Reconcilia entradas antiguas del historial que solo guardaban el nombre (sin
+                // memberId, de antes de que existiera esta vinculación estable) y coinciden con
+                // el nombre anterior O con el nombre que se acaba de poner: así, si un nombre
+                // antiguo se quedó "suelto" de una renombrada anterior, basta con volver a
+                // ponerlo aquí (aunque sea un momento, para luego cambiarlo de nuevo) para que
+                // ese historial huérfano quede enganchado a este miembro de forma permanente y
+                // deje de contar como si fuera una persona distinta en el ranking.
+                data.history.forEach(h => {
+                    if (h.memberId == null && (h.memberName === oldName || h.memberName === name)) h.memberId = m.id;
+                });
             } else {
                 data.members.push({ id: Date.now(), name, color: selectedMemberColor });
             }
@@ -3925,14 +3926,23 @@
                         labels[key] = currentMember ? currentMember.name : h.memberName;
                     }
                 });
-                const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+                // Red de seguridad: si a pesar de todo dos claves distintas acaban mostrando
+                // exactamente el mismo nombre (p. ej. historial huérfano que aún no se ha
+                // reconciliado), las fusionamos en una sola fila sumando su recuento, en vez de
+                // mostrar la misma persona duplicada dos veces.
+                const mergedCounts = {}; // nombre -> count
+                Object.entries(counts).forEach(([key, count]) => {
+                    const label = labels[key];
+                    mergedCounts[label] = (mergedCounts[label] || 0) + count;
+                });
+                const sorted = Object.entries(mergedCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
                 if (sorted.length === 0) {
                     memberEl.innerHTML = `<p style="font-size:13px; color:var(--text-secondary); padding:6px 0;">Sin datos todavía.</p>`;
                 } else {
-                    memberEl.innerHTML = sorted.map(([key, count], i) => `
+                    memberEl.innerHTML = sorted.map(([label, count], i) => `
                         <div class="ranking-row">
                             <div class="ranking-rank">${i + 1}</div>
-                            <div class="ranking-name">${labels[key]}</div>
+                            <div class="ranking-name">${label}</div>
                             <div class="ranking-count">${count}</div>
                         </div>
                     `).join('');
