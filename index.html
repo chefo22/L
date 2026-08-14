@@ -3265,8 +3265,21 @@
             if (!name) { alert('Ponle un nombre al miembro.'); return; }
             if (editingMemberId) {
                 const m = memberById(editingMemberId);
+                const oldName = m.name;
                 m.name = name;
                 m.color = selectedMemberColor;
+                if (oldName !== name) {
+                    const idStr = String(m.id);
+                    setUserName(idStr, name);
+                    // Reconcilia entradas antiguas del historial que solo guardaban el nombre
+                    // (sin memberId, de antes de que existiera esta vinculación estable) y
+                    // coinciden con el nombre anterior: las ligamos ahora a este miembro para
+                    // que cuenten como la misma persona en el ranking, en vez de quedarse
+                    // ancladas para siempre con el nombre viejo como si fuera alguien distinto.
+                    data.history.forEach(h => {
+                        if (h.memberId == null && h.memberName === oldName) h.memberId = m.id;
+                    });
+                }
             } else {
                 data.members.push({ id: Date.now(), name, color: selectedMemberColor });
             }
@@ -3896,16 +3909,30 @@
             }
             const memberEl = document.getElementById('member-ranking-list');
             if (memberEl) {
-                const counts = {};
-                data.history.forEach(h => { if (h.memberName) counts[h.memberName] = (counts[h.memberName] || 0) + 1; });
+                // Agrupamos por memberId (identificador estable), no por el nombre que tenía
+                // el miembro en el momento de completar cada tarea: así, si alguien se cambia
+                // el nombre, sus tareas antiguas y nuevas siguen contando como la misma persona
+                // en vez de aparecer como dos filas distintas en el ranking. Para historial
+                // antiguo que no guardó memberId, se recurre al nombre como respaldo.
+                const counts = {}; // key -> count
+                const labels = {}; // key -> nombre a mostrar
+                data.history.forEach(h => {
+                    if (!h.memberName && h.memberId == null) return;
+                    const key = (h.memberId != null) ? ('id:' + h.memberId) : ('name:' + h.memberName);
+                    counts[key] = (counts[key] || 0) + 1;
+                    if (!labels[key]) {
+                        const currentMember = (h.memberId != null) ? memberById(h.memberId) : null;
+                        labels[key] = currentMember ? currentMember.name : h.memberName;
+                    }
+                });
                 const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
                 if (sorted.length === 0) {
                     memberEl.innerHTML = `<p style="font-size:13px; color:var(--text-secondary); padding:6px 0;">Sin datos todavía.</p>`;
                 } else {
-                    memberEl.innerHTML = sorted.map(([name, count], i) => `
+                    memberEl.innerHTML = sorted.map(([key, count], i) => `
                         <div class="ranking-row">
                             <div class="ranking-rank">${i + 1}</div>
-                            <div class="ranking-name">${name}</div>
+                            <div class="ranking-name">${labels[key]}</div>
                             <div class="ranking-count">${count}</div>
                         </div>
                     `).join('');
@@ -4041,21 +4068,30 @@
                 const undoAllowed = canUndoCompletion(h.completedAt);
 
                 // Si la tarea tenía pasos, mostramos quién hizo cada uno en vez de atribuir
-                // toda la tarea a la persona que tocó el último paso.
+                // toda la tarea a la persona que tocó el último paso. Priorizamos resolver el
+                // nombre ACTUAL a partir de la key (memberById/userDisplayName) sobre el nombre
+                // que quedó congelado en el momento de completar: así, si alguien se cambia el
+                // nombre, todo su historial pasado se actualiza también, en vez de quedarse
+                // mostrando el nombre viejo para siempre.
                 const stepNames = (h.stepsCompletedBy || [])
-                    .map(s => s.completedByName || (s.completedByKey ? userDisplayName(s.completedByKey) : null))
+                    .map(s => (s.completedByKey ? userDisplayName(s.completedByKey) : null) || s.completedByName)
                     .filter(Boolean);
                 const distinctStepNames = [...new Set(stepNames)];
+                const memberLabel = h.memberId != null ? (memberById(h.memberId) ? memberById(h.memberId).name : h.memberName) : h.memberName;
+                const completedByLabel = h.completedByKey ? userDisplayName(h.completedByKey) : h.completedBy;
                 let attributionHTML;
                 if (h.stepsCompletedBy && h.stepsCompletedBy.length > 1 && distinctStepNames.length > 1) {
                     // Varias personas distintas hicieron pasos distintos: detallamos paso por paso.
                     const stepsList = h.stepsCompletedBy
-                        .map(s => `${s.text}${s.completedByName ? ' (<strong>' + s.completedByName + '</strong>)' : (s.completedByKey ? ' (<strong>' + userDisplayName(s.completedByKey) + '</strong>)' : '')}`)
+                        .map(s => {
+                            const label = (s.completedByKey ? userDisplayName(s.completedByKey) : null) || s.completedByName;
+                            return `${s.text}${label ? ' (<strong>' + label + '</strong>)' : ''}`;
+                        })
                         .join(' · ');
-                    attributionHTML = `<div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''} · ${time}</div>
+                    attributionHTML = `<div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${memberLabel ? ' · ' + memberLabel : ''} · ${time}</div>
                         <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${stepsList}</div>`;
                 } else {
-                    attributionHTML = `<div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${h.memberName ? ' · ' + h.memberName : ''}${h.completedBy ? ' · hecho por <strong>' + h.completedBy + '</strong>' : (h.completedByKey ? ' · hecho por <strong>' + userDisplayName(h.completedByKey) + '</strong>' : '')} · ${time}</div>`;
+                    attributionHTML = `<div style="font-size:12px; color:var(--text-secondary)">${h.roomName}${memberLabel ? ' · ' + memberLabel : ''}${completedByLabel ? ' · hecho por <strong>' + completedByLabel + '</strong>' : ''} · ${time}</div>`;
                 }
 
                 const div = document.createElement('div');
@@ -4140,7 +4176,7 @@
                 ? task.subtasks.map(s => ({ text: s.text, completedByKey: s.completedByKey || null, completedByName: s.completedByName || null }))
                 : null;
 
-            data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberName: member ? member.name : null, completedBy: completedByUser, completedByKey: completedByKey, pointsEarned: pointsToAdd, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount, stepsCompletedBy: stepsCompletedBy });
+            data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberId: task.memberId || null, memberName: member ? member.name : null, completedBy: completedByUser, completedByKey: completedByKey, pointsEarned: pointsToAdd, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount, stepsCompletedBy: stepsCompletedBy });
             task.lastCompletedAt = now;
             processProductUsageForCompletedTask(task);
             checkAchievements(completedByKey);
