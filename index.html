@@ -542,11 +542,19 @@
         .bar-label { font-size: 10px; color: var(--text-secondary); font-weight:600; }
         .bar-count { font-size: 10px; color: var(--text-secondary); }
 
-        .ranking-row { display:flex; align-items:center; gap:10px; padding: 8px 0; border-bottom: 1px solid var(--border-color); }
+        .ranking-row { display:flex; align-items:center; gap:10px; padding: 8px 0; border-bottom: 1px solid var(--border-color); cursor:pointer; }
         .ranking-row:last-child { border-bottom:none; }
+        .ranking-group:last-child .ranking-row { border-bottom:none; }
         .ranking-rank { width:20px; font-size:13px; font-weight:700; color: var(--text-secondary); }
         .ranking-name { flex-grow:1; font-size:14px; font-weight:500; }
         .ranking-count { font-size:13px; color: var(--accent-color); font-weight:700; }
+        .ranking-caret { font-size:18px; color: var(--text-secondary); transition: transform 0.2s; }
+        .ranking-group.open .ranking-caret { transform: rotate(180deg); }
+        .ranking-members { display:none; padding: 2px 0 10px 30px; }
+        .ranking-group.open .ranking-members { display:block; }
+        .ranking-member-row { display:flex; align-items:center; gap:10px; padding: 5px 0; }
+        .ranking-member-name { flex-grow:1; font-size:13px; color: var(--text-secondary); }
+        .ranking-member-count { font-size:12px; color: var(--text-secondary); font-weight:600; }
 
         .badge-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
         .badge-item { display:flex; flex-direction:column; align-items:center; gap:4px; opacity: 0.3; }
@@ -3889,22 +3897,48 @@
             if (totalEl) totalEl.innerText = `${total} completadas`;
         }
 
+        function toggleRoomRanking(idx) {
+            const group = document.getElementById('ranking-group-' + idx);
+            if (group) group.classList.toggle('open');
+        }
+
         function renderRankings() {
             const roomEl = document.getElementById('room-ranking-list');
             if (roomEl) {
                 const counts = {};
-                data.history.forEach(h => { counts[h.roomName] = (counts[h.roomName] || 0) + 1; });
+                const memberCounts = {};
+                data.history.forEach(h => {
+                    counts[h.roomName] = (counts[h.roomName] || 0) + 1;
+                    const personKey = h.completedByKey || 'local';
+                    const personName = (h.completedByKey ? userDisplayName(h.completedByKey) : null) || h.completedBy || 'Tú';
+                    if (!memberCounts[h.roomName]) memberCounts[h.roomName] = {};
+                    if (!memberCounts[h.roomName][personKey]) memberCounts[h.roomName][personKey] = { name: personName, count: 0 };
+                    memberCounts[h.roomName][personKey].count++;
+                });
                 const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
                 if (sorted.length === 0) {
                     roomEl.innerHTML = `<p style="font-size:13px; color:var(--text-secondary); padding:6px 0;">Sin datos todavía.</p>`;
                 } else {
-                    roomEl.innerHTML = sorted.map(([name, count], i) => `
-                        <div class="ranking-row">
-                            <div class="ranking-rank">${i + 1}</div>
-                            <div class="ranking-name">${name}</div>
-                            <div class="ranking-count">${count}</div>
-                        </div>
-                    `).join('');
+                    roomEl.innerHTML = sorted.map(([name, count], i) => {
+                        const members = Object.values(memberCounts[name] || {}).sort((a, b) => b.count - a.count);
+                        const membersHTML = members.map(m => `
+                            <div class="ranking-member-row">
+                                <div class="ranking-member-name">${m.name}</div>
+                                <div class="ranking-member-count">${m.count}</div>
+                            </div>
+                        `).join('');
+                        return `
+                            <div class="ranking-group" id="ranking-group-${i}">
+                                <div class="ranking-row" onclick="toggleRoomRanking(${i})">
+                                    <div class="ranking-rank">${i + 1}</div>
+                                    <div class="ranking-name">${name}</div>
+                                    <div class="ranking-count">${count}</div>
+                                    <span class="material-symbols-rounded ranking-caret">expand_more</span>
+                                </div>
+                                <div class="ranking-members">${membersHTML}</div>
+                            </div>
+                        `;
+                    }).join('');
                 }
             }
         }
