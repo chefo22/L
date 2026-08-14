@@ -2774,7 +2774,13 @@
         function renderRoomTasks() {
             const container = document.getElementById('room-tasks-list');
             container.innerHTML = '';
-            const filtered = sortTasks(data.tasks.filter(t => t.roomId == currentRoomDetailId), sortMode);
+            // Las tareas de un solo uso ("No se repite") desaparecen del listado de la
+            // habitación en cuanto se completan: ya cumplieron su propósito y no tiene sentido
+            // que sigan ahí continuamente (p. ej. "Deshacer la maleta"). Quedan igualmente
+            // registradas en el Historial. Las tareas que sí se repiten se siguen mostrando
+            // aunque estén completadas hoy, porque volverán a tocar en su próxima fecha.
+            const isOneTimeDone = (t) => t.completed && (!t.repeatType || t.repeatType === 'none');
+            const filtered = sortTasks(data.tasks.filter(t => t.roomId == currentRoomDetailId && !isOneTimeDone(t)), sortMode);
 
             if (filtered.length === 0) {
                 container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">checklist</span>No hay tareas aquí. Toca "+" para añadir una.</div>`;
@@ -3003,13 +3009,19 @@
             if (!container) return;
             container.innerHTML = '';
             const t = todayStr();
+            // Las tareas de un solo uso ("No se repite") no tienen una "próxima fecha" a la que
+            // saltar al completarse (a diferencia de las repetitivas, que cambian su dueDate y
+            // por eso dejan de verse solas). Sin este filtro se quedarían ancladas y tachadas
+            // para siempre en el día en que se completaron. Igual que en la habitación, en
+            // cuanto se completan desaparecen de Programa (quedan en el Historial).
+            const isOneTimeDone = (x) => x.completed && (!x.repeatType || x.repeatType === 'none');
             let list;
             if (selectedScheduleDate === t) {
                 const overdue = data.tasks.filter(x => x.dueDate && x.dueDate < t && !x.completed);
-                const dueToday = data.tasks.filter(x => x.dueDate === t);
+                const dueToday = data.tasks.filter(x => x.dueDate === t && !isOneTimeDone(x));
                 list = [...overdue, ...dueToday];
             } else {
-                list = data.tasks.filter(x => x.dueDate === selectedScheduleDate);
+                list = data.tasks.filter(x => x.dueDate === selectedScheduleDate && !isOneTimeDone(x));
             }
             if (scheduleSearchQuery) list = list.filter(x => x.name.toLowerCase().includes(scheduleSearchQuery));
             list = sortTasks(list, sortMode);
@@ -4727,8 +4739,13 @@
             const repeatEndCountInput = parseInt(document.getElementById('task-repeat-end-count').value, 10);
             const repeatEndCount = (repeatEndType === 'count') ? ((repeatEndCountInput > 0 ? repeatEndCountInput : 1) - 1) : null;
 
-            // Validaciones de coherencia: si hay repetición pero no hay fecha de vencimiento, se toma hoy como punto de partida
-            if (repeatType !== 'none' && !dueDate) dueDate = todayStr();
+            // Validación de coherencia: si no se puso fecha de vencimiento, se toma hoy como
+            // punto de partida. Esto aplica también a tareas de un solo uso ("No se repite"):
+            // sin fecha nunca aparecerían en "Programa" (que solo lista tareas con dueDate),
+            // aunque sí siguieran visibles en la habitación. Con fecha de hoy, aparecen en
+            // Programa desde ya, y si no se completan se van arrastrando día a día (como
+            // cualquier tarea pendiente) hasta que se hacen, momento en que desaparecen.
+            if (!dueDate) dueDate = todayStr();
             // Si el tipo es "días concretos" pero no se eligió ningún día, se usa el día de la semana de la fecha de vencimiento
             if (repeatType === 'customDays' && repeatWeekDays.length === 0 && dueDate) {
                 repeatWeekDays.push(new Date(dueDate + 'T00:00:00').getDay());
