@@ -955,9 +955,9 @@
             </div>
 
             <div class="icon-filter-row">
-                <div class="icon-filter-btn" onclick="cycleSortMode()" title="Ordenar por fecha o importancia">
-                    <span class="material-symbols-rounded" id="sort-pill-icon">calendar_month</span>
-                    <span id="sort-pill-label">Fecha</span>
+                <div class="icon-filter-btn" onclick="cycleSortMode()" title="Ordenar por hora o importancia">
+                    <span class="material-symbols-rounded" id="sort-pill-icon">schedule</span>
+                    <span id="sort-pill-label">Hora</span>
                 </div>
                 <div class="icon-filter-btn" onclick="cycleScheduleGroupByRoom()" id="group-room-filter-schedule" title="Agrupar por habitación">
                     <span class="material-symbols-rounded" id="group-room-pill-icon">meeting_room</span>
@@ -1992,7 +1992,7 @@
             }
         }
 
-        const sortLabels = { fecha: 'Fecha', importancia: 'Importancia', nombre: 'Nombre (A-Z)' };
+        const sortLabels = { fecha: 'Hora', importancia: 'Importancia', nombre: 'Nombre (A-Z)' };
         const allTasksSortLabels = { nombre: 'Nombre (A-Z)', fecha: 'Fecha de Vencimiento', importancia: 'Importancia', duracion: 'Duración' };
 
         const seasonContent = {
@@ -2070,7 +2070,7 @@
             const sortLabel = document.getElementById('sort-pill-label');
             if (sortLabel) sortLabel.innerText = sortLabels[sortMode];
             const sortIcon = document.getElementById('sort-pill-icon');
-            if (sortIcon) sortIcon.innerText = sortMode === 'importancia' ? 'flag' : 'calendar_month';
+            if (sortIcon) sortIcon.innerText = sortMode === 'importancia' ? 'flag' : 'schedule';
             const indBtn = document.getElementById('indicator-filter-schedule');
             const indIcon = document.getElementById('indicator-filter-icon');
             const indLabel = document.getElementById('indicator-filter-label');
@@ -3112,7 +3112,7 @@
             const label = document.getElementById('sort-pill-label');
             if (label) label.innerText = sortLabels[sortMode];
             const icon = document.getElementById('sort-pill-icon');
-            if (icon) icon.innerText = sortMode === 'importancia' ? 'flag' : 'calendar_month';
+            if (icon) icon.innerText = sortMode === 'importancia' ? 'flag' : 'schedule';
             saveSchedulePrefs();
             renderSchedule();
             renderRoomTasks();
@@ -3810,7 +3810,7 @@
                 const before = p.pendingBuyTaskId;
                 const beforeTask = before ? data.tasks.find(t => t.id === before) : null;
                 const beforeNote = beforeTask ? beforeTask.notes : null;
-                scheduleAutoBuyTask(p, true, `${whenLabel} toca "${nearest.name}" y no queda producto.`);
+                scheduleAutoBuyTask(p, true, `${whenLabel} toca ${nearest.name} y no queda producto.`);
                 const afterTask = data.tasks.find(t => t.id === p.pendingBuyTaskId);
                 if (!beforeTask || (afterTask && afterTask.notes !== beforeNote)) changed = true;
             });
