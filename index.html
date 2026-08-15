@@ -3799,7 +3799,7 @@
                     existing.notes = contextNote;
                     existing.importance = 'Alta';
                 }
-                return;
+                return { created: false, taskId: existing.id };
             }
             const newTask = {
                 id: Date.now() + Math.random(),
@@ -3819,6 +3819,7 @@
             };
             data.tasks.push(newTask);
             product.pendingBuyTaskId = newTask.id;
+            return { created: true, taskId: newTask.id };
         }
 
         // Revisa las tareas programadas para MAÑANA: si alguna necesita un producto que ya
@@ -3860,18 +3861,28 @@
         // Se llama al completar cualquier tarea: si la tarea gasta productos vinculados,
         // cuenta un uso en cada uno; si la tarea completada ES la de "Comprar X" autogenerada,
         // repone ese producto y reinicia su contador de usos.
+        // Devuelve un registro de efectos por producto ({productId, prevUsesSinceRestock,
+        // historyPushed, createdBuyTaskId}) para que uncompleteTaskFully pueda deshacer
+        // exactamente lo que se cambió aquí, ni más ni menos.
         function processProductUsageForCompletedTask(task) {
             if (task.autoBuyProductId) {
+                const p = productById(task.autoBuyProductId);
+                const prevUsesSinceRestock = p ? (p.usesSinceRestock || 0) : null;
+                const prevLastRestockAt = p ? p.lastRestockAt : null;
+                const removedBuyTaskIds = data.tasks.filter(x => x.autoBuyProductId === task.autoBuyProductId && !x.completed).map(x => x.id);
                 restockProduct(task.autoBuyProductId);
-                return;
+                return { restocked: { productId: task.autoBuyProductId, prevUsesSinceRestock, prevLastRestockAt, removedBuyTaskIds } };
             }
             const productIds = task.productIds || [];
-            if (!productIds.length) return;
+            if (!productIds.length) return null;
+            const effects = [];
             productIds.forEach(pid => {
                 const p = productById(pid);
                 if (!p) return;
-                p.usesSinceRestock = (p.usesSinceRestock || 0) + 1;
+                const prevUsesSinceRestock = p.usesSinceRestock || 0;
+                p.usesSinceRestock = prevUsesSinceRestock + 1;
                 const pattern = computeProductUsagePattern(p);
+                const effect = { productId: pid, prevUsesSinceRestock, historyPushed: false, createdBuyTaskId: null };
                 if (pattern === null) {
                     // Todavía no hay estimación: preguntamos si este uso ha agotado el producto.
                     const ranOut = confirm(`¿Se ha acabado "${p.name}" al usarlo en "${task.name}"?`);
@@ -3880,14 +3891,21 @@
                         p.useHistory.push(p.usesSinceRestock);
                         if (p.useHistory.length > 6) p.useHistory = p.useHistory.slice(-6);
                         p.usesSinceRestock = 0;
-                        scheduleAutoBuyTask(p, true);
+                        effect.historyPushed = true;
+                        const result = scheduleAutoBuyTask(p, true);
+                        if (result && result.created) effect.createdBuyTaskId = result.taskId;
                     }
                 } else {
                     const usesLeft = pattern - p.usesSinceRestock;
                     const lead = (p.leadUses === undefined || p.leadUses === null) ? 1 : p.leadUses;
-                    if (usesLeft <= lead) scheduleAutoBuyTask(p, usesLeft <= 0);
+                    if (usesLeft <= lead) {
+                        const result = scheduleAutoBuyTask(p, usesLeft <= 0);
+                        if (result && result.created) effect.createdBuyTaskId = result.taskId;
+                    }
                 }
+                effects.push(effect);
             });
+            return { productEffects: effects };
         }
 
         /* --- PUNTOS Y RECOMPENSAS --- */
@@ -4518,9 +4536,9 @@
                 ? task.subtasks.map(s => ({ text: s.text, completedByKey: s.completedByKey || null, completedByName: s.completedByName || null }))
                 : null;
 
-            data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberId: task.memberId || null, memberName: member ? member.name : null, completedBy: completedByUser, completedByKey: completedByKey, pointsEarned: pointsToAdd, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount, stepsCompletedBy: stepsCompletedBy });
+            const productUsageEffects = processProductUsageForCompletedTask(task);
+            data.history.unshift({ id: Date.now() + Math.random(), taskId: task.id, taskName: task.name, roomName: room ? room.name : 'Casa', memberId: task.memberId || null, memberName: member ? member.name : null, completedBy: completedByUser, completedByKey: completedByKey, pointsEarned: pointsToAdd, completedAt: now, dueDateAtCompletion: task.dueDate, repeatEndCountAtCompletion: task.repeatEndCount, stepsCompletedBy: stepsCompletedBy, productUsageEffects: productUsageEffects });
             task.lastCompletedAt = now;
-            processProductUsageForCompletedTask(task);
             checkAchievements(completedByKey);
             saveData();
             refreshAll();
@@ -4555,15 +4573,50 @@
         // reinicia todos los pasos a pendientes, y revoca cualquier logro/racha que ya no se cumpla.
         function uncompleteTaskFully(task) {
             task.completed = false;
-            // Revierte el conteo de usos de productos vinculados (mejor esfuerzo: no deshace
-            // una reposición automática ya generada, si la hubiera).
-            (task.productIds || []).forEach(pid => {
-                const p = productById(pid);
-                if (p) p.usesSinceRestock = Math.max(0, (p.usesSinceRestock || 0) - 1);
-            });
             const idx = data.history.findIndex(h => h.taskId === task.id);
             let entry = null;
             if (idx > -1) { entry = data.history[idx]; data.history.splice(idx, 1); }
+
+            // Revierte exactamente lo que cambió al completar la tarea (contador de usos,
+            // ciclo aprendido y tarea de "Comprar X" generada), usando el registro guardado
+            // en el historial en el momento de completarla.
+            const effects = entry && entry.productUsageEffects;
+            if (effects && effects.restocked) {
+                // La tarea desmarcada ERA la de "Comprar X": deshace la reposición.
+                const { productId, prevUsesSinceRestock, prevLastRestockAt, removedBuyTaskIds } = effects.restocked;
+                const p = productById(productId);
+                if (p) {
+                    p.usesSinceRestock = prevUsesSinceRestock || 0;
+                    p.lastRestockAt = prevLastRestockAt || null;
+                }
+                // Vuelve a poner esta misma tarea (ya desmarcada) como la pendiente del producto,
+                // y si al reponer se habían eliminado otras "Comprar X" duplicadas sueltas, no
+                // se recrean (eran duplicados, no aportaban nada).
+                if (p) p.pendingBuyTaskId = task.id;
+            } else if (effects && effects.productEffects) {
+                effects.productEffects.forEach(eff => {
+                    const p = productById(eff.productId);
+                    if (!p) return;
+                    p.usesSinceRestock = eff.prevUsesSinceRestock;
+                    if (eff.historyPushed && p.useHistory && p.useHistory.length) {
+                        p.useHistory = p.useHistory.slice(0, -1);
+                    }
+                    if (eff.createdBuyTaskId) {
+                        const buyTask = data.tasks.find(t => t.id === eff.createdBuyTaskId);
+                        if (buyTask && !buyTask.completed) {
+                            data.tasks = data.tasks.filter(t => t.id !== eff.createdBuyTaskId);
+                            if (p.pendingBuyTaskId === eff.createdBuyTaskId) p.pendingBuyTaskId = null;
+                        }
+                    }
+                });
+            } else {
+                // Sin registro de efectos (p. ej. historial de antes de esta versión): mejor
+                // esfuerzo, solo resta 1 al contador.
+                (task.productIds || []).forEach(pid => {
+                    const p = productById(pid);
+                    if (p) p.usesSinceRestock = Math.max(0, (p.usesSinceRestock || 0) - 1);
+                });
+            }
             const affectedKeys = new Set();
             if (task.subtasks && task.subtasks.length) {
                 task.subtasks.forEach(s => {
