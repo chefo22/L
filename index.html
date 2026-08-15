@@ -3600,17 +3600,31 @@
             const estimated = computeProductUsagePattern(product);
             const usesSince = product.usesSinceRestock || 0;
             if (!estimated) {
+                // Si usesSince es 0 porque se acaba de reponer (hay fecha de última reposición hoy),
+                // lo decimos explícitamente: si no, esto es indistinguible de "nunca se ha repuesto"
+                // y parece que marcar como repuesto no tuviera ningún efecto.
+                const justRestocked = usesSince === 0 && product.lastRestockAt === todayStr();
+                let label;
+                if (justRestocked) label = 'Repuesto hoy · aprendiendo cuántos usos aguanta';
+                else if (usesSince > 0) label = `Aprendiendo · ${usesSince} uso(s) registrados`;
+                else label = 'Aprendiendo patrón de uso…';
                 return {
                     state: 'nodata',
-                    label: usesSince > 0 ? `Aprendiendo · ${usesSince} uso(s) registrados` : 'Aprendiendo patrón de uso…',
+                    label,
                     usesLeft: null, estimated: null
                 };
             }
             const usesLeft = estimated - usesSince;
             const lead = (product.leadUses === undefined || product.leadUses === null) ? 1 : product.leadUses;
+            // El aviso de antelación nunca puede "comerse" el uso recién repuesto: si el producto
+            // aguanta pocos usos (ej. 1) y la antelación configurada es igual o mayor, sin este
+            // límite quedaría marcado como "por reponer" incluso recién comprado, con 0 usos desde
+            // la última reposición. Recortamos la antelación efectiva para que como mucho avise
+            // un uso antes del último, nunca en el propio momento de reponer.
+            const effectiveLead = Math.min(lead, Math.max(estimated - 1, 0));
             let state = 'ok', label = `Quedan ~${Math.max(usesLeft, 0)} uso(s)`;
             if (usesLeft <= 0) { state = 'empty'; label = 'Repón ya'; }
-            else if (usesLeft <= lead) { state = 'soon'; label = `Se acaba pronto · ~${usesLeft} uso(s)`; }
+            else if (usesLeft <= effectiveLead) { state = 'soon'; label = `Se acaba pronto · ~${usesLeft} uso(s)`; }
             return { state, label, usesLeft, estimated };
         }
 
