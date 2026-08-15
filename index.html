@@ -3107,12 +3107,15 @@
         function moveRoomTask(id, direction) {
             const isOneTimeDone = (t) => t.completed && (!t.repeatType || t.repeatType === 'none');
             const roomTaskIds = data.tasks.filter(t => t.roomId == currentRoomDetailId && !isOneTimeDone(t)).map(t => t.id);
-            const idx = roomTaskIds.indexOf(id);
+            // Comparación "floja" (==): el id llega como texto desde el atributo onclick del
+            // HTML, pero en data.tasks los id son números; con === nunca coincidían y por eso
+            // las flechas no movían nada.
+            const idx = roomTaskIds.findIndex(rid => rid == id);
             if (idx === -1) return;
             const newIdx = idx + direction;
             if (newIdx < 0 || newIdx >= roomTaskIds.length) return;
-            const realIdxA = data.tasks.findIndex(t => t.id === roomTaskIds[idx]);
-            const realIdxB = data.tasks.findIndex(t => t.id === roomTaskIds[newIdx]);
+            const realIdxA = data.tasks.findIndex(t => t.id == roomTaskIds[idx]);
+            const realIdxB = data.tasks.findIndex(t => t.id == roomTaskIds[newIdx]);
             [data.tasks[realIdxA], data.tasks[realIdxB]] = [data.tasks[realIdxB], data.tasks[realIdxA]];
             saveData();
             renderRoomTasks();
@@ -3752,7 +3755,7 @@
         // Cambia la posición de un producto dentro de data.products, igual que moveRoom
         // hace con las habitaciones. Ese orden es el que se usa en la Lista de Productos.
         function moveProduct(id, direction) {
-            const idx = data.products.findIndex(p => p.id === id);
+            const idx = data.products.findIndex(p => p.id == id);
             if (idx === -1) return;
             const newIdx = idx + direction;
             if (newIdx < 0 || newIdx >= data.products.length) return;
