@@ -2861,7 +2861,7 @@
             const roomPrefix = showRoomName ? `${room ? room.name : 'Casa'} · ` : '';
             const linkHTML = task.link ? `<span class="material-symbols-rounded" title="Abrir enlace" ${interactive ? `onclick="event.stopPropagation(); openTaskLink('${task.id}')"` : ''} style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px; padding:6px; margin:-6px 0 -6px 2px;">link</span>` : '';
             const snoozeHTML = (interactive && !task.completed && task.dueDate) ? `<span class="material-symbols-rounded" title="Posponer 1 día" onclick="event.stopPropagation(); snoozeTask(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">snooze</span>` : '';
-            const assignCompleterHTML = (interactive && !task.completed && data.members.length > 0) ? `<span class="material-symbols-rounded" title="Apuntar tarea a nombre de otra persona" onclick="event.stopPropagation(); openCompleteForMember(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">assignment_ind</span>` : '';
+            const assignCompleterHTML = (interactive && !task.completed) ? `<span class="material-symbols-rounded" title="Apuntar tarea a nombre de otra persona" onclick="event.stopPropagation(); openCompleteForMember(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">assignment_ind</span>` : '';
             const dateChangeHTML = (interactive && !task.completed) ? `<span class="material-symbols-rounded" title="Cambiar fecha de vencimiento" onclick="event.stopPropagation(); changeTaskDueDate(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">event</span>` : '';
             const checkboxHTML = interactive
                 ? `<span class="material-symbols-rounded checkbox ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleTask(${task.id})" style="margin-left:6px; padding:6px; margin-top:-6px; margin-bottom:-6px;">
@@ -2968,15 +2968,17 @@
         function openCompleteForMember(id) {
             const task = data.tasks.find(t => t.id === id);
             if (!task) return;
-            if (!data.members.length) {
-                alert('Primero añade a los miembros del hogar en Ajustes para poder apuntarles tareas.');
+            const myKey = fbCurrentUserKey();
+            const otherMembers = data.members.filter(m => String(m.id) !== String(myKey));
+            if (!otherMembers.length) {
+                alert('No hay otros miembros del hogar a los que apuntar esta tarea. Añade a alguien más en Ajustes.');
                 return;
             }
             quickMemberTaskId = id;
             const nameEl = document.getElementById('quick-member-task-name');
             if (nameEl) nameEl.innerText = `¿Quién ha hecho "${task.name}"?`;
             const select = document.getElementById('quick-member-select');
-            if (select) select.innerHTML = data.members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+            if (select) select.innerHTML = otherMembers.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
             const overlay = document.getElementById('quick-member-overlay');
             if (overlay) overlay.classList.remove('hidden');
         }
