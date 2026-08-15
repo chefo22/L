@@ -1569,6 +1569,7 @@
                 products: [],
                 points: 0,
                 pointsByUser: {},
+                lifetimePointsByUser: {},
                 userNames: {},
                 claimedAchievements: [],
                 claimedAchievementsByUser: {},
@@ -1692,6 +1693,13 @@
             if (d.points > 0 && Object.keys(d.pointsByUser).length === 0) {
                 d.pointsByUser['local'] = d.points;
             }
+            d.lifetimePointsByUser = d.lifetimePointsByUser || {};
+            // Migración: si no había registro de puntos "de por vida" todavía, se usa el saldo
+            // actual como base (no es perfecto si ya se habían gastado puntos, pero evita que
+            // los logros de puntos totales aparezcan vacíos de golpe para cuentas antiguas).
+            Object.keys(d.pointsByUser).forEach(k => {
+                if (d.lifetimePointsByUser[k] === undefined) d.lifetimePointsByUser[k] = d.pointsByUser[k] || 0;
+            });
             d.claimedAchievements = d.claimedAchievements || [];
             d.claimedAchievementsByUser = d.claimedAchievementsByUser || {};
             // Migración: los logros antiguos eran globales (compartidos). Se conservan como logros
@@ -1792,17 +1800,58 @@
 
         const productIconOptions = ['cleaning_services', 'soap', 'sanitizer', 'water_drop', 'local_laundry_service', 'mop', 'dry_cleaning', 'delete', 'recycling', 'spa', 'bathtub', 'shower', 'shopping_cart', 'icecream', 'coffee_maker', 'delete_sweep', 'auto_delete', 'hot_tub', 'wc', 'pest_control', 'iron', 'vacuum', 'box', 'inventory_2', 'shopping_bag', 'liquor', 'apparel', 'backpack', 'checkroom', 'cleaning_bucket', 'compost', 'grain', 'bath_soak'];
         const rewardIconOptions = ['restaurant', 'favorite', 'movie', 'self_improvement', 'redeem', 'celebration', 'local_cafe', 'flight', 'spa', 'shopping_bag', 'cake', 'nightlife'];
-        // Los logros de racha y de total de tareas son INFINITOS y EXPONENCIALES: no es una
-        // lista fija de niveles, sino una única "serie" por tipo. Cada serie empieza en un
-        // umbral base y, en cuanto se consigue un nivel, el siguiente nivel se genera solo
-        // duplicando el umbral (y los puntos de recompensa) del anterior. Así siempre hay un
-        // próximo reto y nunca se "acaban" los logros de racha ni de tareas totales.
-        // El logro de "añadir un miembro" es la excepción: solo tiene un nivel y no se repite.
+        // Los logros pueden ser de varios tipos:
+        // - INFINITOS/EXPONENCIALES ("infinite: true"): no es una lista fija de niveles, sino
+        //   una única "serie". Cada serie empieza en un umbral base y, en cuanto se consigue un
+        //   nivel, el siguiente nivel se genera solo duplicando el umbral (y los puntos) del
+        //   anterior. Así siempre hay un próximo reto y nunca se "acaban".
+        // - DE UNA SOLA VEZ ("infinite: false", sin period): solo tienen un nivel, con su
+        //   propio label/desc/icon fijos (p. ej. "añade un miembro").
+        // - SEMANALES/MENSUALES ("period: 'week'"/"period: 'month'"): también son de un solo
+        //   nivel (no se repiten ni se "renuevan" cada semana/mes), pero su progreso se mide
+        //   sobre una ventana de tiempo actual (la semana o el mes en curso). En cuanto se
+        //   cumple el umbral dentro de esa ventana, el logro queda conseguido para siempre.
         const achievementSeries = [
             { id: 'streak', type: 'streak', baseThreshold: 3, basePoints: 30, infinite: true },
             { id: 'total', type: 'total', baseThreshold: 10, basePoints: 50, infinite: true },
             { id: 'members', type: 'members', baseThreshold: 1, basePoints: 20, infinite: false,
-              label: 'Equipo en casa', desc: 'Añade al menos 1 miembro a tu hogar.', icon: 'group' }
+              label: 'Equipo en casa', desc: 'Añade al menos 1 miembro a tu hogar.', icon: 'group' },
+
+            // --- De una sola vez (primeros pasos) ---
+            { id: 'firstTask', type: 'firstTask', baseThreshold: 1, basePoints: 10, infinite: false,
+              label: 'Primeros pasos', desc: 'Completa tu primera tarea.', icon: 'flag' },
+            { id: 'firstReward', type: 'firstReward', baseThreshold: 1, basePoints: 10, infinite: false,
+              label: 'Primer premio', desc: 'Canjea tu primera recompensa.', icon: 'redeem' },
+            { id: 'firstProduct', type: 'firstProduct', baseThreshold: 1, basePoints: 10, infinite: false,
+              label: 'Bien abastecido', desc: 'Añade tu primer producto al inventario.', icon: 'inventory_2' },
+            { id: 'organizer', type: 'organizer', baseThreshold: 3, basePoints: 20, infinite: false,
+              label: 'Organizador', desc: 'Crea al menos 3 habitaciones.', icon: 'meeting_room' },
+            { id: 'bigSpender', type: 'bigSpender', baseThreshold: 100, basePoints: 25, infinite: false,
+              label: 'Gran comprador', desc: 'Canjea una recompensa de 100 puntos o más de una vez.', icon: 'payments' },
+            { id: 'roomsDiversity', type: 'roomsDiversity', baseThreshold: 5, basePoints: 30, infinite: false,
+              label: 'Todoterreno', desc: 'Completa tareas en 5 habitaciones distintas.', icon: 'diversity_3' },
+
+            // --- Semanales (progreso medido en la semana actual) ---
+            { id: 'weeklyTasks', type: 'weeklyTasks', baseThreshold: 15, basePoints: 50, infinite: false, period: 'week',
+              label: 'Semana productiva', desc: 'Completa 15 tareas en una misma semana.', icon: 'date_range' },
+            { id: 'weeklyRooms', type: 'weeklyRooms', baseThreshold: 3, basePoints: 30, infinite: false, period: 'week',
+              label: 'Semana variada', desc: 'Completa tareas en 3 habitaciones distintas en una misma semana.', icon: 'calendar_view_week' },
+
+            // --- Mensuales (progreso medido en el mes actual) ---
+            { id: 'monthlyTasks', type: 'monthlyTasks', baseThreshold: 40, basePoints: 100, infinite: false, period: 'month',
+              label: 'Mes productivo', desc: 'Completa 40 tareas en un mismo mes.', icon: 'calendar_month' },
+            { id: 'monthlyRewards', type: 'monthlyRewards', baseThreshold: 3, basePoints: 40, infinite: false, period: 'month',
+              label: 'Mes de premios', desc: 'Canjea 3 recompensas en un mismo mes.', icon: 'celebration' },
+
+            // --- Infinitos/exponenciales adicionales ---
+            { id: 'rewards', type: 'rewards', baseThreshold: 3, basePoints: 25, infinite: true },
+            { id: 'points', type: 'points', baseThreshold: 100, basePoints: 20, infinite: true },
+            { id: 'products', type: 'products', baseThreshold: 5, basePoints: 20, infinite: true },
+            { id: 'dailyBurst', type: 'dailyBurst', baseThreshold: 5, basePoints: 25, infinite: true },
+            { id: 'earlyBird', type: 'earlyBird', baseThreshold: 3, basePoints: 15, infinite: true },
+            { id: 'nightOwl', type: 'nightOwl', baseThreshold: 3, basePoints: 15, infinite: true },
+            { id: 'weekendWarrior', type: 'weekendWarrior', baseThreshold: 5, basePoints: 20, infinite: true },
+            { id: 'roomSpecialist', type: 'roomSpecialist', baseThreshold: 10, basePoints: 25, infinite: true }
         ];
 
         // Nombres de "rango" que se van repitiendo cíclicamente en cada nivel, para que un
@@ -1810,6 +1859,56 @@
         // umbral se calcule siempre igual (duplicando el anterior).
         const achievementTierNames = ['Bronce', 'Plata', 'Oro', 'Platino', 'Diamante', 'Maestro', 'Leyenda', 'Mítico'];
         const achievementTierIcons = ['military_tech', 'military_tech', 'emoji_events', 'workspace_premium', 'diamond', 'workspace_premium', 'local_fire_department', 'diamond'];
+
+        // Textos/íconos propios de cada tipo de serie infinita (además de streak/total, que ya
+        // existían). Cada uno recibe el umbral ya calculado para ese nivel.
+        const infiniteSeriesText = {
+            streak: (threshold) => ({
+                label: `Racha ${'{tier}'} · ${threshold} días`,
+                desc: `Completa al menos una tarea cada día durante ${threshold} días seguidos.`
+            }),
+            total: (threshold) => ({
+                label: `${'{tier}'} · ${threshold} tareas`,
+                desc: `Completa un total de ${threshold} tareas.`
+            }),
+            rewards: (threshold) => ({
+                label: `Cazarrecompensas ${'{tier}'}`,
+                desc: `Canjea un total de ${threshold} recompensas.`
+            }),
+            points: (threshold) => ({
+                label: `Ahorrador ${'{tier}'}`,
+                desc: `Gana un total de ${threshold} puntos a lo largo del tiempo.`
+            }),
+            products: (threshold) => ({
+                label: `Despensa ${'{tier}'}`,
+                desc: `Ten registrados ${threshold} productos en el inventario.`
+            }),
+            dailyBurst: (threshold) => ({
+                label: `Día ${'{tier}'} · ${threshold} tareas`,
+                desc: `Completa ${threshold} tareas en un mismo día.`
+            }),
+            earlyBird: (threshold) => ({
+                label: `Madrugador ${'{tier}'}`,
+                desc: `Completa ${threshold} tareas antes de las 8:00.`
+            }),
+            nightOwl: (threshold) => ({
+                label: `Búho nocturno ${'{tier}'}`,
+                desc: `Completa ${threshold} tareas después de las 22:00.`
+            }),
+            weekendWarrior: (threshold) => ({
+                label: `Guerrero de fin de semana ${'{tier}'}`,
+                desc: `Completa ${threshold} tareas en fin de semana.`
+            }),
+            roomSpecialist: (threshold) => ({
+                label: `Especialista ${'{tier}'}`,
+                desc: `Completa ${threshold} tareas en una misma habitación.`
+            })
+        };
+        const infiniteSeriesIcon = {
+            streak: 'local_fire_department', total: 'emoji_events', rewards: 'redeem', points: 'savings',
+            products: 'inventory_2', dailyBurst: 'bolt', earlyBird: 'wb_sunny', nightOwl: 'bedtime',
+            weekendWarrior: 'weekend', roomSpecialist: 'star'
+        };
 
         // Construye el logro concreto de un nivel dado dentro de una serie: calcula el umbral
         // y los puntos duplicando el nivel anterior (2^(nivel-1) veces el valor base), y arma
@@ -1819,20 +1918,17 @@
             if (!series || level < 1) return null;
             if (!series.infinite) {
                 if (level > 1) return null;
-                return { id: `${seriesId}_L1`, seriesId, level: 1, type: series.type, threshold: series.baseThreshold, label: series.label, desc: series.desc, icon: series.icon, points: series.basePoints };
+                return { id: `${seriesId}_L1`, seriesId, level: 1, type: series.type, threshold: series.baseThreshold, label: series.label, desc: series.desc, icon: series.icon, points: series.basePoints, period: series.period || null };
             }
             const threshold = series.baseThreshold * Math.pow(2, level - 1);
             const points = series.basePoints * Math.pow(2, level - 1);
             const tier = achievementTierNames[(level - 1) % achievementTierNames.length];
-            const icon = achievementTierIcons[(level - 1) % achievementTierIcons.length];
-            let label, desc;
-            if (series.type === 'streak') {
-                label = `Racha ${tier} · ${threshold} días`;
-                desc = `Completa al menos una tarea cada día durante ${threshold} días seguidos.`;
-            } else {
-                label = `${tier} · ${threshold} tareas`;
-                desc = `Completa un total de ${threshold} tareas.`;
-            }
+            const tierIcon = achievementTierIcons[(level - 1) % achievementTierIcons.length];
+            const textBuilder = infiniteSeriesText[series.type] || infiniteSeriesText.total;
+            const built = textBuilder(threshold);
+            const label = built.label.replace('{tier}', tier);
+            const desc = built.desc;
+            const icon = level === 1 ? (infiniteSeriesIcon[series.type] || tierIcon) : tierIcon;
             return { id: `${seriesId}_L${level}`, seriesId, level, type: series.type, threshold, label, desc, icon, points };
         }
 
@@ -1851,10 +1947,87 @@
             return max;
         }
 
+        // Lunes (formato YYYY-MM-DD) de la semana a la que pertenece una fecha dada.
+        function startOfWeekStr(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            const day = d.getDay(); // 0 = domingo ... 6 = sábado
+            const diffToMonday = (day === 0 ? -6 : 1) - day;
+            d.setDate(d.getDate() + diffToMonday);
+            return d.toISOString().slice(0, 10);
+        }
+        // Primer día del mes (YYYY-MM-01) al que pertenece una fecha dada.
+        function startOfMonthStr(dateStr) {
+            return dateStr.slice(0, 7) + '-01';
+        }
+
+        // Calcula el valor actual de la estadística que le corresponde a cada tipo de logro,
+        // para una persona (key) concreta. Este valor es el que se compara contra el umbral
+        // de cada nivel para saber si ya se ha conseguido.
         function statValueForSeries(series, key) {
-            if (series.type === 'members') return data.members.length;
-            const s = computeStatsForKey(key);
-            return series.type === 'streak' ? s.streak : s.totalCompleted;
+            const t = todayStr();
+            switch (series.type) {
+                case 'members': return data.members.length;
+                case 'products': return data.products.length;
+                case 'firstProduct': return data.products.length;
+                case 'organizer': return data.rooms.length;
+                case 'streak': return computeStatsForKey(key).streak;
+                case 'total': return computeStatsForKey(key).totalCompleted;
+                case 'firstTask': return computeStatsForKey(key).totalCompleted;
+                case 'points': return (data.lifetimePointsByUser && data.lifetimePointsByUser[key]) || 0;
+                case 'rewards':
+                case 'firstReward':
+                    return (data.redemptions || []).filter(r => r.claimedByKey === key).length;
+                case 'bigSpender': {
+                    const own = (data.redemptions || []).filter(r => r.claimedByKey === key);
+                    return own.reduce((max, r) => Math.max(max, r.cost || 0), 0);
+                }
+                case 'monthlyRewards': {
+                    const monthStart = startOfMonthStr(t);
+                    return (data.redemptions || []).filter(r => r.claimedByKey === key && r.date && r.date.slice(0, 10) >= monthStart).length;
+                }
+                case 'roomsDiversity': {
+                    const own = data.history.filter(h => (h.completedByKey || 'local') === key);
+                    return new Set(own.map(h => h.roomName)).size;
+                }
+                case 'weeklyTasks': {
+                    const weekStart = startOfWeekStr(t);
+                    return data.history.filter(h => (h.completedByKey || 'local') === key && h.completedAt.slice(0, 10) >= weekStart).length;
+                }
+                case 'weeklyRooms': {
+                    const weekStart = startOfWeekStr(t);
+                    const own = data.history.filter(h => (h.completedByKey || 'local') === key && h.completedAt.slice(0, 10) >= weekStart);
+                    return new Set(own.map(h => h.roomName)).size;
+                }
+                case 'monthlyTasks': {
+                    const monthStart = startOfMonthStr(t);
+                    return data.history.filter(h => (h.completedByKey || 'local') === key && h.completedAt.slice(0, 10) >= monthStart).length;
+                }
+                case 'dailyBurst': {
+                    const own = data.history.filter(h => (h.completedByKey || 'local') === key);
+                    const counts = {};
+                    own.forEach(h => { const d = h.completedAt.slice(0, 10); counts[d] = (counts[d] || 0) + 1; });
+                    return Object.values(counts).reduce((max, c) => Math.max(max, c), 0);
+                }
+                case 'earlyBird': {
+                    const own = data.history.filter(h => (h.completedByKey || 'local') === key);
+                    return own.filter(h => new Date(h.completedAt).getHours() < 8).length;
+                }
+                case 'nightOwl': {
+                    const own = data.history.filter(h => (h.completedByKey || 'local') === key);
+                    return own.filter(h => new Date(h.completedAt).getHours() >= 22).length;
+                }
+                case 'weekendWarrior': {
+                    const own = data.history.filter(h => (h.completedByKey || 'local') === key);
+                    return own.filter(h => [0, 6].includes(new Date(h.completedAt).getDay())).length;
+                }
+                case 'roomSpecialist': {
+                    const own = data.history.filter(h => (h.completedByKey || 'local') === key);
+                    const counts = {};
+                    own.forEach(h => { counts[h.roomName] = (counts[h.roomName] || 0) + 1; });
+                    return Object.values(counts).reduce((max, c) => Math.max(max, c), 0);
+                }
+                default: return computeStatsForKey(key).totalCompleted;
+            }
         }
 
         const sortLabels = { fecha: 'Fecha', importancia: 'Importancia', nombre: 'Nombre (A-Z)' };
@@ -2215,6 +2388,12 @@
             if (!amount) return;
             if (!data.pointsByUser) data.pointsByUser = {};
             data.pointsByUser[key] = Math.max(0, (data.pointsByUser[key] || 0) + amount);
+            // Los puntos "de por vida" solo suman (nunca bajan al gastar), para poder tener
+            // logros de puntos totales ganados que no se pierdan al canjear recompensas.
+            if (amount > 0) {
+                if (!data.lifetimePointsByUser) data.lifetimePointsByUser = {};
+                data.lifetimePointsByUser[key] = (data.lifetimePointsByUser[key] || 0) + amount;
+            }
         }
 
         function refreshAll() {
@@ -3326,6 +3505,11 @@
                 });
             } else {
                 data.members.push({ id: Date.now(), name, color: selectedMemberColor });
+                // El logro de "añadir un miembro" (y cualquier otro que dependa del número de
+                // miembros) hay que comprobarlo aquí mismo: antes solo se revisaba al completar
+                // una tarea, así que si nunca se completaba ninguna tras añadir miembros, el
+                // logro se quedaba sin desbloquear aunque ya se cumpliera la condición.
+                checkAchievements();
             }
             saveData();
             closeModal('modal-member');
@@ -3496,6 +3680,7 @@
                     estimatedUses, leadUses, leadDays, useHistory: [], usesSinceRestock: 0,
                     lastRestockAt: null, pendingBuyTaskId: null, reminderEnabled: true, lastNotifiedKey: null
                 });
+                checkAchievements();
             }
             saveData();
             closeModal('modal-product');
@@ -3779,6 +3964,7 @@
             setUserName(key, name);
             addUserPoints(key, -r.cost);
             data.redemptions.unshift({ id: Date.now(), rewardId: r.id, rewardName: r.name, icon: r.icon, cost: r.cost, date: new Date().toISOString(), claimedByKey: key, claimedBy: name || 'Tú' });
+            checkAchievements(key);
             saveData();
             renderRewardsView();
             alert(`¡Recompensa canjeada! 🎉 Disfruta: ${r.name}`);
@@ -4580,6 +4766,7 @@
                     color: selectedRoomColor,
                     location: location
                 });
+                checkAchievements();
             }
             saveData();
             closeModal('modal-room');
