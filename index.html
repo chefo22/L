@@ -3600,17 +3600,9 @@
             const estimated = computeProductUsagePattern(product);
             const usesSince = product.usesSinceRestock || 0;
             if (!estimated) {
-                // Si usesSince es 0 porque se acaba de reponer (hay fecha de última reposición hoy),
-                // lo decimos explícitamente: si no, esto es indistinguible de "nunca se ha repuesto"
-                // y parece que marcar como repuesto no tuviera ningún efecto.
-                const justRestocked = usesSince === 0 && product.lastRestockAt === todayStr();
-                let label;
-                if (justRestocked) label = 'Repuesto hoy · aprendiendo cuántos usos aguanta';
-                else if (usesSince > 0) label = `Aprendiendo · ${usesSince} uso(s) registrados`;
-                else label = 'Aprendiendo patrón de uso…';
                 return {
                     state: 'nodata',
-                    label,
+                    label: usesSince > 0 ? `Aprendiendo · ${usesSince} uso(s) registrados` : 'Aprendiendo patrón de uso…',
                     usesLeft: null, estimated: null
                 };
             }
