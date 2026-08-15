@@ -2009,7 +2009,7 @@
             applyFontSize(data.fontSize, false);
             renderIconGrid('room-icon-grid', 'room', allIconsFlat);
             renderTaskIconCats();
-            renderColorPalette('room-color-palette', roomColors, selectedRoomColor, (c) => { selectedRoomColor = c; renderColorPalette('room-color-palette', roomColors, selectedRoomColor, arguments.callee); });
+            renderColorPalette('room-color-palette', roomColors, selectedRoomColor, selectRoomColor);
             document.getElementById('home-title-text').innerText = data.homeName;
             document.getElementById('home-name-input').value = data.homeName;
             renderAccentPalette();
@@ -3125,13 +3125,25 @@
             renderAllTasksView();
         }
 
+        // Hora que se usa para ordenar una tarea dentro de un mismo día: la hora de su
+        // recordatorio si tiene una puesta, o 13:00 (mediodía/tarde) como hora "neutra"
+        // por defecto si no se ha especificado ninguna. Así, una tarea a las 11:00 sale
+        // antes que una sin hora, y una tarea a las 21:00 sale después.
+        function taskSortTime(task) {
+            return task.reminderTime || '13:00';
+        }
+
         function sortTasks(list, mode) {
             const impRank = { Alta: 0, Media: 1, Baja: 2 };
             const copy = [...list];
             if (mode === 'importancia') copy.sort((a, b) => impRank[a.importance] - impRank[b.importance]);
             else if (mode === 'nombre') copy.sort((a, b) => a.name.localeCompare(b.name));
             else if (mode === 'duracion') copy.sort((a, b) => (b.duration || 0) - (a.duration || 0));
-            else copy.sort((a, b) => (a.dueDate || '9999-99-99').localeCompare(b.dueDate || '9999-99-99'));
+            else copy.sort((a, b) => {
+                const dateCmp = (a.dueDate || '9999-99-99').localeCompare(b.dueDate || '9999-99-99');
+                if (dateCmp !== 0) return dateCmp;
+                return taskSortTime(a).localeCompare(taskSortTime(b));
+            });
             return copy;
         }
 
@@ -3465,7 +3477,7 @@
             document.getElementById('member-name').value = '';
             document.getElementById('member-linked-note').classList.add('hidden');
             selectedMemberColor = memberColors[data.members.length % memberColors.length];
-            renderColorPalette('member-color-palette', memberColors, selectedMemberColor, (c) => { selectedMemberColor = c; renderColorPalette('member-color-palette', memberColors, selectedMemberColor, arguments.callee); });
+            renderColorPalette('member-color-palette', memberColors, selectedMemberColor, selectMemberColor);
             openModal('modal-member');
         }
         function openEditMember(id) {
@@ -3483,7 +3495,7 @@
                 linkedNote.classList.add('hidden');
             }
             selectedMemberColor = m.color;
-            renderColorPalette('member-color-palette', memberColors, selectedMemberColor, (c) => { selectedMemberColor = c; renderColorPalette('member-color-palette', memberColors, selectedMemberColor, arguments.callee); });
+            renderColorPalette('member-color-palette', memberColors, selectedMemberColor, selectMemberColor);
             openModal('modal-member');
         }
         function saveMember() {
@@ -3794,11 +3806,11 @@
                 upcoming.sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1));
                 const nearest = upcoming[0];
                 const tomorrow = addDays(today, 1);
-                const whenLabel = nearest.dueDate === tomorrow ? 'mañana' : `el ${formatDateLabel(nearest.dueDate)}`;
+                const whenLabel = nearest.dueDate === tomorrow ? 'Mañana' : `el ${formatDateLabel(nearest.dueDate)}`;
                 const before = p.pendingBuyTaskId;
                 const beforeTask = before ? data.tasks.find(t => t.id === before) : null;
                 const beforeNote = beforeTask ? beforeTask.notes : null;
-                scheduleAutoBuyTask(p, true, `Necesario comprar: ${whenLabel} toca "${nearest.name}" y no queda producto.`);
+                scheduleAutoBuyTask(p, true, `${whenLabel} toca "${nearest.name}" y no queda producto.`);
                 const afterTask = data.tasks.find(t => t.id === p.pendingBuyTaskId);
                 if (!beforeTask || (afterTask && afterTask.notes !== beforeNote)) changed = true;
             });
@@ -4658,6 +4670,24 @@
             saveData();
         }
 
+        // Funciones estables para elegir color y repintar la paleta correspondiente.
+        // (Antes se usaba una función flecha con "arguments.callee" para auto-referenciarse,
+        // pero las flechas no tienen su propio "arguments": heredaban el de la función que las
+        // creaba, así que al elegir un segundo color se acababa llamando por error a esa otra
+        // función en lugar de repintar la paleta, dejando el primer color "pegado".)
+        function selectRoomColor(c) {
+            selectedRoomColor = c;
+            renderColorPalette('room-color-palette', roomColors, selectedRoomColor, selectRoomColor);
+        }
+        function selectMemberColor(c) {
+            selectedMemberColor = c;
+            renderColorPalette('member-color-palette', memberColors, selectedMemberColor, selectMemberColor);
+        }
+        function selectTaskIconColor(c) {
+            selectedTaskIconColor = (selectedTaskIconColor === c) ? null : c;
+            renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, selectTaskIconColor);
+        }
+
         function renderColorPalette(containerId, colors, selected, onPick, allowCustom = true, big = false) {
             const el = document.getElementById(containerId);
             if (!el) return;
@@ -4775,7 +4805,7 @@
             selectedRoomIcon = 'bathtub';
             selectedRoomColor = roomColors[data.rooms.length % roomColors.length];
             renderIconGrid('room-icon-grid', 'room', allIconsFlat);
-            renderColorPalette('room-color-palette', roomColors, selectedRoomColor, (c) => { selectedRoomColor = c; renderColorPalette('room-color-palette', roomColors, selectedRoomColor, arguments.callee); });
+            renderColorPalette('room-color-palette', roomColors, selectedRoomColor, selectRoomColor);
             openModal('modal-room');
         }
         function openEditRoom(id) {
@@ -4789,7 +4819,7 @@
             selectedRoomIcon = r.icon;
             selectedRoomColor = r.color;
             renderIconGrid('room-icon-grid', 'room', allIconsFlat);
-            renderColorPalette('room-color-palette', roomColors, selectedRoomColor, (c) => { selectedRoomColor = c; renderColorPalette('room-color-palette', roomColors, selectedRoomColor, arguments.callee); });
+            renderColorPalette('room-color-palette', roomColors, selectedRoomColor, selectRoomColor);
             openModal('modal-room');
         }
         function saveRoom() {
@@ -4987,7 +5017,7 @@
             editingTaskProductIds = [];
             renderTaskIconCats();
             renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
-            renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, (c) => { selectedTaskIconColor = (selectedTaskIconColor === c) ? null : c; renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, arguments.callee); });
+            renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, selectTaskIconColor);
             renderSubtaskList();
             renderTaskProductPicker();
             updateSelectRooms();
@@ -5034,7 +5064,7 @@
             selectedTaskCategory = foundCat;
             renderTaskIconCats();
             renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
-            renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, (c) => { selectedTaskIconColor = (selectedTaskIconColor === c) ? null : c; renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, arguments.callee); });
+            renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, selectTaskIconColor);
             renderSubtaskList();
             renderTaskProductPicker();
             openModal('modal-task');
