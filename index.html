@@ -233,14 +233,15 @@
             cursor: pointer;
         }
 
-        .room-reorder-controls { display:flex; flex-direction:column; gap:2px; margin-right:10px; flex-shrink:0; }
-        .room-reorder-controls .material-symbols-rounded {
+        .room-reorder-controls, .product-reorder-controls { display:flex; flex-direction:column; gap:2px; margin-right:10px; flex-shrink:0; }
+        .room-reorder-controls .material-symbols-rounded, .product-reorder-controls .material-symbols-rounded {
             font-size: 20px; color: var(--text-secondary); cursor: pointer;
             width: 26px; height: 22px; display:flex; align-items:center; justify-content:center;
             border-radius: 6px; background-color: var(--bg-input);
         }
-        .room-reorder-controls .material-symbols-rounded.disabled { opacity: 0.3; pointer-events: none; }
+        .room-reorder-controls .material-symbols-rounded.disabled, .product-reorder-controls .material-symbols-rounded.disabled { opacity: 0.3; pointer-events: none; }
         .room-item.reorder-mode { cursor: default; }
+        .card.reorder-mode { cursor: default; }
 
         .icon-container {
             width: 44px;
@@ -902,9 +903,14 @@
                 <span class="material-symbols-rounded">arrow_back</span>
             </button>
             <div class="title-group" style="font-size:22px;">Productos</div>
-            <button class="add-btn" onclick="openCreateProduct()">
-                <span class="material-symbols-rounded">add</span> Agregar
-            </button>
+            <div style="display:flex; align-items:center; gap:14px;">
+                <button class="add-btn" id="product-reorder-btn" onclick="toggleProductReorder()" style="color:var(--text-secondary);">
+                    <span class="material-symbols-rounded">swap_vert</span> Ordenar
+                </button>
+                <button class="add-btn" onclick="openCreateProduct()">
+                    <span class="material-symbols-rounded">add</span> Agregar
+                </button>
+            </div>
         </header>
         <div class="container" id="products-list" style="margin-top: 16px;"></div>
     </div>
@@ -1503,6 +1509,8 @@
             </div>
             <h3 class="section-title-sm">ICONO</h3>
             <div class="icon-grid" id="product-icon-grid"></div>
+            <h3 class="section-title-sm">COLOR DE FONDO DEL ICONO</h3>
+            <div class="color-palette" id="product-color-palette"></div>
             <div style="font-size:12px; color:var(--text-secondary); padding: 4px 16px 12px;" id="product-usage-info"></div>
             <h3 class="section-title-sm">AGUANTA ESTOS USOS (OPCIONAL)</h3>
             <div class="input-group">
@@ -1717,7 +1725,7 @@
                 // Sistema nuevo: por USOS. Un "uso" = una vez que se completa una tarea vinculada.
                 estimatedUses: null, usesSinceRestock: 0, useHistory: [], leadUses: 1,
                 lastRestockAt: null, pendingBuyTaskId: null,
-                reminderEnabled: true, lastNotifiedKey: null, category: 'General', icon: 'cleaning_services', ...p
+                reminderEnabled: true, lastNotifiedKey: null, category: 'General', icon: 'cleaning_services', color: null, ...p
             }));
             d.points = (d.points === undefined || d.points === null) ? 0 : d.points;
             d.pointsByUser = d.pointsByUser || {};
@@ -1785,6 +1793,8 @@
         let editingTaskProductIds = [];
         let editingRewardId = null;
         let selectedProductIcon = 'cleaning_services';
+        let selectedProductColor = null;
+        let productReorderMode = false;
         let selectedRewardIcon = 'redeem';
         let selectedRoomIcon = 'bathtub';
         let selectedTaskIcon = 'mop';
@@ -3623,6 +3633,31 @@
             return { state, label, usesLeft, estimated };
         }
 
+        function toggleProductReorder() {
+            productReorderMode = !productReorderMode;
+            const btn = document.getElementById('product-reorder-btn');
+            if (btn) {
+                btn.style.color = productReorderMode ? 'var(--accent-color)' : 'var(--text-secondary)';
+                btn.innerHTML = productReorderMode
+                    ? '<span class="material-symbols-rounded">check</span> Listo'
+                    : '<span class="material-symbols-rounded">swap_vert</span> Ordenar';
+            }
+            renderProductsView();
+        }
+
+        // Cambia la posición de un producto dentro de data.products, igual que moveRoom
+        // hace con las habitaciones. Ese orden es el que se usa en la Lista de Productos.
+        function moveProduct(id, direction) {
+            const idx = data.products.findIndex(p => p.id === id);
+            if (idx === -1) return;
+            const newIdx = idx + direction;
+            if (newIdx < 0 || newIdx >= data.products.length) return;
+            const [product] = data.products.splice(idx, 1);
+            data.products.splice(newIdx, 0, product);
+            saveData();
+            renderProductsView();
+        }
+
         function renderProductsView() {
             const container = document.getElementById('products-list');
             if (!container) return;
@@ -3630,25 +3665,34 @@
             if (data.products.length === 0) {
                 container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">cleaning_services</span>Agrega tus productos de limpieza (detergente, jabón, etc.), vincúlalos a las tareas que los gastan y aprenderemos cuántos usos aguantan.</div>`;
             } else {
-                data.products.forEach(p => {
+                data.products.forEach((p, i) => {
                     const status = computeProductUsageStatus(p);
                     const linkedCount = tasksUsingProduct(p.id).length;
                     const color = status.state === 'empty' ? 'var(--danger-color)' : (status.state === 'soon' ? 'var(--accent-orange)' : 'var(--text-secondary)');
                     const div = document.createElement('div');
-                    div.className = 'card';
+                    div.className = 'card' + (productReorderMode ? ' reorder-mode' : '');
                     div.style.cursor = 'default';
-                    div.innerHTML = `
-                        <div class="icon-container" style="background-color: var(--bg-input); cursor:pointer;" onclick="openEditProduct('${p.id}')">
+                    const reorderHTML = productReorderMode ? `
+                        <div class="product-reorder-controls">
+                            <span class="material-symbols-rounded ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveProduct('${p.id}', -1)">keyboard_arrow_up</span>
+                            <span class="material-symbols-rounded ${i === data.products.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveProduct('${p.id}', 1)">keyboard_arrow_down</span>
+                        </div>
+                    ` : '';
+                    const clickHandlers = productReorderMode ? '' : `onclick="openEditProduct('${p.id}')"`;
+                    div.innerHTML = reorderHTML + `
+                        <div class="icon-container" style="background-color: ${p.color || 'var(--bg-input)'}; cursor:${productReorderMode ? 'default' : 'pointer'};" ${clickHandlers}>
                             <span class="material-symbols-rounded">${p.icon}</span>
                         </div>
-                        <div class="item-info" style="cursor:pointer;" onclick="openEditProduct('${p.id}')">
+                        <div class="item-info" style="cursor:${productReorderMode ? 'default' : 'pointer'};" ${clickHandlers}>
                             <div class="item-title">${p.name}</div>
                             <div style="font-size:12px; color:${color}; font-weight:600;">${status.label}</div>
                             <div style="font-size:11px; color:var(--text-secondary);">${linkedCount ? `Vinculado a ${linkedCount} tarea${linkedCount === 1 ? '' : 's'}` : 'Sin tareas vinculadas'}</div>
                         </div>
+                        ${productReorderMode ? '' : `
                         <button class="btn-icon" style="color:var(--accent-color);" onclick="restockProduct('${p.id}')" title="Marcar como repuesto hoy">
                             <span class="material-symbols-rounded">add_shopping_cart</span>
                         </button>
+                        `}
                     `;
                     container.appendChild(div);
                 });
@@ -3674,7 +3718,9 @@
             document.getElementById('product-usage-info').innerText = 'Aún no hay datos. La primera vez que se use en una tarea vinculada, te preguntaremos si se ha acabado, hasta que aprendamos el patrón.';
             document.getElementById('product-linked-tasks').innerText = 'Vincúlalo desde la ficha de cada tarea, en la sección "Productos que gasta".';
             selectedProductIcon = 'cleaning_services';
+            selectedProductColor = null;
             renderIconGrid('product-icon-grid', 'product', productIconOptions);
+            renderColorPalette('product-color-palette', roomColors, selectedProductColor, selectProductColor);
             openModal('modal-product');
         }
 
@@ -3699,7 +3745,9 @@
                 ? ('Usado por: ' + linked.map(t => t.name).join(', '))
                 : 'Sin tareas vinculadas todavía. Vincúlalo desde la ficha de cada tarea.';
             selectedProductIcon = p.icon || 'cleaning_services';
+            selectedProductColor = p.color || null;
             renderIconGrid('product-icon-grid', 'product', productIconOptions);
+            renderColorPalette('product-color-palette', roomColors, selectedProductColor, selectProductColor);
             openModal('modal-product');
         }
 
@@ -3715,6 +3763,7 @@
                 const p = productById(editingProductId);
                 p.name = name;
                 p.icon = selectedProductIcon;
+                p.color = selectedProductColor;
                 // Cada vez que se guarda una edición manual del producto, se considera una
                 // corrección explícita del usuario: reiniciamos el patrón aprendido
                 // (useHistory) para que el valor de "usos estimados" tenga efecto real.
@@ -3727,7 +3776,7 @@
                 p.leadDays = leadDays;
             } else {
                 data.products.push({
-                    id: 'p' + Date.now(), name, icon: selectedProductIcon, category: 'General',
+                    id: 'p' + Date.now(), name, icon: selectedProductIcon, color: selectedProductColor, category: 'General',
                     estimatedUses, leadUses, leadDays, useHistory: [], usesSinceRestock: 0,
                     lastRestockAt: null, pendingBuyTaskId: null, reminderEnabled: true, lastNotifiedKey: null
                 });
@@ -4771,6 +4820,10 @@
         function selectRoomColor(c) {
             selectedRoomColor = c;
             renderColorPalette('room-color-palette', roomColors, selectedRoomColor, selectRoomColor);
+        }
+        function selectProductColor(c) {
+            selectedProductColor = (selectedProductColor === c) ? null : c;
+            renderColorPalette('product-color-palette', roomColors, selectedProductColor, selectProductColor);
         }
         function selectMemberColor(c) {
             selectedMemberColor = c;
