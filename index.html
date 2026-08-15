@@ -465,6 +465,20 @@
         }
         .color-hex-wrap.small { height: 30px; padding: 0 9px; }
         .color-hex-prefix { color: var(--text-secondary); font-size: 14px; font-weight: 700; }
+        .color-hex-confirm-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            margin-left: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .color-hex-confirm-btn .material-symbols-rounded { font-size: 18px; }
+        .color-hex-wrap.small .color-hex-confirm-btn .material-symbols-rounded { font-size: 16px; }
+        .color-hex-confirm-btn.ready { color: var(--accent-color); }
         .color-hex-input {
             background: none;
             border: none;
@@ -5003,13 +5017,23 @@
                 hexInput.addEventListener('input', () => {
                     hexInput.value = hexInput.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
                     hexInput.classList.remove('invalid');
+                    confirmBtn.classList.toggle('ready', hexInput.value.length === 3 || hexInput.value.length === 6);
                 });
                 hexInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') { e.preventDefault(); hexInput.blur(); applyHex(); }
+                    if (e.key === 'Enter') { e.preventDefault(); applyHex(); hexInput.blur(); }
                 });
-                hexInput.addEventListener('blur', () => applyHex());
                 hexWrap.appendChild(hexPrefix);
                 hexWrap.appendChild(hexInput);
+                // Botón para confirmar el código escrito: aplica el color solo cuando se
+                // pulsa, en vez de al perder el foco (que en móvil no siempre se dispara
+                // de forma fiable y daba la sensación de que el código no funcionaba).
+                const confirmBtn = document.createElement('button');
+                confirmBtn.type = 'button';
+                confirmBtn.className = 'color-hex-confirm-btn';
+                confirmBtn.title = 'Confirmar color';
+                confirmBtn.innerHTML = '<span class="material-symbols-rounded">check</span>';
+                confirmBtn.onclick = () => applyHex();
+                hexWrap.appendChild(confirmBtn);
                 el.appendChild(hexWrap);
             }
         }
