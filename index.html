@@ -568,6 +568,19 @@
         .badge-item.unlocked .badge-icon-wrap span { color:#000; }
         .badge-label { font-size: 9.5px; text-align:center; color: var(--text-secondary); line-height:1.2; }
         .badge-item { cursor: pointer; }
+        /* Pastilla de nivel + mini barra de progreso: para que un logro de niveles infinitos
+           (racha, total, etc.) no dé la sensación de estar "100% terminado" solo porque ya se
+           consiguió el primer nivel. Deja claro que sigue habiendo más niveles por delante. */
+        .badge-level-pill {
+            font-size: 8px; font-weight: 700; color: var(--accent-color);
+            background-color: var(--bg-input);
+            border-radius: 6px; padding: 1px 5px; margin-top: 1px; letter-spacing: 0.2px;
+        }
+        .badge-mini-progress-track {
+            width: 70%; height: 3px; border-radius: 2px; background-color: var(--bg-input);
+            overflow: hidden; margin-top: 2px;
+        }
+        .badge-mini-progress-fill { height: 100%; background-color: var(--accent-color); }
 
         /* --- Ventana flotante de detalle de logro --- */
         .achievement-popup-overlay {
@@ -1800,13 +1813,14 @@
 
         const productIconOptions = ['cleaning_services', 'soap', 'sanitizer', 'water_drop', 'local_laundry_service', 'mop', 'dry_cleaning', 'delete', 'recycling', 'spa', 'bathtub', 'shower', 'shopping_cart', 'icecream', 'coffee_maker', 'delete_sweep', 'auto_delete', 'hot_tub', 'wc', 'pest_control', 'iron', 'vacuum', 'box', 'inventory_2', 'shopping_bag', 'liquor', 'apparel', 'backpack', 'checkroom', 'cleaning_bucket', 'compost', 'grain', 'bath_soak'];
         const rewardIconOptions = ['restaurant', 'favorite', 'movie', 'self_improvement', 'redeem', 'celebration', 'local_cafe', 'flight', 'spa', 'shopping_bag', 'cake', 'nightlife'];
-        // Los logros pueden ser de varios tipos:
+        // Los logros pueden ser de varios tipos, pero TODOS miden exclusivamente tareas
+        // completadas (nada de crear habitaciones, añadir miembros/productos, ni canjear
+        // recompensas):
         // - INFINITOS/EXPONENCIALES ("infinite: true"): no es una lista fija de niveles, sino
         //   una única "serie". Cada serie empieza en un umbral base y, en cuanto se consigue un
         //   nivel, el siguiente nivel se genera solo duplicando el umbral (y los puntos) del
         //   anterior. Así siempre hay un próximo reto y nunca se "acaban".
-        // - DE UNA SOLA VEZ ("infinite: false", sin period): solo tienen un nivel, con su
-        //   propio label/desc/icon fijos (p. ej. "añade un miembro").
+        // - DE UNA SOLA VEZ ("infinite: false", sin period): solo tienen un nivel fijo.
         // - SEMANALES/MENSUALES ("period: 'week'"/"period: 'month'"): también son de un solo
         //   nivel (no se repiten ni se "renuevan" cada semana/mes), pero su progreso se mide
         //   sobre una ventana de tiempo actual (la semana o el mes en curso). En cuanto se
@@ -1814,44 +1828,24 @@
         const achievementSeries = [
             { id: 'streak', type: 'streak', baseThreshold: 3, basePoints: 30, infinite: true },
             { id: 'total', type: 'total', baseThreshold: 10, basePoints: 50, infinite: true },
-            { id: 'members', type: 'members', baseThreshold: 1, basePoints: 20, infinite: false,
-              label: 'Equipo en casa', desc: 'Añade al menos 1 miembro a tu hogar.', icon: 'group' },
 
-            // --- De una sola vez (primeros pasos) ---
+            // --- De una sola vez ---
             { id: 'firstTask', type: 'firstTask', baseThreshold: 1, basePoints: 10, infinite: false,
               label: 'Primeros pasos', desc: 'Completa tu primera tarea.', icon: 'flag' },
-            { id: 'firstReward', type: 'firstReward', baseThreshold: 1, basePoints: 10, infinite: false,
-              label: 'Primer premio', desc: 'Canjea tu primera recompensa.', icon: 'redeem' },
-            { id: 'firstProduct', type: 'firstProduct', baseThreshold: 1, basePoints: 10, infinite: false,
-              label: 'Bien abastecido', desc: 'Añade tu primer producto al inventario.', icon: 'inventory_2' },
-            { id: 'organizer', type: 'organizer', baseThreshold: 3, basePoints: 20, infinite: false,
-              label: 'Organizador', desc: 'Crea al menos 3 habitaciones.', icon: 'meeting_room' },
-            { id: 'bigSpender', type: 'bigSpender', baseThreshold: 100, basePoints: 25, infinite: false,
-              label: 'Gran comprador', desc: 'Canjea una recompensa de 100 puntos o más de una vez.', icon: 'payments' },
-            { id: 'roomsDiversity', type: 'roomsDiversity', baseThreshold: 5, basePoints: 30, infinite: false,
-              label: 'Todoterreno', desc: 'Completa tareas en 5 habitaciones distintas.', icon: 'diversity_3' },
 
             // --- Semanales (progreso medido en la semana actual) ---
             { id: 'weeklyTasks', type: 'weeklyTasks', baseThreshold: 15, basePoints: 50, infinite: false, period: 'week',
               label: 'Semana productiva', desc: 'Completa 15 tareas en una misma semana.', icon: 'date_range' },
-            { id: 'weeklyRooms', type: 'weeklyRooms', baseThreshold: 3, basePoints: 30, infinite: false, period: 'week',
-              label: 'Semana variada', desc: 'Completa tareas en 3 habitaciones distintas en una misma semana.', icon: 'calendar_view_week' },
 
             // --- Mensuales (progreso medido en el mes actual) ---
             { id: 'monthlyTasks', type: 'monthlyTasks', baseThreshold: 40, basePoints: 100, infinite: false, period: 'month',
               label: 'Mes productivo', desc: 'Completa 40 tareas en un mismo mes.', icon: 'calendar_month' },
-            { id: 'monthlyRewards', type: 'monthlyRewards', baseThreshold: 3, basePoints: 40, infinite: false, period: 'month',
-              label: 'Mes de premios', desc: 'Canjea 3 recompensas en un mismo mes.', icon: 'celebration' },
 
-            // --- Infinitos/exponenciales adicionales ---
-            { id: 'rewards', type: 'rewards', baseThreshold: 3, basePoints: 25, infinite: true },
-            { id: 'points', type: 'points', baseThreshold: 100, basePoints: 20, infinite: true },
-            { id: 'products', type: 'products', baseThreshold: 5, basePoints: 20, infinite: true },
+            // --- Infinitos/exponenciales adicionales, todos sobre tareas completadas ---
             { id: 'dailyBurst', type: 'dailyBurst', baseThreshold: 5, basePoints: 25, infinite: true },
             { id: 'earlyBird', type: 'earlyBird', baseThreshold: 3, basePoints: 15, infinite: true },
             { id: 'nightOwl', type: 'nightOwl', baseThreshold: 3, basePoints: 15, infinite: true },
-            { id: 'weekendWarrior', type: 'weekendWarrior', baseThreshold: 5, basePoints: 20, infinite: true },
-            { id: 'roomSpecialist', type: 'roomSpecialist', baseThreshold: 10, basePoints: 25, infinite: true }
+            { id: 'weekendWarrior', type: 'weekendWarrior', baseThreshold: 5, basePoints: 20, infinite: true }
         ];
 
         // Nombres de "rango" que se van repitiendo cíclicamente en cada nivel, para que un
@@ -1871,18 +1865,6 @@
                 label: `${'{tier}'} · ${threshold} tareas`,
                 desc: `Completa un total de ${threshold} tareas.`
             }),
-            rewards: (threshold) => ({
-                label: `Cazarrecompensas ${'{tier}'}`,
-                desc: `Canjea un total de ${threshold} recompensas.`
-            }),
-            points: (threshold) => ({
-                label: `Ahorrador ${'{tier}'}`,
-                desc: `Gana un total de ${threshold} puntos a lo largo del tiempo.`
-            }),
-            products: (threshold) => ({
-                label: `Despensa ${'{tier}'}`,
-                desc: `Ten registrados ${threshold} productos en el inventario.`
-            }),
             dailyBurst: (threshold) => ({
                 label: `Día ${'{tier}'} · ${threshold} tareas`,
                 desc: `Completa ${threshold} tareas en un mismo día.`
@@ -1898,16 +1880,11 @@
             weekendWarrior: (threshold) => ({
                 label: `Guerrero de fin de semana ${'{tier}'}`,
                 desc: `Completa ${threshold} tareas en fin de semana.`
-            }),
-            roomSpecialist: (threshold) => ({
-                label: `Especialista ${'{tier}'}`,
-                desc: `Completa ${threshold} tareas en una misma habitación.`
             })
         };
         const infiniteSeriesIcon = {
-            streak: 'local_fire_department', total: 'emoji_events', rewards: 'redeem', points: 'savings',
-            products: 'inventory_2', dailyBurst: 'bolt', earlyBird: 'wb_sunny', nightOwl: 'bedtime',
-            weekendWarrior: 'weekend', roomSpecialist: 'star'
+            streak: 'local_fire_department', total: 'emoji_events',
+            dailyBurst: 'bolt', earlyBird: 'wb_sunny', nightOwl: 'bedtime', weekendWarrior: 'weekend'
         };
 
         // Construye el logro concreto de un nivel dado dentro de una serie: calcula el umbral
@@ -1966,37 +1943,12 @@
         function statValueForSeries(series, key) {
             const t = todayStr();
             switch (series.type) {
-                case 'members': return data.members.length;
-                case 'products': return data.products.length;
-                case 'firstProduct': return data.products.length;
-                case 'organizer': return data.rooms.length;
                 case 'streak': return computeStatsForKey(key).streak;
                 case 'total': return computeStatsForKey(key).totalCompleted;
                 case 'firstTask': return computeStatsForKey(key).totalCompleted;
-                case 'points': return (data.lifetimePointsByUser && data.lifetimePointsByUser[key]) || 0;
-                case 'rewards':
-                case 'firstReward':
-                    return (data.redemptions || []).filter(r => r.claimedByKey === key).length;
-                case 'bigSpender': {
-                    const own = (data.redemptions || []).filter(r => r.claimedByKey === key);
-                    return own.reduce((max, r) => Math.max(max, r.cost || 0), 0);
-                }
-                case 'monthlyRewards': {
-                    const monthStart = startOfMonthStr(t);
-                    return (data.redemptions || []).filter(r => r.claimedByKey === key && r.date && r.date.slice(0, 10) >= monthStart).length;
-                }
-                case 'roomsDiversity': {
-                    const own = data.history.filter(h => (h.completedByKey || 'local') === key);
-                    return new Set(own.map(h => h.roomName)).size;
-                }
                 case 'weeklyTasks': {
                     const weekStart = startOfWeekStr(t);
                     return data.history.filter(h => (h.completedByKey || 'local') === key && h.completedAt.slice(0, 10) >= weekStart).length;
-                }
-                case 'weeklyRooms': {
-                    const weekStart = startOfWeekStr(t);
-                    const own = data.history.filter(h => (h.completedByKey || 'local') === key && h.completedAt.slice(0, 10) >= weekStart);
-                    return new Set(own.map(h => h.roomName)).size;
                 }
                 case 'monthlyTasks': {
                     const monthStart = startOfMonthStr(t);
@@ -2019,12 +1971,6 @@
                 case 'weekendWarrior': {
                     const own = data.history.filter(h => (h.completedByKey || 'local') === key);
                     return own.filter(h => [0, 6].includes(new Date(h.completedAt).getDay())).length;
-                }
-                case 'roomSpecialist': {
-                    const own = data.history.filter(h => (h.completedByKey || 'local') === key);
-                    const counts = {};
-                    own.forEach(h => { counts[h.roomName] = (counts[h.roomName] || 0) + 1; });
-                    return Object.values(counts).reduce((max, c) => Math.max(max, c), 0);
                 }
                 default: return computeStatsForKey(key).totalCompleted;
             }
@@ -2067,6 +2013,7 @@
             updateProgramaLabel();
             renderSeasonBanner();
             loadSchedulePrefs();
+            reconcileAllAchievements();
             refreshAll();
             if (data.notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                 startNotificationChecker();
@@ -3505,11 +3452,6 @@
                 });
             } else {
                 data.members.push({ id: Date.now(), name, color: selectedMemberColor });
-                // El logro de "añadir un miembro" (y cualquier otro que dependa del número de
-                // miembros) hay que comprobarlo aquí mismo: antes solo se revisaba al completar
-                // una tarea, así que si nunca se completaba ninguna tras añadir miembros, el
-                // logro se quedaba sin desbloquear aunque ya se cumpliera la condición.
-                checkAchievements();
             }
             saveData();
             closeModal('modal-member');
@@ -3680,7 +3622,6 @@
                     estimatedUses, leadUses, leadDays, useHistory: [], usesSinceRestock: 0,
                     lastRestockAt: null, pendingBuyTaskId: null, reminderEnabled: true, lastNotifiedKey: null
                 });
-                checkAchievements();
             }
             saveData();
             closeModal('modal-product');
@@ -3964,7 +3905,6 @@
             setUserName(key, name);
             addUserPoints(key, -r.cost);
             data.redemptions.unshift({ id: Date.now(), rewardId: r.id, rewardName: r.name, icon: r.icon, cost: r.cost, date: new Date().toISOString(), claimedByKey: key, claimedBy: name || 'Tú' });
-            checkAchievements(key);
             saveData();
             renderRewardsView();
             alert(`¡Recompensa canjeada! 🎉 Disfruta: ${r.name}`);
@@ -3985,7 +3925,7 @@
         // el estado actual siga superando el siguiente umbral (duplicado del anterior), así que
         // si alguien sube varios niveles de golpe (p. ej. al importar un historial) los recibe
         // todos de una vez, cada uno con su propio bonus (también duplicado).
-        function checkAchievements(key) {
+        function checkAchievements(key, silent) {
             key = key || fbCurrentUserKey();
             if (!data.claimedAchievementsByUser) data.claimedAchievementsByUser = {};
             if (!data.claimedAchievementsByUser[key]) data.claimedAchievementsByUser[key] = [];
@@ -4006,10 +3946,24 @@
                     } else break;
                 }
             });
-            if (bonusMsgs.length) {
+            if (bonusMsgs.length && !silent) {
                 const who = userDisplayName(key);
                 setTimeout(() => alert(`🏆 ¡Logro desbloqueado${who ? ' de ' + who : ''}!\n${bonusMsgs.join('\n')}`), 50);
             }
+            return bonusMsgs.length > 0;
+        }
+
+        // Revisa TODOS los logros de TODAS las personas conocidas (sin mostrar ningún aviso).
+        // Sirve como "red de seguridad": si alguien ya cumplía la condición de un logro antes
+        // de que ese logro existiera, o de otra forma quedó sin marcar (p. ej. logros añadidos
+        // después de que la acción ya hubiera ocurrido), aquí se pone al día en silencio cada
+        // vez que se abre la pantalla de Logros, en vez de esperar a la próxima tarea completada.
+        function reconcileAllAchievements() {
+            let changed = false;
+            badgeUserKeys().forEach(k => {
+                if (checkAchievements(k, true)) changed = true;
+            });
+            if (changed) saveData();
         }
 
         // Revoca los logros de una persona que ya NO cumple sus requisitos (p. ej. su racha
@@ -4204,6 +4158,10 @@
             const grid = document.getElementById('badge-grid');
             const chipsEl = document.getElementById('badge-person-chips');
             if (!grid) return;
+            // Antes de pintar, nos ponemos al día en silencio por si algún logro ya se cumplía
+            // pero se había quedado sin marcar (p. ej. porque la condición se cumplió antes de
+            // que ese logro existiera, o antes de que se revisara en el momento adecuado).
+            reconcileAllAchievements();
             const keys = badgeUserKeys();
             if (!selectedBadgeUserKey || !keys.includes(selectedBadgeUserKey)) selectedBadgeUserKey = fbCurrentUserKey();
             if (chipsEl) {
@@ -4215,10 +4173,26 @@
                 const claimedLevel = getClaimedLevel(selectedBadgeUserKey, series.id);
                 const unlocked = claimedLevel > 0;
                 const ach = getAchievementLevel(series.id, unlocked ? claimedLevel : 1);
+                // Para las series infinitas, aunque ya se haya conseguido un nivel, siempre queda
+                // el siguiente por delante: mostramos una pastilla "Nv. X" y una mini barra hacia
+                // el próximo nivel, para que no parezca que el logro ya está "100% terminado".
+                let extraHTML = '';
+                if (series.infinite && unlocked) {
+                    const nextAch = getAchievementLevel(series.id, claimedLevel + 1);
+                    if (nextAch) {
+                        const statValue = statValueForSeries(series, selectedBadgeUserKey);
+                        const pct = Math.max(0, Math.min(100, Math.round((statValue / nextAch.threshold) * 100)));
+                        extraHTML = `
+                            <div class="badge-level-pill">Nv. ${claimedLevel} · sigue</div>
+                            <div class="badge-mini-progress-track"><div class="badge-mini-progress-fill" style="width:${pct}%;"></div></div>
+                        `;
+                    }
+                }
                 return `
                     <div class="badge-item ${unlocked ? 'unlocked' : ''}" onclick="showAchievementDetail('${series.id}')">
                         <div class="badge-icon-wrap"><span class="material-symbols-rounded">${ach.icon}</span></div>
                         <div class="badge-label">${ach.label}</div>
+                        ${extraHTML}
                     </div>
                 `;
             }).join('');
@@ -4252,15 +4226,25 @@
 
             const progressText = document.getElementById('achievement-modal-progress-text');
             if (achievedAch && !showsNextGoal) {
+                // Logro de un solo nivel (no infinito): aquí sí está 100% completo del todo.
                 document.getElementById('achievement-modal-progress-fill').style.width = '100%';
                 progressText.classList.add('unlocked');
                 progressText.textContent = `✓ Logro completado (+${achievedAch.points} pts)`;
+            } else if (achievedAch && showsNextGoal) {
+                // Logro de niveles infinitos ya conseguido en su nivel actual, pero con más
+                // niveles por delante: dejamos claro que ESE nivel está hecho, y que la barra
+                // de abajo es el progreso hacia el SIGUIENTE (no hacia "terminar el logro",
+                // porque este tipo de logro nunca se termina del todo).
+                const pct = Math.max(0, Math.min(100, Math.round((statValue / nextAch.threshold) * 100)));
+                document.getElementById('achievement-modal-progress-fill').style.width = pct + '%';
+                progressText.classList.remove('unlocked');
+                progressText.textContent = `✓ Nivel ${claimedLevel} conseguido · Progreso al Nivel ${nextLevel}: ${pct}% (${statValue} / ${nextAch.threshold})`;
             } else {
-                const targetAch = showsNextGoal ? nextAch : (nextAch || achievedAch);
+                const targetAch = nextAch || achievedAch;
                 const pct = Math.max(0, Math.min(100, Math.round((statValue / targetAch.threshold) * 100)));
                 document.getElementById('achievement-modal-progress-fill').style.width = pct + '%';
                 progressText.classList.remove('unlocked');
-                progressText.textContent = `${pct}% ${achievedAch ? 'hacia el siguiente nivel' : 'completado'} · ${statValue} / ${targetAch.threshold}`;
+                progressText.textContent = `${pct}% completado · ${statValue} / ${targetAch.threshold}`;
             }
 
             openAchievementModal();
@@ -4766,7 +4750,6 @@
                     color: selectedRoomColor,
                     location: location
                 });
-                checkAchievements();
             }
             saveData();
             closeModal('modal-room');
