@@ -3583,34 +3583,29 @@
             return data.tasks.filter(t => !t.autoBuyProductId && (t.productIds || []).includes(productId));
         }
 
-        // Estimación de cuántos usos aguanta el producto: prioriza lo aprendido de ciclos ya
-        // completados (el usuario confirmó que se acabó tras X usos) y si no hay datos aún,
-        // recurre a la estimación manual que se haya indicado en la ficha del producto.
+        // Estimación de cuántos usos aguanta el producto: si el usuario ha indicado un número
+        // a mano en la ficha del producto, ese número manda siempre y no se recalcula solo.
+        // Solo cuando NO hay un número manual (estimatedUses vacío) se recurre al patrón
+        // aprendido automáticamente de ciclos ya completados (el usuario confirmó que se acabó
+        // tras X usos), como apoyo mientras no se haya indicado nada a mano.
         function computeProductUsagePattern(product) {
+            if (product.estimatedUses) return product.estimatedUses;
             const hist = product.useHistory || [];
             if (hist.length >= 1) {
                 const recent = hist.slice(-6); // prioriza los ciclos más recientes
                 const avg = Math.round(recent.reduce((a, b) => a + b, 0) / recent.length);
                 return avg > 0 ? avg : null;
             }
-            return product.estimatedUses || null;
+            return null;
         }
 
         function computeProductUsageStatus(product) {
             const estimated = computeProductUsagePattern(product);
             const usesSince = product.usesSinceRestock || 0;
             if (!estimated) {
-                // Si usesSince es 0 porque se acaba de reponer (hay fecha de última reposición hoy),
-                // lo decimos explícitamente: si no, esto es indistinguible de "nunca se ha repuesto"
-                // y parece que marcar como repuesto no tuviera ningún efecto.
-                const justRestocked = usesSince === 0 && product.lastRestockAt === todayStr();
-                let label;
-                if (justRestocked) label = 'Repuesto hoy · aprendiendo cuántos usos aguanta';
-                else if (usesSince > 0) label = `Aprendiendo · ${usesSince} uso(s) registrados`;
-                else label = 'Aprendiendo patrón de uso…';
                 return {
                     state: 'nodata',
-                    label,
+                    label: usesSince > 0 ? `Aprendiendo · ${usesSince} uso(s) registrados` : 'Aprendiendo patrón de uso…',
                     usesLeft: null, estimated: null
                 };
             }
@@ -3720,6 +3715,13 @@
                 const p = productById(editingProductId);
                 p.name = name;
                 p.icon = selectedProductIcon;
+                // Cada vez que se guarda una edición manual del producto, se considera una
+                // corrección explícita del usuario: reiniciamos el patrón aprendido
+                // (useHistory) para que el valor de "usos estimados" tenga efecto real.
+                // (No basta con comparar si el número cambió: si ya estaba guardado ese mismo
+                // valor de una edición anterior que no llegó a limpiar el historial, comparar
+                // contra el valor ya guardado nunca detectaría el cambio.)
+                p.useHistory = [];
                 p.estimatedUses = estimatedUses;
                 p.leadUses = leadUses;
                 p.leadDays = leadDays;
