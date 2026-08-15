@@ -393,6 +393,11 @@
             margin: 18px 2px 8px 2px;
         }
         .schedule-room-header:first-child { margin-top: 4px; }
+        /* Igual que .schedule-room-header pero para el indicador de habitación de cada
+           tarea suelta cuando NO están agrupadas: mismo look (icono + nombre fuera de
+           la tarjeta), pero con menos margen porque se repite antes de cada tarjeta. */
+        .schedule-room-header.schedule-room-header-single { margin: 12px 2px 6px 2px; }
+        .schedule-room-header.schedule-room-header-single:first-child { margin-top: 4px; }
         .schedule-room-header .room-count {
             font-weight: 600;
             text-transform: none;
@@ -1322,6 +1327,9 @@
             <div class="color-palette" id="room-color-palette"></div>
 
             <h3 class="section-title-sm">ICONO</h3>
+            <div class="input-group" style="margin-bottom:12px;">
+                <div class="input-row"><input type="text" id="room-icon-search" placeholder="Buscar icono... (ej. maleta, sofá, planta)" oninput="filterRoomIcons(this.value)"></div>
+            </div>
             <div class="icon-grid" id="room-icon-grid"></div>
 
             <button class="btn-danger-block hidden" id="room-delete-btn" onclick="deleteRoom()">Eliminar habitación</button>
@@ -1352,7 +1360,7 @@
             <div class="input-group">
                 <div class="input-row">
                     <div class="row-label">Ubicación / Habitación</div>
-                    <select id="task-room-select"></select>
+                    <select id="task-room-select" onchange="updateTaskIconPreview()"></select>
                 </div>
                 <div class="input-row">
                     <div class="row-label">Asignar a</div>
@@ -1361,9 +1369,11 @@
                 <div class="input-row">
                     <div class="row-label">Importancia</div>
                     <select id="task-importance">
+                        <option value="Muy baja">Muy baja</option>
                         <option value="Baja">Baja</option>
                         <option value="Media" selected>Media</option>
                         <option value="Alta">Alta</option>
+                        <option value="Muy alta">Muy alta</option>
                     </select>
                 </div>
                 <div class="input-row" id="task-points-row">
@@ -1469,6 +1479,10 @@
             </div>
 
             <h3 class="section-title-sm">ICONO DE TAREA</h3>
+            <div id="task-icon-preview" style="display:flex; justify-content:center; margin-bottom:14px;"></div>
+            <div class="input-group" style="margin-bottom:12px;">
+                <div class="input-row"><input type="text" id="task-icon-search" placeholder="Buscar icono... (ej. maleta, sofá, planta)" oninput="filterTaskIcons(this.value)"></div>
+            </div>
             <div class="icon-cat-row" id="task-icon-cats"></div>
             <div class="icon-grid" id="task-icon-grid"></div>
 
@@ -1846,15 +1860,25 @@
         const taskIconFgColors = ['#ffffff', '#000000'].concat(memberColors);
 
         const iconCategories = {
-            'Limpieza': ['mop', 'cleaning_services', 'vacuum', 'local_laundry_service', 'dry_cleaning', 'iron', 'water_drop', 'sanitizer', 'soap', 'delete', 'recycling', 'delete_sweep', 'auto_delete', 'countertops', 'dry', 'air', 'cleaning_bucket', 'bucket_check', 'clean_hands', 'compost'],
-            'Baño / WC': ['bathtub', 'shower', 'bathroom', 'wc', 'hot_tub', 'spa', 'soap', 'water_drop', 'sanitizer', 'dry_cleaning', 'plumbing', 'bath_soak'],
-            'Muebles': ['bed', 'chair', 'weekend', 'table_restaurant', 'table_bar', 'curtains', 'curtains_closed', 'window', 'door_front', 'door_sliding', 'checkroom', 'lightbulb', 'nightlight', 'tv', 'desk', 'countertops'],
-            'Cocina': ['kitchen', 'countertops', 'microwave', 'blender', 'coffee_maker', 'dining', 'local_pizza', 'egg', 'set_meal', 'icecream', 'local_cafe', 'restaurant_menu'],
-            'Exterior': ['yard', 'grass', 'local_florist', 'pool', 'garage', 'solar_power', 'park', 'directions_car', 'deck', 'nature'],
-            'Mantenimiento': ['handyman', 'build', 'plumbing', 'electrical_services', 'construction', 'home_repair_service', 'hardware', 'carpenter', 'engineering', 'settings_suggest'],
+            'Limpieza': ['mop', 'cleaning_services', 'vacuum', 'local_laundry_service', 'dry_cleaning', 'iron', 'water_drop', 'sanitizer', 'soap', 'delete', 'recycling', 'delete_sweep', 'auto_delete', 'countertops', 'dry', 'air', 'cleaning_bucket', 'clean_hands', 'compost'],
+            'Baño / WC': ['bathtub', 'shower', 'bathroom', 'wc', 'hot_tub', 'spa', 'soap', 'water_drop', 'sanitizer', 'dry_cleaning', 'plumbing', 'bath_soak', 'countertops'],
+            'Muebles': ['bed', 'chair', 'weekend', 'table_restaurant', 'table_bar', 'curtains', 'curtains_closed', 'window', 'door_front', 'door_sliding', 'checkroom', 'lightbulb', 'nightlight', 'tv', 'desk', 'countertops', 'chair_alt', 'shelves', 'crib'],
+            'Cocina': ['kitchen', 'countertops', 'microwave', 'blender', 'coffee_maker', 'dining', 'local_pizza', 'egg', 'set_meal', 'icecream', 'local_cafe', 'restaurant_menu', 'restaurant', 'nutrition', 'bakery_dining', 'liquor', 'wine_bar', 'local_bar', 'lunch_dining', 'cake', 'ramen_dining', 'fastfood', 'takeout_dining', 'cookie'],
+            'Exterior y Naturaleza': ['yard', 'grass', 'local_florist', 'pool', 'garage', 'solar_power', 'park', 'directions_car', 'deck', 'nature', 'forest', 'terrain', 'beach_access', 'waves', 'umbrella', 'wb_sunny', 'cloud', 'ac_unit', 'eco', 'potted_plant', 'balcony', 'fence', 'landscape', 'agriculture', 'water', 'thunderstorm', 'rainy'],
+            'Mantenimiento': ['handyman', 'build', 'plumbing', 'electrical_services', 'construction', 'home_repair_service', 'hardware', 'carpenter', 'engineering', 'settings_suggest', 'power', 'bolt', 'electric_bolt', 'plug_connect', 'outlet', 'battery_full', 'flashlight_on', 'roofing', 'foundation', 'fireplace', 'heat_pump', 'propane', 'gas_meter', 'square_foot', 'straighten'],
             'Mascotas': ['pets', 'cruelty_free', 'pest_control', 'pest_control_rodent', 'egg', 'park', 'water_drop', 'medication', 'grass', 'bath_soak', 'compost', 'grain'],
-            'Ropa': ['checkroom', 'apparel', 'dry_cleaning', 'local_laundry_service', 'iron', 'backpack'],
-            'General': ['home', 'bed', 'chair', 'weekend', 'desk', 'tv', 'bathtub', 'shower', 'checkroom', 'door_front', 'stairs', 'lightbulb', 'toys', 'crib', 'computer', 'shopping_cart', 'spa', 'box', 'inventory_2']
+            'Ropa': ['checkroom', 'apparel', 'dry_cleaning', 'local_laundry_service', 'iron', 'backpack', 'diamond', 'watch', 'style', 'shopping_bag'],
+            'Viajes y Maletas': ['luggage', 'work', 'business_center', 'flight', 'flight_takeoff', 'flight_land', 'hiking', 'terrain', 'map', 'explore', 'public', 'beach_access', 'camera_alt', 'photo_camera', 'backpack', 'card_travel', 'directions_boat', 'hotel', 'tour', 'attractions', 'travel_explore'],
+            'Transporte': ['directions_car', 'directions_bus', 'train', 'tram', 'subway', 'local_taxi', 'two_wheeler', 'pedal_bike', 'directions_boat', 'local_shipping', 'electric_car', 'car_repair', 'ev_station', 'local_gas_station', 'moped', 'directions_walk', 'directions_run'],
+            'Tecnología': ['computer', 'laptop_mac', 'desktop_windows', 'smartphone', 'tablet_mac', 'headphones', 'keyboard', 'mouse', 'print', 'router', 'wifi', 'camera', 'videocam', 'speaker', 'gamepad', 'sports_esports', 'memory', 'sd_card', 'usb', 'cable', 'battery_full', 'bluetooth', 'smart_display', 'tv', 'watch', 'earbuds'],
+            'Ocio y Entretenimiento': ['music_note', 'piano', 'book', 'menu_book', 'palette', 'brush', 'movie', 'theater_comedy', 'celebration', 'casino', 'extension', 'toys', 'sports_esports', 'photo_camera', 'stadia_controller', 'auto_stories', 'mic', 'queue_music', 'nightlife', 'festival'],
+            'Deporte y Salud': ['fitness_center', 'sports_soccer', 'sports_basketball', 'sports_tennis', 'sports_volleyball', 'directions_run', 'directions_bike', 'pedal_bike', 'self_improvement', 'spa', 'medication', 'healing', 'vaccines', 'monitor_heart', 'favorite', 'thermostat', 'local_hospital', 'medical_services', 'sports_gymnastics', 'pool', 'ice_skating', 'sports_golf'],
+            'Oficina y Documentos': ['work', 'business_center', 'folder', 'description', 'article', 'edit_note', 'receipt_long', 'print', 'event', 'calendar_month', 'schedule', 'badge', 'school', 'calculate', 'savings', 'account_balance', 'credit_card', 'paid', 'attach_money', 'inventory_2', 'assignment', 'draft'],
+            'Bebés y Niños': ['child_care', 'stroller', 'crib', 'toys', 'baby_changing_station', 'child_friendly', 'boy', 'girl', 'family_restroom'],
+            'Compras y Dinero': ['shopping_cart', 'shopping_bag', 'store', 'local_mall', 'sell', 'storefront', 'redeem', 'card_giftcard', 'diamond', 'watch', 'savings', 'attach_money', 'local_offer', 'receipt'],
+            'Fiesta y Eventos': ['celebration', 'cake', 'redeem', 'card_giftcard', 'local_bar', 'nightlife', 'festival', 'wine_bar', 'confirmation_number'],
+            'Seguridad': ['lock', 'key', 'vpn_key', 'security', 'shield', 'verified_user', 'lock_open', 'password', 'fingerprint', 'admin_panel_settings'],
+            'General': ['home', 'bed', 'chair', 'weekend', 'desk', 'tv', 'bathtub', 'shower', 'checkroom', 'door_front', 'stairs', 'lightbulb', 'toys', 'crib', 'computer', 'shopping_cart', 'spa', 'box', 'inventory_2', 'apartment', 'cottage', 'cabin', 'warehouse', 'elevator', 'meeting_room', 'other_houses', 'category', 'widgets', 'star', 'label', 'push_pin', 'bookmark']
         };
         const allIconsFlat = [...new Set(Object.values(iconCategories).flat())];
 
@@ -3174,7 +3198,7 @@
         }
 
         function sortTasks(list, mode) {
-            const impRank = { Alta: 0, Media: 1, Baja: 2 };
+            const impRank = { 'Muy alta': 0, Alta: 1, Media: 2, Baja: 3, 'Muy baja': 4 };
             const copy = [...list];
             if (mode === 'importancia') copy.sort((a, b) => impRank[a.importance] - impRank[b.importance]);
             else if (mode === 'nombre') copy.sort((a, b) => a.name.localeCompare(b.name));
@@ -3225,6 +3249,19 @@
                 <span class="room-count">${count} tarea${count === 1 ? '' : 's'}</span>
             `;
             container.appendChild(header);
+        }
+
+        // Indicador de habitación para una tarea suelta cuando NO están agrupadas: mismo
+        // formato que la cabecera de grupo (icono + nombre), pero por tarea individual y
+        // fuera de la tarjeta, en vez del texto "Habitación · ..." que iba dentro de ella.
+        function appendScheduleRoomIndicator(container, room) {
+            const el = document.createElement('div');
+            el.className = 'schedule-room-header schedule-room-header-single';
+            el.innerHTML = `
+                <span class="material-symbols-rounded" style="color:${room ? room.color : 'var(--text-secondary)'}; font-size:18px;">${room ? room.icon : 'home'}</span>
+                <span>${room ? room.name : 'Sin habitación'}</span>
+            `;
+            container.appendChild(el);
         }
 
         // Estas dos preferencias (iconos y nombres de habitación en Programa) viven en
@@ -3353,9 +3390,13 @@
                     });
                 });
             } else {
+                // Sin agrupar: el indicador de habitación (icono + nombre) se muestra
+                // igual que en el modo agrupado, fuera de la tarjeta, en vez del texto
+                // "Habitación · ..." que antes iba dentro de ella.
                 list.forEach(task => {
                     const room = data.rooms.find(r => r.id == task.roomId);
-                    container.appendChild(scheduleTaskItemEl(task, room, scheduleShowRoomNames));
+                    if (scheduleShowRoomNames) appendScheduleRoomIndicator(container, room);
+                    container.appendChild(scheduleTaskItemEl(task, room, false));
                 });
             }
         }
@@ -4827,13 +4868,33 @@
             selectedMemberColor = c;
             renderColorPalette('member-color-palette', memberColors, selectedMemberColor, selectMemberColor);
         }
+        // Pinta en el propio modal, en vivo, cómo va a quedar el icono de la tarea con la
+        // combinación actual de icono + color de fondo + color de icono, para que se vea
+        // exactamente el resultado antes de guardar (por defecto: icono blanco sobre el
+        // color de la habitación elegida).
+        function updateTaskIconPreview() {
+            const preview = document.getElementById('task-icon-preview');
+            if (!preview) return;
+            const roomSelect = document.getElementById('task-room-select');
+            const room = roomSelect ? data.rooms.find(r => String(r.id) === String(roomSelect.value)) : null;
+            const bg = selectedTaskIconColor || (room ? room.color : 'var(--accent-color)') || '#333';
+            const fg = selectedTaskIconFgColor || '#ffffff';
+            preview.innerHTML = `
+                <div class="icon-container" style="width:56px; height:56px; margin:0; background-color:${bg};">
+                    <span class="material-symbols-rounded" style="color:${fg}; font-size:30px;">${selectedTaskIcon}</span>
+                </div>
+            `;
+        }
+
         function selectTaskIconColor(c) {
             selectedTaskIconColor = (selectedTaskIconColor === c) ? null : c;
             renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, selectTaskIconColor);
+            updateTaskIconPreview();
         }
         function selectTaskIconFgColor(c) {
             selectedTaskIconFgColor = (selectedTaskIconFgColor === c) ? null : c;
             renderColorPalette('task-icon-fg-color-palette', taskIconFgColors, selectedTaskIconFgColor, selectTaskIconFgColor);
+            updateTaskIconPreview();
         }
 
         function renderColorPalette(containerId, colors, selected, onPick, allowCustom = true, big = false) {
@@ -4918,7 +4979,7 @@
                     Array.from(grid.children).forEach(c => c.classList.remove('active'));
                     item.classList.add('active');
                     if (type === 'room') selectedRoomIcon = icon;
-                    if (type === 'task') selectedTaskIcon = icon;
+                    if (type === 'task') { selectedTaskIcon = icon; updateTaskIconPreview(); }
                     if (type === 'product') selectedProductIcon = icon;
                     if (type === 'reward') selectedRewardIcon = icon;
                 };
@@ -4943,6 +5004,28 @@
             });
         }
 
+        // Busca por nombre entre TODOS los iconos disponibles (no solo los de la categoría
+        // activa), ya que con tantos iconos es más rápido escribir que ir mirando categoría
+        // a categoría. Al vaciar el buscador, se vuelve a la categoría que estaba activa.
+        function filterTaskIcons(query) {
+            const catRow = document.getElementById('task-icon-cats');
+            const q = query.trim().toLowerCase().replace(/\s+/g, '_');
+            if (!q) {
+                if (catRow) catRow.classList.remove('hidden');
+                renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
+                return;
+            }
+            if (catRow) catRow.classList.add('hidden');
+            const matches = allIconsFlat.filter(icon => icon.includes(q));
+            renderIconGrid('task-icon-grid', 'task', matches);
+        }
+
+        function filterRoomIcons(query) {
+            const q = query.trim().toLowerCase().replace(/\s+/g, '_');
+            const matches = q ? allIconsFlat.filter(icon => icon.includes(q)) : allIconsFlat;
+            renderIconGrid('room-icon-grid', 'room', matches);
+        }
+
         /* --- CREAR / EDITAR / ELIMINAR HABITACIÓN --- */
         function openCreateRoom() {
             editingRoomId = null;
@@ -4952,6 +5035,7 @@
             document.getElementById('room-location').value = '';
             selectedRoomIcon = 'bathtub';
             selectedRoomColor = roomColors[data.rooms.length % roomColors.length];
+            document.getElementById('room-icon-search').value = '';
             renderIconGrid('room-icon-grid', 'room', allIconsFlat);
             renderColorPalette('room-color-palette', roomColors, selectedRoomColor, selectRoomColor);
             openModal('modal-room');
@@ -4966,6 +5050,7 @@
             document.getElementById('room-location').value = r.location || '';
             selectedRoomIcon = r.icon;
             selectedRoomColor = r.color;
+            document.getElementById('room-icon-search').value = '';
             renderIconGrid('room-icon-grid', 'room', allIconsFlat);
             renderColorPalette('room-color-palette', roomColors, selectedRoomColor, selectRoomColor);
             openModal('modal-room');
@@ -5164,6 +5249,7 @@
             selectedTaskCategory = 'Limpieza';
             editingSubtasks = [];
             editingTaskProductIds = [];
+            document.getElementById('task-icon-search').value = '';
             renderTaskIconCats();
             renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
             renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, selectTaskIconColor);
@@ -5173,6 +5259,7 @@
             updateSelectRooms();
             updateSelectMembers();
             if (presetRoomId) document.getElementById('task-room-select').value = presetRoomId;
+            updateTaskIconPreview();
             openModal('modal-task');
         }
 
@@ -5213,12 +5300,14 @@
             editingTaskProductIds = (t.productIds || []).slice();
             let foundCat = Object.keys(iconCategories).find(cat => iconCategories[cat].includes(t.icon)) || 'Limpieza';
             selectedTaskCategory = foundCat;
+            document.getElementById('task-icon-search').value = '';
             renderTaskIconCats();
             renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
             renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, selectTaskIconColor);
             renderColorPalette('task-icon-fg-color-palette', taskIconFgColors, selectedTaskIconFgColor, selectTaskIconFgColor);
             renderSubtaskList();
             renderTaskProductPicker();
+            updateTaskIconPreview();
             openModal('modal-task');
         }
 
