@@ -1553,6 +1553,22 @@
         </div>
     </div>
 
+    <!-- Diálogo pequeño para apuntar una tarea como hecha en nombre de otro miembro,
+         sin tener que iniciar sesión como esa persona (útil si la tarea ya se hizo
+         y solo quieres dejar constancia de quién la hizo). -->
+    <div id="quick-member-overlay" class="quick-date-overlay hidden" onclick="if(event.target===this) closeQuickMemberDialog()">
+        <div class="quick-date-card">
+            <div class="quick-date-title" id="quick-member-task-name">¿Quién ha hecho esta tarea?</div>
+            <div class="input-group" style="margin-bottom:16px;">
+                <div class="input-row"><select id="quick-member-select" class="select-ltr" style="width:100%; text-align:left;"></select></div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-text" style="flex:1; background-color:var(--bg-input); border-radius:12px; padding:10px 0; color:var(--text-secondary);" onclick="closeQuickMemberDialog()">Cancelar</button>
+                <button class="btn-text" style="flex:1; background-color:var(--accent-color); border-radius:12px; padding:10px 0; color:#000;" onclick="saveQuickMemberDialog()">Marcar como hecha</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         /* ============ DATOS Y MIGRACIÓN ============ */
         function defaultData() {
@@ -2845,6 +2861,7 @@
             const roomPrefix = showRoomName ? `${room ? room.name : 'Casa'} · ` : '';
             const linkHTML = task.link ? `<span class="material-symbols-rounded" title="Abrir enlace" ${interactive ? `onclick="event.stopPropagation(); openTaskLink('${task.id}')"` : ''} style="color:var(--text-secondary); font-size:20px; cursor:pointer; margin-left:8px; padding:6px; margin:-6px 0 -6px 2px;">link</span>` : '';
             const snoozeHTML = (interactive && !task.completed && task.dueDate) ? `<span class="material-symbols-rounded" title="Posponer 1 día" onclick="event.stopPropagation(); snoozeTask(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">snooze</span>` : '';
+            const assignCompleterHTML = (interactive && !task.completed && data.members.length > 0) ? `<span class="material-symbols-rounded" title="Apuntar tarea a nombre de otra persona" onclick="event.stopPropagation(); openCompleteForMember(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">assignment_ind</span>` : '';
             const dateChangeHTML = (interactive && !task.completed) ? `<span class="material-symbols-rounded" title="Cambiar fecha de vencimiento" onclick="event.stopPropagation(); changeTaskDueDate(${task.id})" style="color:var(--text-secondary); font-size:20px; cursor:pointer; padding:6px; margin:-6px 0 -6px 2px;">event</span>` : '';
             const checkboxHTML = interactive
                 ? `<span class="material-symbols-rounded checkbox ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleTask(${task.id})" style="margin-left:6px; padding:6px; margin-top:-6px; margin-bottom:-6px;">
@@ -2866,6 +2883,7 @@
                 ${memberHTML}
                 ${linkHTML}
                 ${snoozeHTML}
+                ${assignCompleterHTML}
                 ${dateChangeHTML}
                 ${interactive ? `<span style="width:1px; align-self:stretch; background:var(--border-color); margin:2px 4px;"></span>` : ''}
                 ${checkboxHTML}
@@ -2940,6 +2958,43 @@
                 refreshAll();
             }
             closeQuickDateDialog();
+        }
+
+        // Apunta una tarea como completada en nombre de OTRO miembro del hogar, sin tener que
+        // iniciar sesión como esa persona. Útil cuando la tarea ya se hizo (por ejemplo, en persona
+        // y sin sincronización) y solo se quiere dejar constancia de quién la hizo, para que sus
+        // puntos, su historial y sus logros/racha se contabilicen a nombre de esa persona.
+        let quickMemberTaskId = null;
+        function openCompleteForMember(id) {
+            const task = data.tasks.find(t => t.id === id);
+            if (!task) return;
+            if (!data.members.length) {
+                alert('Primero añade a los miembros del hogar en Ajustes para poder apuntarles tareas.');
+                return;
+            }
+            quickMemberTaskId = id;
+            const nameEl = document.getElementById('quick-member-task-name');
+            if (nameEl) nameEl.innerText = `¿Quién ha hecho "${task.name}"?`;
+            const select = document.getElementById('quick-member-select');
+            if (select) select.innerHTML = data.members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+            const overlay = document.getElementById('quick-member-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+        }
+
+        function closeQuickMemberDialog() {
+            const overlay = document.getElementById('quick-member-overlay');
+            if (overlay) overlay.classList.add('hidden');
+            quickMemberTaskId = null;
+        }
+
+        function saveQuickMemberDialog() {
+            const task = data.tasks.find(t => t.id === quickMemberTaskId);
+            const select = document.getElementById('quick-member-select');
+            if (task && select && select.value && !task.completed) {
+                const member = memberById(select.value);
+                if (member) completeTaskFully(task, String(member.id), member.name);
+            }
+            closeQuickMemberDialog();
         }
 
         function renderRoomTasks() {
@@ -4373,13 +4428,17 @@
 
         // Marca la tarea como completada del todo: si tiene pasos pendientes los completa y suma
         // solo los puntos de los pasos que aún no se habían marcado (evita duplicar puntos ya ganados).
-        function completeTaskFully(task) {
+        // forcedKey/forcedName (opcionales): permiten apuntar la tarea como hecha por OTRA persona
+        // del hogar (en lugar de quien tiene la sesión/dispositivo actual), por ejemplo cuando
+        // alguien completa una tarea en persona pero quiere dejar constancia de que la hizo otro
+        // miembro. Si se indican, los puntos, el historial y los logros se atribuyen a esa persona.
+        function completeTaskFully(task, forcedKey, forcedName) {
             task.completed = true;
             const now = new Date().toISOString();
             const room = data.rooms.find(r => r.id == task.roomId);
             const member = memberById(task.memberId);
-            const completedByUser = fbCurrentUserName();
-            const completedByKey = fbCurrentUserKey();
+            const completedByUser = forcedName || fbCurrentUserName();
+            const completedByKey = forcedKey || fbCurrentUserKey();
             setUserName(completedByKey, completedByUser);
 
             let pointsToAdd = 0;
