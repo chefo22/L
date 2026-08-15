@@ -1456,8 +1456,13 @@
             <div class="icon-cat-row" id="task-icon-cats"></div>
             <div class="icon-grid" id="task-icon-grid"></div>
 
-            <h3 class="section-title-sm">COLOR DEL ICONO</h3>
+            <h3 class="section-title-sm">COLOR DE FONDO</h3>
+            <div style="font-size:12px; color:var(--text-secondary); padding: 0 16px 8px;">Si no eliges ninguno, se usa el color de la habitación.</div>
             <div class="color-palette" id="task-icon-color-palette"></div>
+
+            <h3 class="section-title-sm">COLOR DEL ICONO</h3>
+            <div style="font-size:12px; color:var(--text-secondary); padding: 0 16px 8px;">Si no eliges ninguno, el icono se muestra en blanco.</div>
+            <div class="color-palette" id="task-icon-fg-color-palette"></div>
 
             <button class="btn-secondary-block hidden" id="task-duplicate-btn" onclick="duplicateTask()">Duplicar tarea</button>
             <button class="btn-danger-block hidden" id="task-delete-btn" onclick="deleteTask()">Eliminar tarea</button>
@@ -1741,7 +1746,7 @@
             d.redemptions = d.redemptions || [];
             d.tasks = (d.tasks || []).map(t => ({
                 notes: '', dueDate: null, frequencyDays: null, lastCompletedAt: null, createdAt: new Date().toISOString(),
-                tags: [], subtasks: [], memberId: null, duration: null, reminderTime: null, iconColor: null,
+                tags: [], subtasks: [], memberId: null, duration: null, reminderTime: null, iconColor: null, iconFgColor: null,
                 reminderLead: 0, link: null, lastNotifiedKey: null, points: POINTS_PER_TASK,
                 repeatType: 'none', repeatWeekDays: [], repeatInterval: 1, repeatUnit: 'day',
                 repeatMode: 'afterComplete', repeatEndType: 'never', repeatEndDate: null, repeatEndCount: null,
@@ -1786,6 +1791,7 @@
         let selectedRoomColor = '#78c5d6';
         let selectedMemberColor = '#78c5d6';
         let selectedTaskIconColor = null;
+        let selectedTaskIconFgColor = null;
         let selectedTaskCategory = 'Limpieza';
         let editingSubtasks = [];
         let editingRepeatWeekDays = [];
@@ -1813,6 +1819,10 @@
 
         const roomColors = ['#78c5d6', '#8fc351', '#f2bc43', '#5c8aea', '#85c441', '#a584d4', '#ff9f0a', '#ff6482', '#5ac8b8', '#c77dff', '#ff453a', '#4ade80', '#32ade6', '#ffd60a', '#e0724a', '#8a8fa3'];
         const memberColors = ['#4ade80', '#32ade6', '#ff9f0a', '#ff453a', '#bf5af2', '#ffd60a', '#5ac8b8', '#ff6482', '#78c5d6', '#8fc351', '#a584d4', '#c77dff', '#e0724a', '#5c8aea'];
+        // Paleta para el color del propio icono (glifo): blanco y negro primero (las opciones
+        // más habituales para que el icono se lea bien sobre el fondo), y luego el resto de colores
+        // por si se quiere una combinación con más contraste o a juego.
+        const taskIconFgColors = ['#ffffff', '#000000'].concat(memberColors);
 
         const iconCategories = {
             'Limpieza': ['mop', 'cleaning_services', 'vacuum', 'local_laundry_service', 'dry_cleaning', 'iron', 'water_drop', 'sanitizer', 'soap', 'delete', 'recycling', 'delete_sweep', 'auto_delete', 'countertops', 'dry', 'air', 'cleaning_bucket', 'bucket_check', 'clean_hands', 'compost'],
@@ -2999,6 +3009,16 @@
             closeQuickMemberDialog();
         }
 
+        // Calcula el color de fondo y el color del icono de una tarea:
+        // - Fondo: el elegido a mano (task.iconColor) o, si no hay, el color de la habitación
+        //   (o el color de acento si la tarea no tiene habitación, ej. tareas de compra).
+        // - Icono: el elegido a mano (task.iconFgColor) o, por defecto, blanco.
+        function taskIconStyle(task, room) {
+            const bg = task.iconColor || (room ? room.color : 'var(--accent-color)') || '#333';
+            const fg = task.iconFgColor || 'white';
+            return { bg, fg };
+        }
+
         function renderRoomTasks() {
             const container = document.getElementById('room-tasks-list');
             container.innerHTML = '';
@@ -3015,14 +3035,15 @@
                 return;
             }
 
+            const roomForIcon = data.rooms.find(r => r.id == currentRoomDetailId);
             filtered.forEach(task => {
-                let impColor = task.importance === 'Alta' ? '#ff453a' : (task.importance === 'Media' ? '#ff9f0a' : '#32ade6');
+                const { bg, fg } = taskIconStyle(task, roomForIcon);
                 const div = document.createElement('div');
                 div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
                 div.onclick = () => openEditTask(task.id);
                 div.innerHTML = `
-                    <div class="icon-container" style="background-color: ${task.iconColor || '#2c2c2e'};">
-                        <span class="material-symbols-rounded" style="color:${task.iconColor ? 'white' : impColor}">${task.icon}</span>
+                    <div class="icon-container" style="background-color: ${bg};">
+                        <span class="material-symbols-rounded" style="color:${fg}">${task.icon}</span>
                     </div>
                     ${taskItemHTML(task, null, false)}
                 `;
@@ -3200,9 +3221,10 @@
         function scheduleTaskItemEl(task, room, showRoomName) {
             const div = document.createElement('div');
             div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
+            const iconStyle1 = taskIconStyle(task, room);
             const indicatorHTML = scheduleShowRoomIndicators ? `
-                <div class="icon-container" style="background-color: ${task.iconColor || (room ? room.color : '#333')}">
-                    <span class="material-symbols-rounded">${task.icon}</span>
+                <div class="icon-container" style="background-color: ${iconStyle1.bg}">
+                    <span class="material-symbols-rounded" style="color:${iconStyle1.fg}">${task.icon}</span>
                 </div>` : '';
             div.innerHTML = indicatorHTML + taskItemHTML(task, room, showRoomName);
             return div;
@@ -3214,9 +3236,10 @@
         function scheduleShoppingItemEl(task) {
             const div = document.createElement('div');
             div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
+            const iconStyle2 = taskIconStyle(task, null);
             const indicatorHTML = scheduleShowRoomIndicators ? `
-                <div class="icon-container" style="background-color: ${task.iconColor || 'var(--accent-color)'}">
-                    <span class="material-symbols-rounded">${task.icon}</span>
+                <div class="icon-container" style="background-color: ${iconStyle2.bg}">
+                    <span class="material-symbols-rounded" style="color:${iconStyle2.fg}">${task.icon}</span>
                 </div>` : '';
             div.innerHTML = indicatorHTML + taskItemHTML(task, null, false);
             if (task.notes) {
@@ -3422,12 +3445,13 @@
             }
             list.forEach(task => {
                 const room = data.rooms.find(r => r.id == task.roomId);
+                const { bg, fg } = taskIconStyle(task, room);
                 const div = document.createElement('div');
                 div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
                 div.onclick = () => openEditTask(task.id);
                 div.innerHTML = `
-                    <div class="icon-container" style="background-color: ${task.iconColor || (room ? room.color : '#333')}">
-                        <span class="material-symbols-rounded">${task.icon}</span>
+                    <div class="icon-container" style="background-color: ${bg}">
+                        <span class="material-symbols-rounded" style="color:${fg}">${task.icon}</span>
                     </div>
                     ${taskItemHTML(task, room, true, false)}
                 `;
@@ -4687,6 +4711,10 @@
             selectedTaskIconColor = (selectedTaskIconColor === c) ? null : c;
             renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, selectTaskIconColor);
         }
+        function selectTaskIconFgColor(c) {
+            selectedTaskIconFgColor = (selectedTaskIconFgColor === c) ? null : c;
+            renderColorPalette('task-icon-fg-color-palette', taskIconFgColors, selectedTaskIconFgColor, selectTaskIconFgColor);
+        }
 
         function renderColorPalette(containerId, colors, selected, onPick, allowCustom = true, big = false) {
             const el = document.getElementById(containerId);
@@ -5012,12 +5040,14 @@
             updateRepeatUI();
             selectedTaskIcon = 'mop';
             selectedTaskIconColor = null;
+            selectedTaskIconFgColor = null;
             selectedTaskCategory = 'Limpieza';
             editingSubtasks = [];
             editingTaskProductIds = [];
             renderTaskIconCats();
             renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
             renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, selectTaskIconColor);
+            renderColorPalette('task-icon-fg-color-palette', taskIconFgColors, selectedTaskIconFgColor, selectTaskIconFgColor);
             renderSubtaskList();
             renderTaskProductPicker();
             updateSelectRooms();
@@ -5058,6 +5088,7 @@
             updateRepeatUI();
             selectedTaskIcon = t.icon;
             selectedTaskIconColor = t.iconColor || null;
+            selectedTaskIconFgColor = t.iconFgColor || null;
             editingSubtasks = (t.subtasks || []).map(s => ({ ...s }));
             editingTaskProductIds = (t.productIds || []).slice();
             let foundCat = Object.keys(iconCategories).find(cat => iconCategories[cat].includes(t.icon)) || 'Limpieza';
@@ -5065,6 +5096,7 @@
             renderTaskIconCats();
             renderIconGrid('task-icon-grid', 'task', iconCategories[selectedTaskCategory]);
             renderColorPalette('task-icon-color-palette', memberColors, selectedTaskIconColor, selectTaskIconColor);
+            renderColorPalette('task-icon-fg-color-palette', taskIconFgColors, selectedTaskIconFgColor, selectTaskIconFgColor);
             renderSubtaskList();
             renderTaskProductPicker();
             openModal('modal-task');
@@ -5113,7 +5145,7 @@
             }
 
             const payload = {
-                roomId, name, notes, importance: imp, icon: selectedTaskIcon, iconColor: selectedTaskIconColor,
+                roomId, name, notes, importance: imp, icon: selectedTaskIcon, iconColor: selectedTaskIconColor, iconFgColor: selectedTaskIconFgColor,
                 dueDate, tags, memberId, duration, reminderTime, reminderLead, link, points,
                 subtasks: editingSubtasks,
                 productIds: editingTaskProductIds.slice(),
