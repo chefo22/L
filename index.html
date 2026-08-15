@@ -233,15 +233,16 @@
             cursor: pointer;
         }
 
-        .room-reorder-controls, .product-reorder-controls { display:flex; flex-direction:column; gap:2px; margin-right:10px; flex-shrink:0; }
-        .room-reorder-controls .material-symbols-rounded, .product-reorder-controls .material-symbols-rounded {
+        .room-reorder-controls, .product-reorder-controls, .task-reorder-controls { display:flex; flex-direction:column; gap:2px; margin-right:10px; flex-shrink:0; }
+        .room-reorder-controls .material-symbols-rounded, .product-reorder-controls .material-symbols-rounded, .task-reorder-controls .material-symbols-rounded {
             font-size: 20px; color: var(--text-secondary); cursor: pointer;
             width: 26px; height: 22px; display:flex; align-items:center; justify-content:center;
             border-radius: 6px; background-color: var(--bg-input);
         }
-        .room-reorder-controls .material-symbols-rounded.disabled, .product-reorder-controls .material-symbols-rounded.disabled { opacity: 0.3; pointer-events: none; }
+        .room-reorder-controls .material-symbols-rounded.disabled, .product-reorder-controls .material-symbols-rounded.disabled, .task-reorder-controls .material-symbols-rounded.disabled { opacity: 0.3; pointer-events: none; }
         .room-item.reorder-mode { cursor: default; }
         .card.reorder-mode { cursor: default; }
+        .task-item.reorder-mode { cursor: default; }
 
         .icon-container {
             width: 44px;
@@ -889,8 +890,11 @@
             <button class="btn-icon" onclick="hideRoomDetail()" style="color: var(--text-primary);">
                 <span class="material-symbols-rounded">arrow_back</span>
             </button>
-            <div class="title-group" id="detail-room-title">Habitación</div>
-            <div style="display:flex; gap:6px; align-items:center;">
+            <div class="title-group" id="detail-room-title" style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">Habitación</div>
+            <div style="display:flex; gap:6px; align-items:center; flex-shrink:0;">
+                <button class="btn-icon" id="room-task-reorder-btn" onclick="toggleRoomTaskReorder()" style="color:var(--text-secondary);" title="Ordenar tareas">
+                    <span class="material-symbols-rounded">swap_vert</span>
+                </button>
                 <button class="btn-icon" onclick="openEditRoom(currentRoomDetailId)" style="color: var(--text-secondary);">
                     <span class="material-symbols-rounded">edit</span>
                 </button>
@@ -1819,6 +1823,7 @@
         let selectedProductIcon = 'cleaning_services';
         let selectedProductColor = null;
         let productReorderMode = false;
+        let roomTaskReorderMode = false;
         let selectedRewardIcon = 'redeem';
         let selectedRoomIcon = 'bathtub';
         let selectedTaskIcon = 'mop';
@@ -1861,12 +1866,12 @@
 
         const iconCategories = {
             'Limpieza': ['mop', 'cleaning_services', 'vacuum', 'local_laundry_service', 'dry_cleaning', 'iron', 'water_drop', 'sanitizer', 'soap', 'delete', 'recycling', 'delete_sweep', 'auto_delete', 'countertops', 'dry', 'air', 'cleaning_bucket', 'clean_hands', 'compost'],
-            'Baño / WC': ['bathtub', 'shower', 'bathroom', 'wc', 'hot_tub', 'spa', 'soap', 'water_drop', 'sanitizer', 'dry_cleaning', 'plumbing', 'bath_soak', 'countertops'],
-            'Muebles': ['bed', 'chair', 'weekend', 'table_restaurant', 'table_bar', 'curtains', 'curtains_closed', 'window', 'door_front', 'door_sliding', 'checkroom', 'lightbulb', 'nightlight', 'tv', 'desk', 'countertops', 'chair_alt', 'shelves', 'crib'],
+            'Baño / WC': ['bathtub', 'shower', 'bathroom', 'wc', 'hot_tub', 'spa', 'soap', 'water_drop', 'sanitizer', 'dry_cleaning', 'plumbing', 'bath_soak', 'countertops', 'shower_head', 'toilet'],
+            'Muebles': ['bed', 'chair', 'weekend', 'table_restaurant', 'table_bar', 'curtains', 'curtains_closed', 'window', 'door_front', 'door_sliding', 'checkroom', 'lightbulb', 'nightlight', 'tv', 'desk', 'countertops', 'chair_alt', 'shelves', 'crib', 'bunk_bed'],
             'Cocina': ['kitchen', 'countertops', 'microwave', 'blender', 'coffee_maker', 'dining', 'local_pizza', 'egg', 'set_meal', 'icecream', 'local_cafe', 'restaurant_menu', 'restaurant', 'nutrition', 'bakery_dining', 'liquor', 'wine_bar', 'local_bar', 'lunch_dining', 'cake', 'ramen_dining', 'fastfood', 'takeout_dining', 'cookie'],
             'Exterior y Naturaleza': ['yard', 'grass', 'local_florist', 'pool', 'garage', 'solar_power', 'park', 'directions_car', 'deck', 'nature', 'forest', 'terrain', 'beach_access', 'waves', 'umbrella', 'wb_sunny', 'cloud', 'ac_unit', 'eco', 'potted_plant', 'balcony', 'fence', 'landscape', 'agriculture', 'water', 'thunderstorm', 'rainy'],
-            'Mantenimiento': ['handyman', 'build', 'plumbing', 'electrical_services', 'construction', 'home_repair_service', 'hardware', 'carpenter', 'engineering', 'settings_suggest', 'power', 'bolt', 'electric_bolt', 'plug_connect', 'outlet', 'battery_full', 'flashlight_on', 'roofing', 'foundation', 'fireplace', 'heat_pump', 'propane', 'gas_meter', 'square_foot', 'straighten'],
-            'Mascotas': ['pets', 'cruelty_free', 'pest_control', 'pest_control_rodent', 'egg', 'park', 'water_drop', 'medication', 'grass', 'bath_soak', 'compost', 'grain'],
+            'Mantenimiento': ['handyman', 'build', 'plumbing', 'electrical_services', 'construction', 'home_repair_service', 'hardware', 'carpenter', 'engineering', 'settings_suggest', 'power', 'bolt', 'electric_bolt', 'plug_connect', 'outlet', 'battery_full', 'flashlight_on', 'roofing', 'foundation', 'fireplace', 'heat_pump', 'propane', 'gas_meter', 'square_foot', 'straighten', 'construction_2'],
+            'Mascotas': ['pets', 'cruelty_free', 'pest_control', 'pest_control_rodent', 'egg', 'park', 'water_drop', 'medication', 'grass', 'bath_soak', 'compost', 'grain', 'catching_pokemon'],
             'Ropa': ['checkroom', 'apparel', 'dry_cleaning', 'local_laundry_service', 'iron', 'backpack', 'diamond', 'watch', 'style', 'shopping_bag'],
             'Viajes y Maletas': ['luggage', 'work', 'business_center', 'flight', 'flight_takeoff', 'flight_land', 'hiking', 'terrain', 'map', 'explore', 'public', 'beach_access', 'camera_alt', 'photo_camera', 'backpack', 'card_travel', 'directions_boat', 'hotel', 'tour', 'attractions', 'travel_explore'],
             'Transporte': ['directions_car', 'directions_bus', 'train', 'tram', 'subway', 'local_taxi', 'two_wheeler', 'pedal_bike', 'directions_boat', 'local_shipping', 'electric_car', 'car_repair', 'ev_station', 'local_gas_station', 'moped', 'directions_walk', 'directions_run'],
@@ -2872,6 +2877,12 @@
         function showRoomDetail(id, name) {
             currentRoomDetailId = id;
             document.getElementById('detail-room-title').innerText = name;
+            roomTaskReorderMode = false;
+            const btn = document.getElementById('room-task-reorder-btn');
+            if (btn) {
+                btn.style.color = 'var(--text-secondary)';
+                btn.innerHTML = '<span class="material-symbols-rounded">swap_vert</span>';
+            }
             showScreen('view-room-detail');
             renderRoomTasks();
         }
@@ -3062,6 +3073,37 @@
             return { bg, fg };
         }
 
+        function toggleRoomTaskReorder() {
+            roomTaskReorderMode = !roomTaskReorderMode;
+            const btn = document.getElementById('room-task-reorder-btn');
+            if (btn) {
+                btn.style.color = roomTaskReorderMode ? 'var(--accent-color)' : 'var(--text-secondary)';
+                btn.innerHTML = roomTaskReorderMode
+                    ? '<span class="material-symbols-rounded">check</span>'
+                    : '<span class="material-symbols-rounded">swap_vert</span>';
+            }
+            renderRoomTasks();
+        }
+
+        // Cambia la posición de una tarea dentro de las tareas de SU habitación, igual que
+        // moveProduct hace con los productos: mueve la tarea un puesto arriba/abajo respecto
+        // a las demás tareas de la misma habitación, intercambiando su posición real dentro
+        // de data.tasks con la de la tarea vecina (sin tocar el orden de tareas de otras
+        // habitaciones). Ese orden manual es el que se usa al ver la habitación.
+        function moveRoomTask(id, direction) {
+            const isOneTimeDone = (t) => t.completed && (!t.repeatType || t.repeatType === 'none');
+            const roomTaskIds = data.tasks.filter(t => t.roomId == currentRoomDetailId && !isOneTimeDone(t)).map(t => t.id);
+            const idx = roomTaskIds.indexOf(id);
+            if (idx === -1) return;
+            const newIdx = idx + direction;
+            if (newIdx < 0 || newIdx >= roomTaskIds.length) return;
+            const realIdxA = data.tasks.findIndex(t => t.id === roomTaskIds[idx]);
+            const realIdxB = data.tasks.findIndex(t => t.id === roomTaskIds[newIdx]);
+            [data.tasks[realIdxA], data.tasks[realIdxB]] = [data.tasks[realIdxB], data.tasks[realIdxA]];
+            saveData();
+            renderRoomTasks();
+        }
+
         function renderRoomTasks() {
             const container = document.getElementById('room-tasks-list');
             container.innerHTML = '';
@@ -3071,7 +3113,10 @@
             // registradas en el Historial. Las tareas que sí se repiten se siguen mostrando
             // aunque estén completadas hoy, porque volverán a tocar en su próxima fecha.
             const isOneTimeDone = (t) => t.completed && (!t.repeatType || t.repeatType === 'none');
-            const filtered = sortTasks(data.tasks.filter(t => t.roomId == currentRoomDetailId && !isOneTimeDone(t)), sortMode);
+            // El orden dentro de una habitación es manual (el que el usuario fije con
+            // "Ordenar"), no por fecha/importancia: por eso aquí NO se pasa por sortTasks,
+            // se respeta tal cual el orden de data.tasks.
+            const filtered = data.tasks.filter(t => t.roomId == currentRoomDetailId && !isOneTimeDone(t));
 
             if (filtered.length === 0) {
                 container.innerHTML = `<div class="empty-state"><span class="material-symbols-rounded">checklist</span>No hay tareas aquí. Toca "+" para añadir una.</div>`;
@@ -3079,12 +3124,18 @@
             }
 
             const roomForIcon = data.rooms.find(r => r.id == currentRoomDetailId);
-            filtered.forEach(task => {
+            filtered.forEach((task, i) => {
                 const { bg, fg } = taskIconStyle(task, roomForIcon);
                 const div = document.createElement('div');
-                div.className = `task-item ${task.completed ? 'task-completed' : ''}`;
-                div.onclick = () => openEditTask(task.id);
-                div.innerHTML = `
+                div.className = `task-item ${task.completed ? 'task-completed' : ''} ${roomTaskReorderMode ? 'reorder-mode' : ''}`;
+                if (!roomTaskReorderMode) div.onclick = () => openEditTask(task.id);
+                const reorderHTML = roomTaskReorderMode ? `
+                    <div class="task-reorder-controls">
+                        <span class="material-symbols-rounded ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveRoomTask('${task.id}', -1)">keyboard_arrow_up</span>
+                        <span class="material-symbols-rounded ${i === filtered.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveRoomTask('${task.id}', 1)">keyboard_arrow_down</span>
+                    </div>
+                ` : '';
+                div.innerHTML = reorderHTML + `
                     <div class="icon-container" style="background-color: ${bg};">
                         <span class="material-symbols-rounded" style="color:${fg}">${task.icon}</span>
                     </div>
